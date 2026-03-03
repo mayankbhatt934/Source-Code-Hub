@@ -153,7 +153,7 @@ function openUPIModal(plan, price) {
     }
     currentPlan = plan;
     currentPrice = price;
-    const myUPI_ID = "8512878804@ptaxis"; 
+    const myUPI_ID = "mayankbhatt934@oksbi"; 
     const name = "SourceHub Premium";
     const upiLink = `upi://pay?pa=${myUPI_ID}&pn=${name}&am=${price}&cu=INR`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;

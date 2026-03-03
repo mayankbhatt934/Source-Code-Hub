@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard</title><link rel="stylesheet" href="styles.css"><script defer src="app.js"></script></head><body>
+<header class="container" id="nav"></header><main class="container"><section class="hero"><h1>User Dashboard</h1><p id="who" class="muted"></p></section>
+<section class="grid grid-3">
+<article class="card"><h3>Free Code</h3><p class="muted">Access all free snippets.</p><a class="btn" href="free-code.html">Open</a></article>
+<article class="card"><h3>Premium Code</h3><p class="muted" id="pdesc"></p><a class="btn" href="premium-code.html">Open</a></article>
+<article class="card"><h3>AI Prompts</h3><p class="muted">Use curated copy-ready prompts.</p><a class="btn" href="ai-prompts.html">Open</a></article>
+</section>
+<div class="card" style="margin-top:1rem"><h3>Membership</h3><p class="muted" id="member"></p><button id="upgrade" class="btn btn-secondary" onclick="upgrade()">Upgrade to Premium (Demo)</button></div>
+</main><footer>Dashboard with account-based access controls.</footer>
+<script>
+nav(document.getElementById('nav')); const u=requireAuth();
+if(u){document.getElementById('who').textContent=`Logged in as ${u.name} (${u.email})`;
+ document.getElementById('member').textContent=u.premium?'Premium active ✅':'You are on Free plan.';
+ document.getElementById('pdesc').textContent=u.premium?'Premium unlocked.':'Requires premium membership.';
+ if(u.premium) document.getElementById('upgrade').style.display='none';}
+function upgrade(){ const u=currentUser(); const arr=users(); const i=arr.findIndex(x=>x.email===u.email); arr[i].premium=true; setUsers(arr); location.reload(); }
+</script></body></html>

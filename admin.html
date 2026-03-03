@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title><link rel="stylesheet" href="styles.css"><script defer src="app.js"></script></head><body>
+<header class="container" id="nav"></header><main class="container"><section class="hero"><h1>Admin Panel</h1><p>Manage users and premium access.</p></section>
+<div class="card"><table class="table" id="tbl"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Premium</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+</main><footer>Admin system enabled for admin role only.</footer>
+<script>
+nav(document.getElementById('nav')); const me=requireAdmin();
+function render(){
+ const body=document.querySelector('#tbl tbody'); body.innerHTML='';
+ users().forEach((u,idx)=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${u.premium?'Yes':'No'}</td><td class='row'>${u.role!=='admin'?`<button class='btn btn-secondary' onclick='toggle(${idx})'>Toggle Premium</button><button class='btn btn-danger' onclick='delUser(${idx})'>Delete</button>`:'-'}</td>`;
+  body.appendChild(tr);
+ })
+}
+function toggle(i){const arr=users(); arr[i].premium=!arr[i].premium; setUsers(arr); render();}
+function delUser(i){const arr=users(); arr.splice(i,1); setUsers(arr); render();}
+if(me)render();
+</script></body></html>

@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign Up</title><link rel="stylesheet" href="styles.css"><script defer src="app.js"></script></head><body>
+<header class="container" id="nav"></header><main class="container"><section class="hero"><h1>Create Account</h1></section>
+<div class="card" style="max-width:560px;margin:0 auto"><label>Name</label><input id="name" class="input"><label>Email</label><input id="email" class="input" type="email"><label>Password</label><input id="password" class="input" type="password"><button class="btn btn-primary" onclick="doSignup()">Sign up</button><p class="muted" id="msg"></p></div></main>
+<footer>New accounts start as Free users.</footer>
+<script>
+nav(document.getElementById('nav'));
+function doSignup(){
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  const password=document.getElementById('password').value;
+  if(!name||!email||!password){document.getElementById('msg').textContent='Please fill all fields'; return;}
+  const arr=users(); if(arr.some(u=>u.email===email)){document.getElementById('msg').textContent='Email already exists';return;}
+  arr.push({name,email,password,role:'user',premium:false}); setUsers(arr); setSession({email}); location.href='dashboard.html';
+}
+</script></body></html>

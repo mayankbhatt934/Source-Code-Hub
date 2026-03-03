@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login</title><link rel="stylesheet" href="styles.css"><script defer src="app.js"></script></head><body>
+<header class="container" id="nav"></header><main class="container"><section class="hero"><h1>Login</h1></section>
+<div class="card" style="max-width:520px;margin:0 auto"><label>Email</label><input id="email" class="input" type="email"><label>Password</label><input id="password" class="input" type="password"><button class="btn btn-primary" onclick="doLogin()">Login</button> <p class="muted" id="msg"></p></div></main>
+<footer>Demo admin: admin@sourcehub.ai / admin123</footer>
+<script>
+nav(document.getElementById('nav'));
+function doLogin(){
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  const password=document.getElementById('password').value;
+  const u=users().find(x=>x.email===email && x.password===password);
+  if(!u){document.getElementById('msg').textContent='Invalid credentials';return;}
+  setSession({email:u.email}); location.href='dashboard.html';
+}
+</script></body></html>

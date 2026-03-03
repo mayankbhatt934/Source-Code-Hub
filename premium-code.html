@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Premium Code</title><link rel="stylesheet" href="styles.css"><script defer src="app.js"></script></head><body>
+<header class="container" id="nav"></header><main class="container"><section class="hero"><h1>Premium Code Vault</h1><p>Advanced scripts for premium users only.</p></section>
+<div id="locked" class="card notice" style="display:none"><h3>Premium Access Required</h3><p class="muted">Please login and upgrade to premium on dashboard to unlock this page.</p><a class="btn btn-secondary" href="dashboard.html">Go to Dashboard</a></div>
+<div id="content" class="grid grid-2" style="display:none">
+<div class="code"><div class="code-head"><strong>Flask Auth Starter</strong><button class="btn btn-primary" onclick="copyText(document.getElementById('p1').innerText,this)">Copy</button></div><pre id="p1">from flask import Flask
+app = Flask(__name__)
+@app.route('/')
+def home():
+    return 'Premium starter'</pre></div>
+<div class="code"><div class="code-head"><strong>Analytics SQL Pack</strong><button class="btn btn-primary" onclick="copyText(document.getElementById('p2').innerText,this)">Copy</button></div><pre id="p2">SELECT user_id, COUNT(*) AS sessions
+FROM events
+GROUP BY user_id
+ORDER BY sessions DESC;</pre></div>
+</div></main><footer>Premium system enforced in frontend session logic.</footer>
+<script>
+nav(document.getElementById('nav'));
+const u=currentUser();
+if(u && u.premium){document.getElementById('content').style.display='grid';}
+else {document.getElementById('locked').style.display='block';}
+</script></body></html>

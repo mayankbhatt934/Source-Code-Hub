@@ -1,302 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Source Code Hub | mayank.code.ai</title>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&family=Fira+Code:wght@400;500&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Source Code Hub | Build, Learn, Launch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel: rgba(19, 27, 47, 0.68);
+      --panel-solid: #111a2f;
+      --text: #f4f7ff;
+      --muted: #a9b7d9;
+      --brand: #64d3ff;
+      --brand-2: #ad8cff;
+      --ok: #5bf6ac;
+      --border: rgba(141, 170, 255, 0.22);
+      --shadow: 0 24px 90px rgba(18, 29, 58, 0.55);
+      --radius: 18px;
+      --max-width: 1120px;
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            background: #0f0c29;
-            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
-            color: white;
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
+    html { scroll-behavior: smooth; }
 
-        /* Background Glow */
-        .glass-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            transition: background 0.2s ease;
-        }
+    body {
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 15% -10%, #244fbe55, transparent 40%),
+        radial-gradient(circle at 90% 20%, #6d2fff44, transparent 35%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
 
-        header {
-            padding: 2rem 10%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .wrap { width: min(92%, var(--max-width)); margin: 0 auto; }
 
-        .logo { font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; }
-        .logo span { color: #00d2ff; }
+    .blur {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle 260px at var(--x, 50%) var(--y, 40%), #80b8ff20, transparent 60%);
+      z-index: -1;
+    }
 
-        .nav-links { display: flex; list-style: none; gap: 20px; }
-        .nav-links a { color: white; text-decoration: none; font-size: 0.9rem; opacity: 0.8; transition: 0.3s; }
-        .nav-links a:hover { opacity: 1; color: #00d2ff; }
+    .nav {
+      position: sticky;
+      top: 16px;
+      z-index: 20;
+      margin: 16px auto;
+      width: min(94%, var(--max-width));
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      background: rgba(8, 13, 25, 0.72);
+      box-shadow: var(--shadow);
+    }
 
-        .hero { text-align: center; padding: 40px 20px; }
-        .hero h1 { font-size: clamp(2.5rem, 8vw, 3.5rem); line-height: 1.2; }
-        .hero span { background: linear-gradient(90deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo { font-size: 1rem; font-weight: 800; letter-spacing: 0.12em; }
+    .logo span {
+      background: linear-gradient(100deg, var(--brand), var(--brand-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-        /* Featured Source Code Editor */
-        .code-container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: #1e1e1e;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden;
-        }
+    .nav ul { display: flex; list-style: none; gap: 20px; }
+    .nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
+    .nav a:hover { color: var(--text); }
 
-        .code-header {
-            background: #333;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .btn {
+      background: linear-gradient(110deg, var(--brand), var(--brand-2));
+      border: none;
+      color: #06101d;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .dots { display: flex; gap: 8px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-        .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 30px;
+      align-items: center;
+      padding: 72px 0 30px;
+    }
 
-        pre {
-            padding: 20px;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            overflow-x: auto;
-            color: #dcdcaa;
-            text-align: left;
-        }
+    .eyebrow {
+      display: inline-block;
+      color: var(--brand);
+      border: 1px solid #6dbfff44;
+      border-radius: 100px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      margin-bottom: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-        .copy-main-btn {
-            background: #00d2ff;
-            color: #000;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: 0.3s;
-        }
+    h1 {
+      font-size: clamp(2.1rem, 4.3vw, 4rem);
+      line-height: 1.1;
+      margin-bottom: 18px;
+    }
 
-        /* AI Prompt Boxes */
-        .prompt-section { max-width: 800px; margin: 60px auto; padding: 0 20px; }
-        .prompt-box {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
+    .gradient {
+      background: linear-gradient(100deg, #8dd9ff, #d8acff 72%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-        .prompt-text { font-size: 0.9rem; color: #ccc; font-style: italic; margin-right: 15px; }
+    .hero p { color: var(--muted); max-width: 58ch; margin-bottom: 26px; }
 
-        .copy-btn {
-            background: #3a7bd5;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            min-width: 80px;
-            transition: 0.3s;
-        }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
-        .copy-btn.copied { background: #00ff88; color: #000; }
+    .ghost {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 16px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      background: transparent;
+    }
 
-        /* Floating DM Button */
-        .floating-dm {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            z-index: 1000;
-            animation: pulse 2s infinite;
-        }
+    .hero-card,
+    .card,
+    .snippet,
+    .testimonial,
+    .cta {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
 
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    .hero-card { padding: 22px; }
 
-        footer { text-align: center; padding: 60px 40px; background: rgba(0, 0, 0, 0.2); }
-        .insta-tag { color: #00d2ff; text-decoration: none; font-weight: 600; }
+    .stats {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
 
-        @media (max-width: 600px) {
-            .prompt-box { flex-direction: column; text-align: center; gap: 15px; }
-        }
-    </style>
+    .stat {
+      padding: 14px;
+      border: 1px solid #95c5ff25;
+      border-radius: 14px;
+      background: #0d162cb5;
+    }
+
+    .stat strong { display: block; font-size: 1.3rem; color: var(--ok); }
+    .stat small { color: var(--muted); }
+
+    section { padding: 42px 0; }
+
+    .section-title { margin-bottom: 20px; font-size: clamp(1.6rem, 3.4vw, 2.35rem); }
+    .section-copy { color: var(--muted); margin-bottom: 24px; max-width: 64ch; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card { padding: 20px; }
+    .card h3 { margin-bottom: 9px; }
+    .card p { color: var(--muted); font-size: 0.95rem; }
+
+    .pill {
+      display: inline-block;
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #8bb4ff50;
+      color: #9ac4ff;
+    }
+
+    .snippet { overflow: hidden; }
+    .snippet-head {
+      background: #0f182e;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+    }
+
+    .dots { display: flex; gap: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.red { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green { background: #28c840; }
+
+    pre {
+      margin: 0;
+      padding: 20px;
+      overflow-x: auto;
+      color: #e7efff;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.86rem;
+      background: #090f1f;
+    }
+
+    .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .testimonial { padding: 18px; }
+    .testimonial p { color: var(--muted); margin-bottom: 12px; }
+    .testimonial strong { font-size: 0.94rem; }
+
+    .cta {
+      margin-top: 28px;
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    footer { padding: 28px 0 40px; color: var(--muted); text-align: center; }
+
+    @media (max-width: 960px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid, .testimonials { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 680px) {
+      .nav ul { display: none; }
+      .grid, .testimonials, .stats { grid-template-columns: 1fr; }
+      .cta { align-items: flex-start; }
+      .hero { padding-top: 46px; }
+    }
+  </style>
 </head>
 <body>
+  <div class="blur" aria-hidden="true"></div>
 
-    <div class="glass-bg"></div>
+  <nav class="nav">
+    <div class="logo">SOURCE <span>CODE HUB</span></div>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#social-proof">Testimonials</a></li>
+    </ul>
+    <a class="btn" href="#start">Start Building</a>
+  </nav>
 
-    <a href="https://ig.me/m/mayank.code.ai" target="_blank" class="floating-dm">
-        <span>DM for Help</span>
-    </a>
+  <main class="wrap">
+    <section class="hero" id="start">
+      <div>
+        <span class="eyebrow">Create Better, Faster</span>
+        <h1>Build beautiful products with <span class="gradient">clean code + strong design</span>.</h1>
+        <p>
+          Source Code Hub is your launchpad for modern web experiences: curated code snippets,
+          polished components, and practical UI patterns that help developers ship confidently.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="#projects">Explore templates</a>
+          <a class="ghost" href="https://github.com" target="_blank" rel="noreferrer">View GitHub</a>
+        </div>
+      </div>
 
-    <header data-aos="fade-down">
-        <div class="logo">SOURCE<span>HUB</span></div>
-        <ul class="nav-links">
-            <li><a href="https://instagram.com/mayank.code.ai" target="_blank">Instagram</a></li>
-            <li><a href="https://ig.me/m/mayank.code.ai">Contact</a></li>
-        </ul>
-    </header>
-
-    <section class="hero">
-        <h1 data-aos="zoom-in">Python <span>Lyrics Script</span></h1>
-        <p data-aos="fade-up" data-aos-delay="200">Copy the "Finding Her" code below.</p>
+      <aside class="hero-card">
+        <h3>Weekly Growth Snapshot</h3>
+        <p class="section-copy">Data-inspired builder dashboard from the community.</p>
+        <div class="stats">
+          <div class="stat">
+            <strong>420+</strong>
+            <small>Reusable snippets</small>
+          </div>
+          <div class="stat">
+            <strong>98%</strong>
+            <small>Developer satisfaction</small>
+          </div>
+          <div class="stat">
+            <strong>24h</strong>
+            <small>Average launch cycle</small>
+          </div>
+        </div>
+      </aside>
     </section>
 
-    <div class="code-container" data-aos="fade-up">
-        <div class="code-header">
-            <div class="dots">
-                <div class="dot red"></div>
-                <div class="dot yellow"></div>
-                <div class="dot green"></div>
-            </div>
-            <button class="copy-main-btn" onclick="copyMainCode()">Copy Script</button>
-        </div>
-        <pre id="main-code">
-import time
-import sys
+    <section id="features">
+      <h2 class="section-title">Everything you need to craft a standout website</h2>
+      <p class="section-copy">A polished toolkit designed for creators, students, and indie teams who want rapid development without sacrificing visual quality.</p>
 
-def print_lyrics():
-    lyrics = [
-        "Sambhaal ke rakha wo phool mera tu",
-        "Meri shayari mein zaroor raha tu",
-        "Jo aankhon mein pyaari si duniya basaayi",
-        "Wo duniya bhi tha tu, wo lamha bhi tha tu",
-        "Haan, lagte hain mujhko ye kisse sataane",
-        "Deta na dil mera tujhko bhulaane",
-        "Adhoore se vaade, adhoori si raatein",
-        "Ab hisse mein daakhil mere bas wo yaadein"
-    ]
-
-    delays = [0.7, 0.7, 0.4, 0.5, 0.5, 0.7, 0.7, 1.0]
-
-    print("Finding Her:\n")
-    time.sleep(1.2)
-
-    for i, line in enumerate(lyrics):
-        for char in line:
-            sys.stdout.write(char)
-            sys.stdout.flush()
-            time.sleep(0.1)
-        print()
-        time.sleep(delays[i])
-
-print_lyrics()</pre>
-    </div>
-
-    <section class="prompt-section" data-aos="fade-up">
-        <h2 style="text-align: center; margin-bottom: 30px;">AI <span>Prompts</span></h2>
-        
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 1 - The Minimalist Portfolio</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Generate a single-page HTML/CSS for a minimalist portfolio. Design should be elegant, high-performance, featuring a clean hero section, small text, a multi-column project grid, and a contact form with glowing input fields. Use a neutral color palette like #FFFFFF and #333333.')">Copy</button>
-        </div>
-        
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 2 - Next-Gen Tech Landing Page</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Create the HTML, CSS, and basic JS for a next-gen technology landing page. It must feel high-performance and future-proof. Include a dynamic navbar, a feature section with glassmorphism cards, an AI-inspired graphic, and smooth scroll animations. Main colors: #00CCFF, #9900FF, #121212.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 3 - High-Converting E-Commerce</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Build a high-performance, conversion-focused single product page layout. Generate HTML/CSS for a header, large image carousel, clear product pricing section, and an eye-catching Buy Now button that pulses on hover. Use a trusting, vibrant color palette.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 4 - Freelancer Branding Hubs</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Create a personalized landing page template for a modern digital freelancer. Generate code for an engaging introduction section, a dynamic skills/services checklist, and a Latest Work section using interactive hover effects. Ensure the design is professional and memorable.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 5 - Visual Artist Portfolio</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Generate an HTML/CSS layout for a visually striking photography portfolio. It should be a single-page experience, featuring a dynamic image gallery grid with light-box functionality. Integrate a smooth transition effect when images are loaded. Design should be dark-themed with focus on visual impact.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 6 - Professional Corporate Site</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Create the structural HTML and modern CSS for a corporate business homepage. Design must be professional, clean, and build trust. Include a complex footer, a client testimonials section with a carousel, and a services overview. Use deep blue and gray accent colors for a corporate feel.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 7 - Next-Gen App Dashboard</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Generate a front-end dashboard UI for an interactive web application. Create a top-level layout with a sidebar navigation, a series of dynamic data visualization cards, and an integrated notification panel. Implement a sleek dark mode with vibrant teal and orange data accents.')">Copy</button>
-        </div>
-
-        <div class="prompt-box">
-            <span class="prompt-text">Prompt 8 - Creative 'About Us' Page</span>
-            <button class="copy-btn" onclick="copyPrompt(this, 'Design a creative, single-page About Us template for a modern agency. Incorporate a narrative-driven timeline of company milestones, a dynamically animated team section with interactive profile cards, and a powerful Our Vision statement box. Design with high engagement in mind.')">Copy</button>
-        </div>
-
+      <div class="grid">
+        <article class="card">
+          <span class="pill">UI Blocks</span>
+          <h3>Production-ready components</h3>
+          <p>Hero sections, pricing tables, feature cards, FAQ blocks, and contact forms with accessibility-friendly structure.</p>
+        </article>
+        <article class="card">
+          <span class="pill">Copy + Code</span>
+          <h3>Designed to convert</h3>
+          <p>Use carefully written headline systems and conversion-focused layouts that improve retention and click-through rates.</p>
+        </article>
+        <article class="card">
+          <span class="pill">Performance</span>
+          <h3>Fast by default</h3>
+          <p>Lean CSS, semantic HTML, and clean JavaScript with a responsive architecture optimized for Core Web Vitals.</p>
+        </article>
+      </div>
     </section>
 
-    <footer>
-        <p>Created by <a href="https://instagram.com/mayank.code.ai" class="insta-tag">@mayank.code.ai</a></p>
-    </footer>
+    <section id="projects">
+      <h2 class="section-title">Featured snippet: animated metrics card</h2>
+      <p class="section-copy">Plug this component into your dashboard and customize colors, labels, and values instantly.</p>
 
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init({ duration: 1000, once: false });
+      <article class="snippet">
+        <div class="snippet-head">
+          <div class="dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+          <button class="btn" id="copyBtn" type="button">Copy Snippet</button>
+        </div>
+<pre id="snippetCode">const metrics = [
+  { label: "Signups", value: 1920, trend: "+12%" },
+  { label: "Conversion", value: "8.4%", trend: "+1.1%" },
+  { label: "Revenue", value: "$12.4k", trend: "+18%" }
+];
 
-        // Mouse Background Effect
-        const glass = document.querySelector('.glass-bg');
-        document.addEventListener('mousemove', (e) => {
-            glass.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(0, 210, 255, 0.1), transparent 20%)`;
-        });
+function renderMetrics(items) {
+  return items.map((item) => `
+    &lt;article class="metric-card"&gt;
+      &lt;h4&gt;${item.label}&lt;/h4&gt;
+      &lt;strong&gt;${item.value}&lt;/strong&gt;
+      &lt;span&gt;${item.trend} this week&lt;/span&gt;
+    &lt;/article&gt;`).join("");
+}</pre>
+      </article>
+    </section>
 
-        // Copy Main Code
-        function copyMainCode() {
-            const code = document.getElementById('main-code').innerText;
-            navigator.clipboard.writeText(code);
-            const btn = document.querySelector('.copy-main-btn');
-            btn.innerText = 'Copied!';
-            btn.style.background = '#00ff88';
-            setTimeout(() => { 
-                btn.innerText = 'Copy Script'; 
-                btn.style.background = '#00d2ff';
-            }, 2000);
-        }
+    <section id="social-proof">
+      <h2 class="section-title">Loved by builders worldwide</h2>
+      <div class="testimonials">
+        <article class="testimonial">
+          <p>“I shipped my portfolio in one evening. The structure and visual polish made me look like a pro.”</p>
+          <strong>— Ayesha, Front-end Developer</strong>
+        </article>
+        <article class="testimonial">
+          <p>“The components are practical, modern, and very easy to adapt. Great for hackathons and client demos.”</p>
+          <strong>— Daniel, Product Designer</strong>
+        </article>
+        <article class="testimonial">
+          <p>“This is what I wish I had when learning web development—clear examples and inspiring layouts.”</p>
+          <strong>— Rohan, CS Student</strong>
+        </article>
+      </div>
 
-        // Copy Prompts
-        function copyPrompt(btn, text) {
-            navigator.clipboard.writeText(text);
-            const original = btn.innerText;
-            btn.innerText = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(() => { 
-                btn.innerText = original; 
-                btn.classList.remove('copied');
-            }, 2000);
-        }
-    </script>
+      <div class="cta">
+        <div>
+          <h3>Ready to launch something amazing?</h3>
+          <p class="section-copy">Fork the project, customize sections, and publish your new website in minutes.</p>
+        </div>
+        <a class="btn" href="https://github.com" target="_blank" rel="noreferrer">Get Started on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Built with ambition by Source Code Hub • 2026
+  </footer>
+
+  <script>
+    const blur = document.querySelector('.blur');
+    document.addEventListener('pointermove', (event) => {
+      blur.style.setProperty('--x', `${event.clientX}px`);
+      blur.style.setProperty('--y', `${event.clientY}px`);
+    });
+
+    const copyBtn = document.getElementById('copyBtn');
+    const snippet = document.getElementById('snippetCode');
+
+    copyBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(snippet.innerText);
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      copyBtn.style.background = 'linear-gradient(110deg, #5bf6ac, #8fffca)';
+      setTimeout(() => {
+        copyBtn.textContent = original;
+        copyBtn.style.background = 'linear-gradient(110deg, var(--brand), var(--brand-2))';
+      }, 1400);
+    });
+  </script>
 </body>
 </html>

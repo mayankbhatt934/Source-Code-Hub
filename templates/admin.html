@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel | SourceHub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #0f0c29;
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #00d2ff;
+            margin: 0;
+        }
+
+        .logout-btn {
+            background: #ff5f56;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-top: 10px;
+            color: #fff;
+        }
+
+        .pending-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .tx-row {
+            display: flex;
+            justify-content: space-between;
+            background: #1e1e1e;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .approve-btn {
+            background: #00ff88;
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    {% if not logged_in %}
+    <div style="text-align:center; margin-top: 100px;">
+        <h2 style="color: #00d2ff;">Admin Login</h2>
+        <form method="POST" action="/admin">
+            <input type="text" name="username" placeholder="Username" required style="padding:10px;"><br><br>
+            <input type="password" name="password" placeholder="Password" required style="padding:10px;"><br><br>
+            <button type="submit" style="padding:10px 20px;">Login</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="dashboard-container">
+        <div class="header-row">
+            <h1>SourceHub Admin Panel</h1>
+            <a href="/admin-logout" class="logout-btn">Logout</a>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Page Views</h3>
+                <div class="value" id="views">...</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="value" id="users">...</div>
+            </div>
+            <div class="stat-card">
+                <h3>Premium Users</h3>
+                <div class="value" id="premium">...</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Revenue</h3>
+                <div class="value" style="color: #00ff88;" id="revenue">₹0</div>
+            </div>
+        </div>
+
+        <div class="pending-box">
+            <h2 style="color: #f5af19;">Pending UPI Approvals</h2>
+            <div id="pending-list"></div>
+        </div>
+    </div>
+
+    <script>
+        function loadDashboard() {
+            fetch('/api/admin-data')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('views').innerText = data.page_views;
+                    document.getElementById('users').innerText = data.total_users;
+                    document.getElementById('premium').innerText = data.premium_users;
+                    document.getElementById('revenue').innerText = "₹" + data.total_revenue;
+
+                    const list = document.getElementById('pending-list');
+                    list.innerHTML = "";
+                    if (data.pending_payments.length === 0) {
+                        list.innerHTML = "<p>No pending payments!</p>";
+                    } else {
+                        data.pending_payments.forEach(tx => {
+                            // Replace the old list.innerHTML inside admin.html with this:
+                            list.innerHTML += `
+    <div class="tx-row">
+        <div>
+            <strong>Email:</strong> ${tx.email} <br>
+            <strong>Plan:</strong> ${tx.plan} (₹${tx.amount}) <br>
+            <strong style="color:#f5af19;">Awaiting your confirmation</strong>
+        </div>
+        <button class="approve-btn" onclick="approveTx(${tx.id})">Verify & Approve</button>
+    </div>
+`;
+                        });
+                    }
+                });
+        }
+
+        function approveTx(id) {
+            fetch(`/admin/approve-payment/${id}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Approved! User is now Premium.');
+                        loadDashboard();
+                    }
+                });
+        }
+
+        loadDashboard();
+    </script>
+    {% endif %}
+
+</body>
+
+</html>

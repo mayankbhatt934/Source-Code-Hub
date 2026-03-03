@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Source Code Hub</title>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="glass-bg"></div>
+    <a href="#" target="_blank" class="floating-dm"><span>DM for Help</span></a>
+
+    <header data-aos="fade-down">
+        <div class="logo" onclick="switchPage('home')">SOURCE<span>HUB</span></div>
+        <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
+        <ul class="nav-links" id="nav-menu">
+            <li onclick="switchPage('home')" id="nav-home" class="active">Home</li>
+            <li onclick="switchPage('free')" id="nav-free">Free Code</li>
+            <li onclick="switchPage('premium')" id="nav-premium">Premium Room</li>
+            <li onclick="switchPage('prompts')" id="nav-prompts">AI Prompts</li>
+            <li onclick="switchPage('pricing')" id="nav-pricing">Pricing</li>
+            <li onclick="switchAuthPage()" id="nav-login" class="login-nav-btn">Account</li>
+        </ul>
+    </header>
+
+    <section id="page-home" class="page-section active">
+        <section class="hero">
+            <h1 data-aos="zoom-in">Welcome to <span>SourceHub</span></h1>
+            <p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts, engineered AI prompts, and premium algorithms.</p>
+        </section>
+
+        <div class="home-grid" data-aos="fade-up" data-aos-delay="300">
+            <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection of Python scripts, web layouts, and logic algorithms completely free of charge.</p></div>
+            <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end, production-ready code. Requires a premium pass and account login.</p></div>
+            <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #00d2ff;">AI Prompts</h2><p>Browse categorized collections of highly-engineered prompts to generate perfect UI/UX designs via AI.</p></div>
+        </div>
+    </section>
+
+    <section id="page-free" class="page-section">
+        <section class="hero"><h1>Free <span>Source Codes</span></h1><p>A growing library of free scripts. Copy and paste directly into your projects.</p></section>
+        <div class="code-wrapper" data-aos="fade-up">
+            <div class="code-title"><span>01. Python Lyrics Script ("Finding Her")</span></div>
+            <div class="code-container">
+                <div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" onclick="copyMainCode('code-1', this)">Copy Script</button></div>
+                <pre id="code-1">
+import time
+import sys
+
+def print_lyrics():
+    lyrics = [
+        "Sambhaal ke rakha wo phool mera tu",
+        "Meri shayari mein zaroor raha tu",
+        "Jo aankhon mein pyaari si duniya basaayi",
+        "Wo duniya bhi tha tu, wo lamha bhi tha tu",
+        "Haan, lagte hain mujhko ye kisse sataane",
+        "Deta na dil mera tujhko bhulaane",
+        "Adhoore se vaade, adhoori si raatein",
+        "Ab hisse mein daakhil mere bas wo yaadein"
+    ]
+
+    delays = [0.7, 0.7, 0.4, 0.5, 0.5, 0.7, 0.7, 1.0]
+
+    print("Finding Her:\n")
+    time.sleep(1.2)
+
+    for i, line in enumerate(lyrics):
+        for char in line:
+            sys.stdout.write(char)
+            sys.stdout.flush()
+            time.sleep(0.1)
+        print()
+        time.sleep(delays[i])
+
+print_lyrics()</pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-premium" class="page-section">
+        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Exclusive, high-end algorithms and web templates. Login required to download.</p></section>
+        <div class="code-wrapper" id="premium-code-block" style="filter: blur(5px); pointer-events: none; opacity: 0.6;">
+            <div class="code-title" style="color: #f5af19;"><span>⭐ Advanced AI Trading Bot</span></div>
+            <div class="code-container">
+                <div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: #f5af19;">Locked</button></div>
+                <pre>
+# ----------------------------------------
+# PREMIUM AI TRADING ALGORITHM [LOCKED]
+# ----------------------------------------
+import advanced_neural_net
+import market_data
+
+def execute_premium_trade():
+    pass
+                </pre>
+            </div>
+        </div>
+        <div id="premium-unlock-btn" style="text-align: center; margin-top: -30px; position: relative; z-index: 10;">
+            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 30px;" onclick="switchAuthPage(); setAuthMode('premium');">Unlock Premium Now</button>
+        </div>
+    </section>
+
+    <section id="page-prompts" class="page-section">
+        <section class="hero"><h1>AI <span>Prompts Library</span></h1><p>Explore our categorized collections of highly-engineered prompts.</p></section>
+        <div class="prompt-section-wrapper" data-aos="fade-up">
+            <h3 class="prompt-section-title">Collection 1: <span>Top 8 Web Layout Prompts</span></h3>
+            <div class="prompt-box"><span class="prompt-text">Prompt 1 - Minimalist Portfolio</span><button class="copy-btn" onclick="copyPrompt(this, 'Generate a single-page HTML/CSS for a minimalist portfolio. Design should be elegant, high-performance, featuring a clean hero section, small text, a multi-column project grid, and a contact form with glowing input fields. Use a neutral color palette like #FFFFFF and #333333.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 2 - Tech Landing Page</span><button class="copy-btn" onclick="copyPrompt(this, 'Create the HTML, CSS, and basic JS for a next-gen technology landing page. It must feel high-performance and future-proof. Include a dynamic navbar, a showcase section with glassmorphism cards, an AI-inspired graphic, and smooth scroll animations. Main colors: #00CCFF, #9900FF, #121212.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 3 - E-Commerce</span><button class="copy-btn" onclick="copyPrompt(this, 'Build a high-performance, conversion-focused single product page layout. Generate HTML/CSS for a header, large image carousel, clear product pricing section, and an eye-catching Buy Now button that pulses on hover. Use a trusting, vibrant color palette.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 4 - Freelancer Hub</span><button class="copy-btn" onclick="copyPrompt(this, 'Create a personalized landing page template for a modern digital freelancer. Generate code for an engaging introduction section, a dynamic skills/services checklist, and a Latest Work section using interactive hover effects. Ensure the design is professional and memorable.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 5 - Artist Portfolio</span><button class="copy-btn" onclick="copyPrompt(this, 'Generate an HTML/CSS layout for a visually striking photography portfolio. It should be a single-page experience, featuring a dynamic image gallery grid with light-box functionality. Integrate a smooth transition effect when images are loaded. Design should be dark-themed with focus on visual impact.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 6 - Corporate Site</span><button class="copy-btn" onclick="copyPrompt(this, 'Create the structural HTML and modern CSS for a corporate business homepage. Design must be professional, clean, and build trust. Include a complex footer, a client testimonials section with a carousel, and a services overview. Use deep blue and gray accent colors for a corporate feel.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 7 - App Dashboard</span><button class="copy-btn" onclick="copyPrompt(this, 'Generate a front-end dashboard UI for an interactive web application. Create a top-level layout with a sidebar navigation, a series of dynamic data visualization cards, and an integrated notification panel. Implement a sleek dark mode with vibrant teal and orange data accents.')">Copy</button></div>
+            <div class="prompt-box"><span class="prompt-text">Prompt 8 - About Us</span><button class="copy-btn" onclick="copyPrompt(this, 'Design a creative, single-page About Us template for a modern agency. Incorporate a narrative-driven timeline of company milestones, a dynamically animated team section with interactive profile cards, and a powerful Our Vision statement box. Design with high engagement in mind.')">Copy</button></div>
+        </div>
+    </section>
+
+    <section id="page-pricing" class="page-section">
+        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Choose the perfect plan to unlock exclusive source codes.</p></section>
+        <div class="pricing-grid" data-aos="fade-up">
+            <div class="pricing-card">
+                <h3 class="plan-name">Weekly</h3><div class="plan-price">₹199<span>/wk</span></div>
+                <ul class="plan-benefits"><li>7 days premium access</li><li>Download locked source codes</li></ul>
+                <button class="submit-btn" onclick="openUPIModal('Weekly', 1)">Subscribe Now</button>
+            </div>
+            <div class="pricing-card popular">
+                <h3 class="plan-name" style="color: #fff;">Monthly</h3><div class="plan-price" style="color: #f5af19;">₹499<span>/mo</span></div>
+                <ul class="plan-benefits"><li>30 days premium access</li><li>Download all source codes</li><li>Priority support</li></ul>
+                <button class="submit-btn premium-btn" onclick="openUPIModal('Monthly', 499)">Subscribe Now</button>
+            </div>
+            <div class="pricing-card">
+                <h3 class="plan-name">Yearly</h3><div class="plan-price">₹3999<span>/yr</span></div>
+                <ul class="plan-benefits"><li>365 days premium access</li><li>Unlimited downloads</li></ul>
+                <button class="submit-btn" onclick="openUPIModal('Yearly', 3999)">Subscribe Now</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-login" class="page-section">
+        <div class="center-box">
+            <h2 id="auth-main-title">Access <span id="login-title-span" style="color:#00d2ff;">Account</span></h2>
+            <div class="auth-toggle" id="auth-toggle">
+                <div class="toggle-bg"></div>
+                <button class="active" id="btn-normal" onclick="setAuthMode('normal')">Normal</button>
+                <button id="btn-premium" onclick="setAuthMode('premium')">Premium Room</button>
+            </div>
+            <div class="auth-form-wrapper">
+                <div id="premium-lock-overlay" class="lock-overlay">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div>
+                    <h3 style="color: #f5af19; margin-bottom: 10px; font-size: 1.2rem;">Premium Required</h3>
+                    <button class="submit-btn premium-btn" style="width: 80%; padding: 10px;" onclick="switchPage('pricing')">View Pricing Plans</button>
+                    <span class="go-back-link" onclick="setAuthMode('normal')">← Go back</span>
+                </div>
+                <div class="flip-container" id="flip-container">
+                    <div class="flip-inner" id="flip-inner-box">
+                        <div class="flip-front">
+                            <form id="login-form" onsubmit="handleLogin(event)">
+                                <div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div>
+                                <div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div>
+                                <button type="submit" class="submit-btn auth-action-btn">Login</button>
+                            </form>
+                            <p class="flip-text" id="flip-to-reg-text">Don't have an account? <span onclick="toggleFlipCard()">Create one</span></p>
+                        </div>
+                        <div class="flip-back">
+                            <form id="register-form" onsubmit="handleRegistration(event)">
+                                <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div>
+                                <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div>
+                                <div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div>
+                                <button type="submit" class="submit-btn auth-action-btn">Register</button>
+                            </form>
+                            <p class="flip-text" id="flip-to-log-text">Already have an account? <span onclick="toggleFlipCard()">Login</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-profile" class="page-section">
+        <div class="center-box" style="max-width: 500px; position: relative;">
+            <div style="position: absolute; top: 20px; right: 20px;">
+                <button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button>
+            </div>
+            
+            <h2 style="color: #00d2ff; margin-bottom: 30px;">My Profile</h2>
+            
+            <div class="profile-avatar-wrapper">
+                <img id="profile-img" src="https://ui-avatars.com/api/?name=User&background=00d2ff&color=fff" alt="Profile">
+                <label for="upload-photo" class="upload-btn">📷 Change Photo</label>
+                <input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
+            </div>
+            
+            <div id="profile-status-badge" class="status-badge basic">Basic Account</div>
+            <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Expires: <span></span></p>
+
+            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 30px;">
+                <div class="form-group">
+                    <label style="font-size: 0.8rem; color: #ccc;">Email Address (Cannot be changed)</label>
+                    <input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 0.8rem; color: #ccc;">Full Name</label>
+                    <input type="text" id="prof-name" required>
+                </div>
+                <button type="submit" class="submit-btn">Save Changes</button>
+            </form>
+        </div>
+    </section>
+
+    <div id="upi-modal-overlay" class="upi-modal-overlay">
+        <div class="upi-modal">
+            <span class="close-modal" onclick="closeUPIModal()">&times;</span>
+            <h2 style="color: #00d2ff; margin-bottom: 10px;">Pay via Google Pay</h2>
+            <p id="modal-plan-desc" style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;"></p>
+            <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00d2ff;">
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 0.8rem; color: #888;">Mobile Users:</p>
+                <a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a>
+            </div>
+            <form onsubmit="submitUPIPayment(event)">
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after you have completed the payment on your app.</p>
+                <button type="submit" class="submit-btn premium-btn">I have completed the payment</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>Created for SourceHub</p>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

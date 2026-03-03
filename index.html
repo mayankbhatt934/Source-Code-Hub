@@ -6,70 +6,189 @@
     <title>Source Code Hub | mayank.code.ai</title>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&family=Fira+Code:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --bg: #080b18;
+            --bg-soft: #10162b;
+            --card: rgba(255, 255, 255, 0.06);
+            --stroke: rgba(255, 255, 255, 0.14);
+            --text: #f4f7ff;
+            --muted: #a9b7da;
+            --accent: #5be8ff;
+            --accent-2: #9e79ff;
+            --success: #31f7a3;
+            --shadow: 0 24px 50px rgba(3, 5, 14, 0.65);
+        }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            background: #0f0c29;
-            background: linear-gradient(to right, #24243e, #302b63, #0f0c29);
-            color: white;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
             overflow-x: hidden;
             min-height: 100vh;
+            background:
+                radial-gradient(circle at 15% 15%, rgba(91, 232, 255, 0.18), transparent 35%),
+                radial-gradient(circle at 82% 4%, rgba(158, 121, 255, 0.18), transparent 32%),
+                linear-gradient(145deg, #040611 0%, #0b1022 38%, #080b18 100%);
         }
 
-        /* Background Glow */
+        .container {
+            width: min(1100px, 92%);
+            margin: 0 auto;
+        }
+
         .glass-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
-            z-index: -1;
+            z-index: -2;
             transition: background 0.2s ease;
         }
 
+        .noise-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.06;
+            background-image: radial-gradient(#fff 0.45px, transparent 0.45px);
+            background-size: 4px 4px;
+        }
+
         header {
-            padding: 2rem 10%;
+            width: min(1100px, 92%);
+            margin: 20px auto 0;
+            padding: 1.1rem 1.3rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid var(--stroke);
+            background: rgba(9, 13, 31, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 16px;
+            z-index: 999;
         }
 
-        .logo { font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; }
-        .logo span { color: #00d2ff; }
+        .logo { font-size: 1.2rem; font-weight: 800; letter-spacing: 2px; }
+        .logo span {
+            background: linear-gradient(100deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-        .nav-links { display: flex; list-style: none; gap: 20px; }
-        .nav-links a { color: white; text-decoration: none; font-size: 0.9rem; opacity: 0.8; transition: 0.3s; }
-        .nav-links a:hover { opacity: 1; color: #00d2ff; }
+        .nav-links { display: flex; list-style: none; gap: 10px; }
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.87rem;
+            font-weight: 500;
+            opacity: 0.86;
+            border: 1px solid transparent;
+            padding: 8px 12px;
+            border-radius: 999px;
+            transition: 0.25s ease;
+        }
 
-        .hero { text-align: center; padding: 40px 20px; }
-        .hero h1 { font-size: clamp(2.5rem, 8vw, 3.5rem); line-height: 1.2; }
-        .hero span { background: linear-gradient(90deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links a:hover {
+            opacity: 1;
+            color: var(--accent);
+            border-color: rgba(91, 232, 255, 0.3);
+            background: rgba(91, 232, 255, 0.08);
+        }
 
-        /* Featured Source Code Editor */
+        .hero {
+            text-align: center;
+            padding: 80px 20px 20px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            font-size: 0.76rem;
+            padding: 7px 14px;
+            border: 1px solid var(--stroke);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--muted);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.4rem, 8vw, 4rem);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+
+        .hero span,
+        .prompt-section h2 span {
+            background: linear-gradient(100deg, #8ef6ff, #8f95ff 45%, #c684ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--muted);
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        .stats {
+            width: min(850px, 92%);
+            margin: 32px auto 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .stat-card {
+            border: 1px solid var(--stroke);
+            background: var(--card);
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .stat-card span {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
         .code-container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: #1e1e1e;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 900px;
+            margin: 34px auto;
+            background: linear-gradient(145deg, rgba(26, 30, 50, 0.95), rgba(17, 18, 33, 0.98));
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--stroke);
             overflow: hidden;
         }
 
         .code-header {
-            background: #333;
-            padding: 10px 20px;
+            background: rgba(255,255,255,0.04);
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.09);
         }
 
         .dots { display: flex; gap: 8px; }
@@ -77,84 +196,144 @@
         .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
 
         pre {
-            padding: 20px;
+            padding: 24px;
             font-family: 'Fira Code', monospace;
             font-size: 14px;
             line-height: 1.5;
             overflow-x: auto;
-            color: #dcdcaa;
+            color: #f0f5a6;
             text-align: left;
+            scrollbar-color: rgba(255,255,255,0.4) transparent;
+        }
+
+        .copy-main-btn,
+        .copy-btn {
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.25s ease;
         }
 
         .copy-main-btn {
-            background: #00d2ff;
-            color: #000;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
+            background: linear-gradient(110deg, var(--accent), #9bd8ff);
+            color: #05121f;
+            padding: 7px 16px;
+            border-radius: 8px;
             font-size: 0.8rem;
-            transition: 0.3s;
         }
 
-        /* AI Prompt Boxes */
-        .prompt-section { max-width: 800px; margin: 60px auto; padding: 0 20px; }
+        .copy-main-btn:hover,
+        .copy-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .prompt-section {
+            max-width: 900px;
+            margin: 64px auto;
+            padding: 0 20px;
+        }
+
+        .prompt-section h2 {
+            text-align: center;
+            margin-bottom: 26px;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
         .prompt-box {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            padding: 20px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+            border-radius: 14px;
+            padding: 16px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 12px;
+            border: 1px solid var(--stroke);
             backdrop-filter: blur(10px);
+            transition: border-color 0.3s ease, transform 0.2s ease;
         }
 
-        .prompt-text { font-size: 0.9rem; color: #ccc; font-style: italic; margin-right: 15px; }
+        .prompt-box:hover {
+            border-color: rgba(91, 232, 255, 0.45);
+            transform: translateY(-2px);
+        }
+
+        .prompt-text { font-size: 0.92rem; color: #e6ecff; font-style: italic; margin-right: 15px; }
 
         .copy-btn {
-            background: #3a7bd5;
+            background: linear-gradient(110deg, #5f78ff, #7d49ff);
             color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 9px;
             min-width: 80px;
-            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(25, 32, 80, 0.45);
         }
 
-        .copy-btn.copied { background: #00ff88; color: #000; }
+        .copy-btn.copied {
+            background: linear-gradient(110deg, #1fe2a4, #5ef7b8);
+            color: #022b1d;
+        }
 
-        /* Floating DM Button */
         .floating-dm {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
+            bottom: 24px;
+            right: 24px;
             background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
             color: white;
-            padding: 15px 25px;
+            padding: 14px 22px;
             border-radius: 50px;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 1000;
+            box-shadow: 0 16px 30px rgba(0,0,0,0.4);
             animation: pulse 2s infinite;
         }
 
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
-        footer { text-align: center; padding: 60px 40px; background: rgba(0, 0, 0, 0.2); }
-        .insta-tag { color: #00d2ff; text-decoration: none; font-weight: 600; }
+        footer {
+            text-align: center;
+            padding: 56px 40px;
+            margin-top: 42px;
+            border-top: 1px solid rgba(255,255,255,0.09);
+            background: linear-gradient(180deg, rgba(8, 12, 25, 0), rgba(8, 12, 25, 0.7));
+        }
 
-        @media (max-width: 600px) {
-            .prompt-box { flex-direction: column; text-align: center; gap: 15px; }
+        .insta-tag {
+            color: #8eeeff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                position: static;
+                margin-top: 14px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .prompt-box {
+                flex-direction: column;
+                text-align: center;
+                gap: 13px;
+            }
+
+            .floating-dm {
+                right: 12px;
+                bottom: 12px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="glass-bg"></div>
+    <div class="noise-layer"></div>
 
     <a href="https://ig.me/m/mayank.code.ai" target="_blank" class="floating-dm">
         <span>DM for Help</span>
@@ -168,9 +347,25 @@
         </ul>
     </header>
 
-    <section class="hero">
+    <section class="hero container">
+        <div class="hero-badge" data-aos="fade-down">✨ Premium Script & Prompt Vault</div>
         <h1 data-aos="zoom-in">Python <span>Lyrics Script</span></h1>
         <p data-aos="fade-up" data-aos-delay="200">Copy the "Finding Her" code below.</p>
+    </section>
+
+    <section class="stats" data-aos="fade-up" data-aos-delay="300">
+        <article class="stat-card">
+            <strong>1-Click</strong>
+            <span>Instant code copy</span>
+        </article>
+        <article class="stat-card">
+            <strong>8 Prompts</strong>
+            <span>Ready for creators</span>
+        </article>
+        <article class="stat-card">
+            <strong>Premium UI</strong>
+            <span>Modern glass aesthetic</span>
+        </article>
     </section>
 
     <div class="code-container" data-aos="fade-up">
@@ -216,12 +411,12 @@ print_lyrics()</pre>
 
     <section class="prompt-section" data-aos="fade-up">
         <h2 style="text-align: center; margin-bottom: 30px;">AI <span>Prompts</span></h2>
-        
+
         <div class="prompt-box">
             <span class="prompt-text">Prompt 1 - The Minimalist Portfolio</span>
             <button class="copy-btn" onclick="copyPrompt(this, 'Generate a single-page HTML/CSS for a minimalist portfolio. Design should be elegant, high-performance, featuring a clean hero section, small text, a multi-column project grid, and a contact form with glowing input fields. Use a neutral color palette like #FFFFFF and #333333.')">Copy</button>
         </div>
-        
+
         <div class="prompt-box">
             <span class="prompt-text">Prompt 2 - Next-Gen Tech Landing Page</span>
             <button class="copy-btn" onclick="copyPrompt(this, 'Create the HTML, CSS, and basic JS for a next-gen technology landing page. It must feel high-performance and future-proof. Include a dynamic navbar, a feature section with glassmorphism cards, an AI-inspired graphic, and smooth scroll animations. Main colors: #00CCFF, #9900FF, #121212.')">Copy</button>
@@ -267,33 +462,30 @@ print_lyrics()</pre>
     <script>
         AOS.init({ duration: 1000, once: false });
 
-        // Mouse Background Effect
         const glass = document.querySelector('.glass-bg');
         document.addEventListener('mousemove', (e) => {
-            glass.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(0, 210, 255, 0.1), transparent 20%)`;
+            glass.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(91, 232, 255, 0.12), transparent 20%)`;
         });
 
-        // Copy Main Code
         function copyMainCode() {
             const code = document.getElementById('main-code').innerText;
             navigator.clipboard.writeText(code);
             const btn = document.querySelector('.copy-main-btn');
             btn.innerText = 'Copied!';
-            btn.style.background = '#00ff88';
-            setTimeout(() => { 
-                btn.innerText = 'Copy Script'; 
-                btn.style.background = '#00d2ff';
+            btn.style.background = 'linear-gradient(110deg, #1fe2a4, #5ef7b8)';
+            setTimeout(() => {
+                btn.innerText = 'Copy Script';
+                btn.style.background = 'linear-gradient(110deg, var(--accent), #9bd8ff)';
             }, 2000);
         }
 
-        // Copy Prompts
         function copyPrompt(btn, text) {
             navigator.clipboard.writeText(text);
             const original = btn.innerText;
             btn.innerText = 'Copied!';
             btn.classList.add('copied');
-            setTimeout(() => { 
-                btn.innerText = original; 
+            setTimeout(() => {
+                btn.innerText = original;
                 btn.classList.remove('copied');
             }, 2000);
         }

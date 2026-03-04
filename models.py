@@ -11,11 +11,15 @@ class User(db.Model):
     is_premium = db.Column(db.Boolean, default=False)
     premium_expiry = db.Column(db.DateTime, nullable=True)
     profile_photo = db.Column(db.Text, nullable=True)
+    
+    # NEW BAN COLUMNS
+    is_banned = db.Column(db.Boolean, default=False)
+    ban_expiry = db.Column(db.DateTime, nullable=True) # Null means permanent if is_banned is True
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
-    sender_upi = db.Column(db.String(100)) # CHANGED: Now tracks UPI ID instead of UTR
+    sender_upi = db.Column(db.String(100))
     amount = db.Column(db.Integer)
     plan = db.Column(db.String(50))
     code_id = db.Column(db.Integer, nullable=True)

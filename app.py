@@ -17,8 +17,7 @@ ADMIN_PASSWORD = 'password123'
 
 DB_URL = os.environ.get('DATABASE_URL')
 if DB_URL:
-    if DB_URL.startswith("postgres://"):
-        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+    if DB_URL.startswith("postgres://"): DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 else:
     if os.environ.get('VERCEL'): app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/sourcehub.db'
@@ -37,16 +36,13 @@ with app.app_context():
 def force_db_reset():
     db.drop_all()
     db.create_all()
-    if not SiteAnalytics.query.first():
-        db.session.add(SiteAnalytics(page_views=0))
-        db.session.commit()
+    if not SiteAnalytics.query.first(): db.session.add(SiteAnalytics(page_views=0)); db.session.commit()
     return "DATABASE RESET SUCCESSFUL!"
 
 @app.route('/')
 def home():
     stats = SiteAnalytics.query.first()
-    stats.page_views += 1
-    db.session.commit()
+    stats.page_views += 1; db.session.commit()
     return render_template('index.html')
 
 @app.route('/register', methods=['POST'])
@@ -63,6 +59,13 @@ def login():
     data = request.json
     user = User.query.filter_by(email=data.get('email')).first()
     if user and check_password_hash(user.password, data.get('password')):
+        # NEW: BAN CHECK DURING LOGIN
+        if user.is_banned:
+            if user.ban_expiry and datetime.utcnow() > user.ban_expiry:
+                user.is_banned = False; user.ban_expiry = None; db.session.commit() # Ban expired!
+            else:
+                return jsonify({"status": "error", "message": "Your account has been restricted by the Admin."}), 403
+        
         session['user_email'] = user.email 
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium})
     return jsonify({"status": "error", "message": "Invalid email or password!"}), 401
@@ -76,6 +79,16 @@ def logout():
 def get_profile():
     if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
+    if not user: session.pop('user_email', None); return jsonify({"error": "User deleted"}), 401
+    
+    # NEW: KICK OUT BANNED USERS IF THEY ARE CURRENTLY LOGGED IN
+    if user.is_banned:
+        if user.ban_expiry and datetime.utcnow() > user.ban_expiry:
+            user.is_banned = False; user.ban_expiry = None; db.session.commit()
+        else:
+            session.pop('user_email', None)
+            return jsonify({"error": "Account banned"}), 403
+
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
         user.is_premium = False; db.session.commit()
     expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else ("Lifetime Access" if user.is_premium else None)
@@ -107,9 +120,7 @@ def forgot_password():
             msg['Subject'] = 'Source Code Hub - Password Reset Code'
             msg['From'] = f"Source Code Hub Support <{sender_email}>"
             msg['To'] = email
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                server.login(sender_email, sender_password)
-                server.sendmail(sender_email, email, msg.as_string())
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: server.login(sender_email, sender_password); server.sendmail(sender_email, email, msg.as_string())
         except Exception as e: print("Email failed to send:", e)
     return jsonify({"status": "success", "message": "Code sent to your email!"})
 
@@ -129,22 +140,14 @@ def reset_password():
 def submit_upi_payment():
     data = request.json
     if 'user_email' not in session: return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
-    
     if data.get('is_gift'):
         recipient = User.query.filter_by(email=data.get('gift_email')).first()
         if not recipient: return jsonify({"status": "error", "message": "Recipient email not found! They must create an account first."}), 404
 
-    new_tx = Transaction(
-        email=session['user_email'], 
-        sender_upi=data.get('sender_upi'), # CHANGED: Saving UPI ID
-        amount=data.get('amount'), 
-        plan=data.get('plan'), 
-        code_id=data.get('code_id'),
-        is_gift=data.get('is_gift', False),
-        gift_recipient_email=data.get('gift_email'),
-        status='Pending'
-    )
-    db.session.add(new_tx)
+    db.session.add(Transaction(
+        email=session['user_email'], sender_upi=data.get('sender_upi'), amount=data.get('amount'), plan=data.get('plan'), 
+        code_id=data.get('code_id'), is_gift=data.get('is_gift', False), gift_recipient_email=data.get('gift_email'), status='Pending'
+    ))
     db.session.commit()
     return jsonify({"status": "success", "message": "Payment submitted! Admin will verify."})
 
@@ -152,8 +155,7 @@ def submit_upi_payment():
 def my_purchases():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
-    purchases = UserCodePurchase.query.filter_by(email=user.email).all()
-    purchased_code_ids = [p.code_id for p in purchases]
+    purchased_code_ids = [p.code_id for p in UserCodePurchase.query.filter_by(email=user.email).all()]
     codes = PremiumCode.query.filter(PremiumCode.id.in_(purchased_code_ids)).all()
     code_list = [{"id": c.id, "title": c.title, "category": c.category, "code": c.code} for c in codes]
     return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
@@ -162,24 +164,25 @@ def my_purchases():
 def admin_dashboard():
     error = None
     if request.method == 'POST':
-        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD:
-            session['is_admin'] = True  
-            return redirect(url_for('admin_dashboard'))
+        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD: session['is_admin'] = True; return redirect(url_for('admin_dashboard'))
         else: error = "Invalid username or password"
     if not session.get('is_admin'): return render_template('admin.html', logged_in=False, error=error)
     return render_template('admin.html', logged_in=True)
 
 @app.route('/admin-logout')
 def admin_logout():
-    session.pop('is_admin', None) 
-    return redirect(url_for('admin_dashboard'))
+    session.pop('is_admin', None); return redirect(url_for('admin_dashboard'))
 
 @app.route('/api/admin-data')
 def admin_data():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
     revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
     pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
-    return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": SiteAnalytics.query.first().page_views, "pending_payments": pending_list})
+    
+    # FETCH BANNED USERS LIST
+    banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d, %Y') if u.ban_expiry else "Permanent"} for u in User.query.filter_by(is_banned=True).all()]
+    
+    return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": SiteAnalytics.query.first().page_views, "pending_payments": pending_list, "banned_users": banned_users})
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
 def approve_payment(tx_id):
@@ -189,7 +192,6 @@ def approve_payment(tx_id):
         tx.status = 'Success'
         target_email = tx.gift_recipient_email if tx.is_gift else tx.email
         user = User.query.filter_by(email=target_email).first()
-        
         if user:
             if 'Pass' in tx.plan:
                 user.is_premium = True
@@ -197,10 +199,8 @@ def approve_payment(tx_id):
                 elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
                 elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
                 elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
-            elif tx.code_id:
-                db.session.add(UserCodePurchase(email=user.email, code_id=tx.code_id))
-        db.session.commit()
-        return jsonify({"status": "success"})
+            elif tx.code_id: db.session.add(UserCodePurchase(email=user.email, code_id=tx.code_id))
+        db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404
 
 @app.route('/admin/gift', methods=['POST'])
@@ -209,7 +209,6 @@ def admin_gift():
     data = request.json
     user = User.query.filter_by(email=data.get('email')).first()
     if not user: return jsonify({"status": "error", "message": "User email not found."}), 404
-    
     if data.get('type') == 'membership':
         user.is_premium = True
         plan = data.get('value')
@@ -217,21 +216,43 @@ def admin_gift():
         elif plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
         elif plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
         elif plan == 'Lifetime Pass': user.premium_expiry = None
-    elif data.get('type') == 'code':
-        db.session.add(UserCodePurchase(email=user.email, code_id=data.get('value')))
+    elif data.get('type') == 'code': db.session.add(UserCodePurchase(email=user.email, code_id=data.get('value')))
+    db.session.commit(); return jsonify({"status": "success", "message": "Gift sent successfully!"})
+
+# NEW: BAN AND UNBAN ROUTES
+@app.route('/admin/ban-user', methods=['POST'])
+def admin_ban_user():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    user = User.query.filter_by(email=data.get('email')).first()
+    if not user: return jsonify({"status": "error", "message": "User not found!"}), 404
+    
+    ban_type = data.get('duration')
+    user.is_banned = True
+    if ban_type == '7 Days': user.ban_expiry = datetime.utcnow() + timedelta(days=7)
+    elif ban_type == '30 Days': user.ban_expiry = datetime.utcnow() + timedelta(days=30)
+    elif ban_type == 'Permanent': user.ban_expiry = None
     
     db.session.commit()
-    return jsonify({"status": "success", "message": "Gift sent successfully!"})
+    return jsonify({"status": "success", "message": f"User {user.email} banned ({ban_type})."})
+
+@app.route('/admin/unban-user', methods=['POST'])
+def admin_unban_user():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    user = User.query.filter_by(email=request.json.get('email')).first()
+    if user:
+        user.is_banned = False
+        user.ban_expiry = None
+        db.session.commit()
+        return jsonify({"status": "success", "message": "User unbanned successfully."})
+    return jsonify({"status": "error", "message": "User not found."}), 404
 
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:
-        codes = FreeCode.query.all()
-        prompts = AIPrompt.query.all()
-        premium = PremiumCode.query.all()
-        code_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code} for c in codes]
-        premium_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code} for p in premium]
-        prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in prompts]
+        code_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code} for c in FreeCode.query.all()]
+        premium_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code} for p in PremiumCode.query.all()]
+        prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in AIPrompt.query.all()]
         return jsonify({"codes": code_list, "premium_codes": premium_list, "prompts": prompt_list})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
@@ -256,23 +277,17 @@ def admin_add_prompt():
 @app.route('/admin/delete-code/<int:code_id>', methods=['DELETE'])
 def delete_code(code_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    c = FreeCode.query.get(code_id)
-    if c: db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
-    return jsonify({"error": "Not found"}), 404
+    c = FreeCode.query.get(code_id); db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/delete-premium/<int:code_id>', methods=['DELETE'])
 def delete_premium(code_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    c = PremiumCode.query.get(code_id)
-    if c: db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
-    return jsonify({"error": "Not found"}), 404
+    c = PremiumCode.query.get(code_id); db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/delete-prompt/<int:prompt_id>', methods=['DELETE'])
 def delete_prompt(prompt_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    p = AIPrompt.query.get(prompt_id)
-    if p: db.session.delete(p); db.session.commit(); return jsonify({"status": "success"})
-    return jsonify({"error": "Not found"}), 404
+    p = AIPrompt.query.get(prompt_id); db.session.delete(p); db.session.commit(); return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     app.run(debug=True)

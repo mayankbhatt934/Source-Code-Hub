@@ -54,7 +54,7 @@ async function loadUserProfile() {
         if (res.ok) {
             isLoggedIn = true; document.getElementById('nav-login').innerText = "Dashboard"; document.getElementById('nav-notifications').style.display = 'block';
             const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; 
-            document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email; document.getElementById('profile-img').src = user.photo;
+            document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email; document.getElementById('profile-img').src = user.photo ? user.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             if(user.has_staff_access) document.getElementById('btn-staff-panel').style.display = 'block'; else document.getElementById('btn-staff-panel').style.display = 'none';
             if(user.is_premium || user.has_staff_access) { document.getElementById('creator-lock').style.display = 'none'; document.getElementById('creator-unlocked').style.display = 'block'; }
             document.getElementById('my-ref-link').value = `${window.location.origin}/?ref=${user.ref_code}`; document.getElementById('cr-earnings').innerText = user.earnings;

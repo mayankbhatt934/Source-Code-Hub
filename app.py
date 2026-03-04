@@ -227,9 +227,18 @@ def get_leaderboard():
     return jsonify(top)
 
 # --- ADMIN ROUTES ---
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
-    if not check_admin_access(): return redirect('/#page-login')
+    if request.method == 'POST':
+        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD: 
+            session['is_admin'] = True
+            return redirect('/admin')
+        else: 
+            return render_template('admin.html', logged_in=False, error="Invalid credentials")
+    
+    if not check_admin_access(): 
+        return render_template('admin.html', logged_in=False)
+        
     return render_template('admin.html', logged_in=True)
 
 @app.route('/api/admin-data')

@@ -44,12 +44,16 @@ async function handleLogin(e) {
     try { 
         const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('log-email').value, password: document.getElementById('log-password').value }) }); 
         const data = await res.json(); 
+        
         if (res.ok) { 
-            isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; 
-            await loadUserProfile(); loadDynamicContent(); switchPage('profile'); 
+            isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; await loadUserProfile(); loadDynamicContent(); switchPage('profile'); 
         } else { 
-            // This will show the BAN message if they are banned
-            alert("Error: " + data.message); 
+            // NEW: Trigger the giant lockdown screen if the server says 403 (Banned)
+            if (res.status === 403) {
+                document.getElementById('banned-screen-overlay').style.display = 'flex';
+            } else {
+                alert("Error: " + data.message); 
+            }
         } 
     } catch (err) { alert("Server error."); } 
 }
@@ -60,10 +64,10 @@ async function loadUserProfile() {
     try {
         const res = await fetch('/api/profile');
         
-        // NEW: IF SERVER SAYS 403 (BANNED), LOG THEM OUT INSTANTLY!
+        // NEW: If they refresh the page while banned, instantly lock them out!
         if (res.status === 403) {
-            alert("Your account has been banned/restricted by the Admin.");
-            handleLogout();
+            document.getElementById('banned-screen-overlay').style.display = 'flex';
+            await fetch('/logout', { method: 'POST' }); // Silently wipe their session
             return;
         }
 

@@ -186,51 +186,40 @@ def get_content():
     try:
         codes = FreeCode.query.all()
         prompts = AIPrompt.query.all()
+        premium = PremiumCode.query.all() # Fetching Premium codes!
         
-        # Safely fetches categories!
-        code_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page Code'), "code": c.code} for c in codes]
+        # Safely fetching categories and prices
+        code_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code} for c in codes]
+        premium_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code} for p in premium]
         prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in prompts]
         
-        return jsonify({"codes": code_list, "prompts": prompt_list})
+        return jsonify({"codes": code_list, "premium_codes": premium_list, "prompts": prompt_list})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/admin/add-code', methods=['POST'])
-def admin_add_code():
+@app.route('/admin/add-premium', methods=['POST'])
+def admin_add_premium():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    new_code = FreeCode(title=data.get('title'), category=data.get('category', 'Single Page Code'), code=data.get('code'))
-    db.session.add(new_code)
+    new_premium = PremiumCode(
+        title=data.get('title'), 
+        category=data.get('category'), 
+        price=int(data.get('price')), 
+        code=data.get('code')
+    )
+    db.session.add(new_premium)
     db.session.commit()
     return jsonify({"status": "success"})
 
-@app.route('/admin/add-prompt', methods=['POST'])
-def admin_add_prompt():
+@app.route('/admin/delete-premium/<int:code_id>', methods=['DELETE'])
+def delete_premium(code_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    new_prompt = AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text'))
-    db.session.add(new_prompt)
-    db.session.commit()
-    return jsonify({"status": "success"})
-
-@app.route('/admin/delete-code/<int:code_id>', methods=['DELETE'])
-def delete_code(code_id):
-    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    code = FreeCode.query.get(code_id)
+    code = PremiumCode.query.get(code_id)
     if code:
         db.session.delete(code)
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"error": "Code not found"}), 404
-
-@app.route('/admin/delete-prompt/<int:prompt_id>', methods=['DELETE'])
-def delete_prompt(prompt_id):
-    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    prompt = AIPrompt.query.get(prompt_id)
-    if prompt:
-        db.session.delete(prompt)
-        db.session.commit()
-        return jsonify({"status": "success"})
-    return jsonify({"error": "Prompt not found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

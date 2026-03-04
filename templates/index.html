@@ -4,11 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Source Code Hub</title>
-    
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
-    
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
+        .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
+        .cat-tab:hover { border-color: #555; color: #fff; }
+        .cat-tab.active { background: #00d2ff; color: #000; border-color: #00d2ff; font-weight: bold; }
+        .cat-tab.premium-tab.active { background: #f5af19; border-color: #f5af19; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
 </head>
 <body>
 
@@ -22,9 +30,7 @@
                 By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a>
             </span>
         </div>
-        
         <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
-        
         <ul class="nav-links" id="nav-menu">
             <li onclick="switchPage('home')" id="nav-home" class="active">Home</li>
             <li onclick="switchPage('free')" id="nav-free">Free Code</li>
@@ -40,7 +46,6 @@
             <h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1>
             <p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts, engineered AI prompts, and premium algorithms.</p>
         </section>
-
         <div class="home-grid" data-aos="fade-up" data-aos-delay="300">
             <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection of Python scripts, web layouts, and logic algorithms completely free of charge.</p></div>
             <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end, production-ready code. Requires a premium pass and account login.</p></div>
@@ -49,70 +54,50 @@
     </section>
 
     <section id="page-free" class="page-section">
-        <section class="hero">
-            <h1>Free <span>Source Codes</span></h1>
-            <p>A growing library of free scripts. Copy and paste directly into your projects.</p>
-        </section>
-        
-        <div id="dynamic-free-codes" style="max-width: 900px; margin: 0 auto; padding: 20px;">
-            <p style="text-align: center; color: #888;">Loading live codes...</p>
+        <section class="hero"><h1>Free <span>Source Codes</span></h1><p>A growing library of free scripts. Copy and paste directly into your projects.</p></section>
+        <div class="category-tabs">
+            <button id="btn-free-single" class="cat-tab free-tab-btn active" onclick="switchCategoryTab('free', 'single')">Single Page Codes</button>
+            <button id="btn-free-full" class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button>
         </div>
+        <div id="free-single-content" class="free-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading live codes...</p></div>
+        <div id="free-full-content" class="free-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading live codes...</p></div>
     </section>
 
     <section id="page-premium" class="page-section">
-        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Exclusive, high-end algorithms and web templates. Login required to download.</p></section>
-        <div class="code-wrapper" id="premium-code-block" style="filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none; -webkit-user-select: none;">
-            <div class="code-title" style="color: #f5af19;"><span>⭐ Advanced AI Trading Bot</span></div>
-            <div class="code-container">
-                <div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: #f5af19;" onclick="copyMainCode('premium-secret-code', this)">Copy Script</button></div>
-                <pre id="premium-secret-code">
-# ----------------------------------------
-# PREMIUM AI TRADING ALGORITHM [LOCKED]
-# ----------------------------------------
-# This code is safely hidden on the backend server.
-# Purchase Premium to unlock and inject the real code here!
-def execute_premium_trade():
-    pass
-                </pre>
-            </div>
+        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Buy individual files or unlock everything with a Premium Membership.</p></section>
+        <div class="category-tabs">
+            <button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active" onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button>
+            <button id="btn-prem-full" class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website Codes</button>
         </div>
-        <div id="premium-unlock-btn" style="text-align: center; margin-top: -30px; position: relative; z-index: 10;">
-            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 30px;" onclick="switchAuthPage(); setAuthMode('premium');">Unlock Premium Now</button>
-        </div>
+        <div id="premium-single-content" class="prem-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
+        <div id="premium-full-content" class="prem-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
     </section>
 
     <section id="page-prompts" class="page-section">
-        <section class="hero">
-            <h1>AI <span>Prompts Library</span></h1>
-            <p>Explore our dynamically updated collection of highly-engineered prompts.</p>
-        </section>
-        
+        <section class="hero"><h1>AI <span>Prompts Library</span></h1><p>Explore our dynamically updated collection of highly-engineered prompts.</p></section>
         <div class="prompt-section-wrapper" data-aos="fade-up">
             <h3 class="prompt-section-title">Live <span>Community Prompts</span></h3>
-            
-            <div id="dynamic-prompts">
-                <p style="text-align: center; color: #888;">Loading live prompts...</p>
-            </div>
+            <div id="dynamic-prompts"><p style="text-align: center; color: #888;">Loading live prompts...</p></div>
         </div>
     </section>
 
     <section id="page-pricing" class="page-section">
-        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Choose the perfect plan to unlock exclusive source codes.</p></section>
+        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Choose the perfect plan to unlock all exclusive source codes forever.</p></section>
         <div class="pricing-grid" data-aos="fade-up">
             <div class="pricing-card">
                 <h3 class="plan-name">Weekly</h3><div class="plan-price">₹199<span>/wk</span></div>
-                <ul class="plan-benefits"><li>7 days premium access</li><li>Download locked source codes</li></ul>
-                <button class="submit-btn" onclick="openUPIModal('Weekly', 199)">Subscribe Now</button>
+                <ul class="plan-benefits"><li>7 days premium access</li><li>Download all source codes</li></ul>
+                <button class="submit-btn" onclick="openUPIModal('Weekly Pass', 199)">Subscribe Now</button>
             </div>
             <div class="pricing-card popular">
                 <h3 class="plan-name" style="color: #fff;">Monthly</h3><div class="plan-price" style="color: #f5af19;">₹499<span>/mo</span></div>
                 <ul class="plan-benefits"><li>30 days premium access</li><li>Download all source codes</li><li>Priority support</li></ul>
-                <button class="submit-btn premium-btn" onclick="openUPIModal('Monthly', 499)">Subscribe Now</button>
+                <button class="submit-btn premium-btn" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button>
             </div>
             <div class="pricing-card">
-                <h3 class="plan-name">Yearly</h3><div class="plan-price">₹3999<span>/yr</span></div>
-                <ul class="plan-benefits"><li>365 days premium access</li><li>Unlimited downloads</li></ul>
-                <button class="submit-btn" onclick="openUPIModal('Yearly', 3999)">Subscribe Now</button>
+                <h3 class="plan-name">Lifetime</h3><div class="plan-price">₹3999<span>/once</span></div>
+                <ul class="plan-benefits"><li>Permanent lifetime access</li><li>Unlimited downloads forever</li></ul>
+                <button class="submit-btn" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button>
             </div>
         </div>
     </section>
@@ -122,16 +107,10 @@ def execute_premium_trade():
             <h2 id="auth-main-title">Access <span id="login-title-span" style="color:#00d2ff;">Account</span></h2>
             <div class="auth-toggle" id="auth-toggle">
                 <div class="toggle-bg"></div>
-                <button class="active" id="btn-normal" onclick="setAuthMode('normal')">Normal</button>
-                <button id="btn-premium" onclick="setAuthMode('premium')">Premium Room</button>
+                <button class="active" id="btn-normal" onclick="setAuthMode('normal')">Login</button>
+                <button id="btn-premium" onclick="setAuthMode('premium')">Register</button>
             </div>
             <div class="auth-form-wrapper">
-                <div id="premium-lock-overlay" class="lock-overlay">
-                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div>
-                    <h3 style="color: #f5af19; margin-bottom: 10px; font-size: 1.2rem;">Premium Required</h3>
-                    <button class="submit-btn premium-btn" style="width: 80%; padding: 10px;" onclick="switchPage('pricing')">View Pricing Plans</button>
-                    <span class="go-back-link" onclick="setAuthMode('normal')">← Go back</span>
-                </div>
                 <div class="flip-container" id="flip-container">
                     <div class="flip-inner" id="flip-inner-box">
                         <div class="flip-front">
@@ -139,12 +118,8 @@ def execute_premium_trade():
                                 <div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div>
                                 <div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div>
                                 <button type="submit" class="submit-btn auth-action-btn">Login</button>
-                                
-                                <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;">
-                                    <a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#aaa'">Forgot Password?</a>
-                                </p>
+                                <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p>
                             </form>
-                            <p class="flip-text" id="flip-to-reg-text">Don't have an account? <span onclick="toggleFlipCard()">Create one</span></p>
                         </div>
                         <div class="flip-back">
                             <form id="register-form" onsubmit="handleRegistration(event)">
@@ -153,7 +128,6 @@ def execute_premium_trade():
                                 <div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div>
                                 <button type="submit" class="submit-btn auth-action-btn">Register</button>
                             </form>
-                            <p class="flip-text" id="flip-to-log-text">Already have an account? <span onclick="toggleFlipCard()">Login</span></p>
                         </div>
                     </div>
                 </div>
@@ -163,30 +137,18 @@ def execute_premium_trade():
 
     <section id="page-profile" class="page-section">
         <div class="center-box" style="max-width: 500px; position: relative;">
-            <div style="position: absolute; top: 20px; right: 20px;">
-                <button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button>
-            </div>
-            
+            <div style="position: absolute; top: 20px; right: 20px;"><button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button></div>
             <h2 style="color: #00d2ff; margin-bottom: 30px;">My Profile</h2>
-            
             <div class="profile-avatar-wrapper">
                 <img id="profile-img" src="https://ui-avatars.com/api/?name=User&background=00d2ff&color=fff" alt="Profile">
                 <label for="upload-photo" class="upload-btn">📷 Change Photo</label>
                 <input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
             </div>
-            
             <div id="profile-status-badge" class="status-badge basic">Basic Account</div>
             <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Expires: <span></span></p>
-
             <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 30px;">
-                <div class="form-group">
-                    <label style="font-size: 0.8rem; color: #ccc;">Email Address (Cannot be changed)</label>
-                    <input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888;">
-                </div>
-                <div class="form-group">
-                    <label style="font-size: 0.8rem; color: #ccc;">Full Name</label>
-                    <input type="text" id="prof-name" required>
-                </div>
+                <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Email Address</label><input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888;"></div>
+                <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Full Name</label><input type="text" id="prof-name" required></div>
                 <button type="submit" class="submit-btn">Save Changes</button>
             </form>
         </div>
@@ -195,7 +157,7 @@ def execute_premium_trade():
     <div id="upi-modal-overlay" class="upi-modal-overlay">
         <div class="upi-modal">
             <span class="close-modal" onclick="closeUPIModal()">&times;</span>
-            <h2 style="color: #00d2ff; margin-bottom: 10px;">Pay via Google Pay</h2>
+            <h2 style="color: #00d2ff; margin-bottom: 10px;">Secure Checkout</h2>
             <p id="modal-plan-desc" style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;"></p>
             <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00d2ff;">
             <div style="margin-bottom: 20px;">
@@ -203,7 +165,7 @@ def execute_premium_trade():
                 <a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a>
             </div>
             <form onsubmit="submitUPIPayment(event)">
-                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after you have completed the payment on your app.</p>
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after payment is complete.</p>
                 <button type="submit" class="submit-btn premium-btn">I have completed the payment</button>
             </form>
         </div>
@@ -213,25 +175,19 @@ def execute_premium_trade():
         <div class="upi-modal">
             <span class="close-modal" onclick="closeResetModal()">&times;</span>
             <h2 style="color: #00d2ff; margin-bottom: 10px;">Reset Password</h2>
-            
             <form id="request-code-form" onsubmit="handleRequestCode(event)">
-                <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px;">Enter your email to receive a 6-digit reset code.</p>
-                <div class="form-group"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"></div>
+                <input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;">
                 <button type="submit" class="submit-btn">Send Code</button>
             </form>
-
             <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;">
-                <p style="color: #00ff88; font-size: 0.9rem; margin-bottom: 15px;">Code sent! Please check your email.</p>
-                <div class="form-group"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 10px;"></div>
-                <div class="form-group"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"></div>
+                <input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;">
+                <input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;">
                 <button type="submit" class="submit-btn premium-btn">Update Password</button>
             </form>
         </div>
     </div>
 
-    <footer>
-        <p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a></p>
-    </footer>
+    <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

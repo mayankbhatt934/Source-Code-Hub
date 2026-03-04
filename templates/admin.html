@@ -79,7 +79,6 @@
                         <button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish Premium Code</button>
                     </form>
                 </div>
-                
                 <div class="admin-card" style="padding: 15px;">
                     <h3 style="margin-bottom: 15px; color: #b06ab3;">+ Add AI Prompt</h3>
                     <form onsubmit="submitNewPrompt(event)">
@@ -94,18 +93,9 @@
         <div class="admin-card">
             <h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Published Content</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                <div>
-                    <h3 style="color: #00d2ff; margin-bottom: 15px;">Free Codes</h3>
-                    <div id="manage-codes-list"><p style="color: #888;">Loading...</p></div>
-                </div>
-                <div>
-                    <h3 style="color: #f5af19; margin-bottom: 15px;">Premium Codes</h3>
-                    <div id="manage-premium-list"><p style="color: #888;">Loading...</p></div>
-                </div>
-                <div>
-                    <h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3>
-                    <div id="manage-prompts-list"><p style="color: #888;">Loading...</p></div>
-                </div>
+                <div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free Codes</h3><div id="manage-codes-list"><p style="color: #888;">Loading...</p></div></div>
+                <div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Codes</h3><div id="manage-premium-list"><p style="color: #888;">Loading...</p></div></div>
+                <div><h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3><div id="manage-prompts-list"><p style="color: #888;">Loading...</p></div></div>
             </div>
         </div>
 
@@ -118,11 +108,9 @@
                     document.getElementById('stat-premium').innerText = data.premium_users;
                     document.getElementById('stat-revenue').innerText = data.total_revenue;
                     document.getElementById('stat-views').innerText = data.page_views;
-                    
                     const pendingDiv = document.getElementById('pending-list');
-                    if (data.pending_payments.length === 0) {
-                        pendingDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payments right now.</p>';
-                    } else {
+                    if (data.pending_payments.length === 0) pendingDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payments right now.</p>';
+                    else {
                         pendingDiv.innerHTML = data.pending_payments.map(tx => `
                             <div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;">
                                 <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>User:</strong> ${tx.email}</p>
@@ -141,57 +129,27 @@
             }
 
             async function submitNewCode(e) {
-                e.preventDefault();
-                const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
+                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
                 try {
-                    const res = await fetch('/admin/add-code', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            title: document.getElementById('code-title').value, 
-                            category: document.getElementById('code-category').value,
-                            code: document.getElementById('code-content').value 
-                        })
-                    });
+                    const res = await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) });
                     if (res.ok) { e.target.reset(); loadManageContent(); }
-                } catch(err) { alert("Server error."); }
-                btn.innerText = "Publish Free Code";
+                } catch(err) { alert("Server error."); } btn.innerText = "Publish Free Code";
             }
 
             async function submitNewPremium(e) {
-                e.preventDefault();
-                const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
+                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
                 try {
-                    const res = await fetch('/admin/add-premium', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            title: document.getElementById('prem-title').value, 
-                            category: document.getElementById('prem-category').value,
-                            price: document.getElementById('prem-price').value,
-                            code: document.getElementById('prem-content').value 
-                        })
-                    });
+                    const res = await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) });
                     if (res.ok) { e.target.reset(); loadManageContent(); }
-                } catch(err) { alert("Server error."); }
-                btn.innerText = "Publish Premium Code";
+                } catch(err) { alert("Server error."); } btn.innerText = "Publish Premium Code";
             }
 
             async function submitNewPrompt(e) {
-                e.preventDefault();
-                const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
+                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
                 try {
-                    const res = await fetch('/admin/add-prompt', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            title: document.getElementById('prompt-title').value, 
-                            prompt_text: document.getElementById('prompt-content').value 
-                        })
-                    });
+                    const res = await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) });
                     if (res.ok) { e.target.reset(); loadManageContent(); }
-                } catch(err) { alert("Server error."); }
-                btn.innerText = "Publish Prompt";
+                } catch(err) { alert("Server error."); } btn.innerText = "Publish Prompt";
             }
 
             async function loadManageContent() {
@@ -199,18 +157,9 @@
                     const res = await fetch('/api/content');
                     if(res.ok) {
                         const data = await res.json();
-                        
-                        const codesDiv = document.getElementById('manage-codes-list');
-                        codesDiv.innerHTML = data.codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No codes published.</p>' : data.codes.map(c => `
-                            <div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title} <br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
-
-                        const premDiv = document.getElementById('manage-premium-list');
-                        premDiv.innerHTML = data.premium_codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No premium codes.</p>' : data.premium_codes.map(c => `
-                            <div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}<br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
-
-                        const promptsDiv = document.getElementById('manage-prompts-list');
-                        promptsDiv.innerHTML = data.prompts.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No prompts published.</p>' : data.prompts.map(p => `
-                            <div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
+                        document.getElementById('manage-codes-list').innerHTML = data.codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No codes published.</p>' : data.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title} <br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
+                        document.getElementById('manage-premium-list').innerHTML = data.premium_codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No premium codes.</p>' : data.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}<br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
+                        document.getElementById('manage-prompts-list').innerHTML = data.prompts.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No prompts published.</p>' : data.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
                     }
                 } catch(err) { console.log("Failed to load manage content"); }
             }

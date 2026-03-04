@@ -15,12 +15,11 @@ class User(db.Model):
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
-    utr_number = db.Column(db.String(100))
+    sender_upi = db.Column(db.String(100)) # CHANGED: Now tracks UPI ID instead of UTR
     amount = db.Column(db.Integer)
     plan = db.Column(db.String(50))
     code_id = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(50), default='Pending')
-    # NEW GIFTING COLUMNS
     is_gift = db.Column(db.Boolean, default=False)
     gift_recipient_email = db.Column(db.String(100), nullable=True)
 

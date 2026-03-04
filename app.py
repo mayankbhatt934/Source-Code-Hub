@@ -125,20 +125,18 @@ def reset_password():
         return jsonify({"status": "success", "message": "Password updated successfully!"})
     return jsonify({"status": "error", "message": "User not found!"}), 404
 
-# --- UPI PAYMENT & MY PURCHASES LOGIC ---
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():
     data = request.json
     if 'user_email' not in session: return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
     
-    # NEW: If it's a gift, check if recipient exists first!
     if data.get('is_gift'):
         recipient = User.query.filter_by(email=data.get('gift_email')).first()
         if not recipient: return jsonify({"status": "error", "message": "Recipient email not found! They must create an account first."}), 404
 
     new_tx = Transaction(
         email=session['user_email'], 
-        utr_number=data.get('utr_number'), 
+        sender_upi=data.get('sender_upi'), # CHANGED: Saving UPI ID
         amount=data.get('amount'), 
         plan=data.get('plan'), 
         code_id=data.get('code_id'),
@@ -160,7 +158,6 @@ def my_purchases():
     code_list = [{"id": c.id, "title": c.title, "category": c.category, "code": c.code} for c in codes]
     return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
 
-# --- ADMIN ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     error = None
@@ -181,7 +178,7 @@ def admin_logout():
 def admin_data():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
     revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
-    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "utr": t.utr_number, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
+    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
     return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": SiteAnalytics.query.first().page_views, "pending_payments": pending_list})
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
@@ -190,7 +187,6 @@ def approve_payment(tx_id):
     tx = Transaction.query.get(tx_id)
     if tx:
         tx.status = 'Success'
-        # Check if gift, give to target email
         target_email = tx.gift_recipient_email if tx.is_gift else tx.email
         user = User.query.filter_by(email=target_email).first()
         
@@ -207,7 +203,6 @@ def approve_payment(tx_id):
         return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404
 
-# NEW ADMIN GIFTING ROUTE
 @app.route('/admin/gift', methods=['POST'])
 def admin_gift():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401

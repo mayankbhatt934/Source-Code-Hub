@@ -78,6 +78,9 @@ function openUPIModal(planName, price, codeId = null, giftMode = false) {
     document.getElementById('upi-mobile-link').href = upiURL;
     document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`;
     
+    // Clear out the inputs so they are fresh
+    document.getElementById('modal-sender-upi').value = '';
+    
     const giftContainer = document.getElementById('gift-email-container');
     const giftInput = document.getElementById('modal-gift-email');
     if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } 
@@ -96,15 +99,34 @@ async function submitUPIPayment(e) {
         if(!giftEmail) { alert("Please enter the recipient's email address!"); return; }
     }
 
-    const utr = prompt("Please enter the 12-digit UPI Reference Number (UTR) from your payment app:");
-    if (!utr || utr.length < 10) { alert("Valid UTR number is required."); return; }
-    
-    const res = await fetch('/submit-upi-payment', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ utr_number: utr, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail })
-    });
-    const data = await res.json();
-    if (res.ok) { alert(data.message); closeUPIModal(); } else { alert("Error: " + data.message); }
+    // CHANGED: Now using the HTML input box instead of the ugly prompt()
+    const upiID = document.getElementById('modal-sender-upi').value;
+    if (!upiID || !upiID.includes('@')) { 
+        alert("Please enter a valid UPI ID containing an '@' symbol."); 
+        return; 
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Verifying...";
+
+    try {
+        const res = await fetch('/submit-upi-payment', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail })
+        });
+        const data = await res.json();
+        if (res.ok) { 
+            alert(data.message); 
+            closeUPIModal(); 
+            e.target.reset();
+        } else { 
+            alert("Error: " + data.message); 
+        }
+    } catch(err) {
+        alert("Server error processing payment.");
+    }
+    btn.innerText = originalText;
 }
 
 // =========================================
@@ -154,7 +176,6 @@ async function loadDynamicContent() {
                     html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this)">Copy Script</button></div><pre id="code-${item.id}">${item.code}</pre></div>`;
                 }
 
-                // UPDATED: ADDED GIFT BUTTON TO LOCKED CODES
                 if (isLocked) {
                     html += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;">
                                 <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3>

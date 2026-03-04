@@ -62,8 +62,7 @@
                             <option value="Yearly Pass">Yearly Pass</option>
                             <option value="Lifetime Pass">Lifetime Pass</option>
                         </select>
-                        <select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;">
-                            </select>
+                        <select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;"></select>
                         <button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button>
                     </form>
                 </div>
@@ -133,8 +132,7 @@
             }
 
             async function submitAdminGift(e) {
-                e.preventDefault();
-                const btn = e.target.querySelector('button'); btn.innerText = "Sending...";
+                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Sending...";
                 const type = document.getElementById('gift-type').value;
                 const value = type === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value;
                 try {
@@ -143,10 +141,8 @@
                         body: JSON.stringify({ email: document.getElementById('gift-email').value, type: type, value: value })
                     });
                     const data = await res.json();
-                    if(res.ok) { alert(data.message); e.target.reset(); toggleGiftType(); }
-                    else { alert("Error: " + data.message); }
-                } catch(err) { alert("Server error."); }
-                btn.innerText = "Send Gift";
+                    if(res.ok) { alert(data.message); e.target.reset(); toggleGiftType(); } else { alert("Error: " + data.message); }
+                } catch(err) { alert("Server error."); } btn.innerText = "Send Gift";
             }
 
             async function loadAdminData() {
@@ -160,10 +156,12 @@
                     const pendingDiv = document.getElementById('pending-list');
                     if (data.pending_payments.length === 0) pendingDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payments right now.</p>';
                     else {
+                        // UPDATED: Now shows "Sender UPI" instead of UTR
                         pendingDiv.innerHTML = data.pending_payments.map(tx => `
                             <div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;">
                                 <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>User:</strong> ${tx.email}</p>
                                 <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>Plan:</strong> ${tx.plan} (₹${tx.amount})</p>
+                                <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>Sender UPI:</strong> <span style="color: #00ff88;">${tx.sender_upi}</span></p>
                                 ${tx.is_gift ? `<p style="font-size: 0.8rem; color: #ff007f; margin-bottom: 5px;">🎁 GIFT TO: ${tx.gift_email}</p>` : ''}
                                 <button onclick="approvePayment(${tx.id})" style="background: #00ff88; color: #000; font-weight: bold; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve Payment</button>
                             </div>
@@ -191,7 +189,6 @@
                         document.getElementById('manage-premium-list').innerHTML = data.premium_codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No premium codes.</p>' : data.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}<br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
                         document.getElementById('manage-prompts-list').innerHTML = data.prompts.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No prompts published.</p>' : data.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
                         
-                        // Populate Gift dropdown
                         const giftCodeSelect = document.getElementById('gift-code-val');
                         giftCodeSelect.innerHTML = data.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                     }

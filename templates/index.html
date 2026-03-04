@@ -37,7 +37,6 @@
             <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px;">By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></span>
         </div>
         <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
-        
         <ul class="nav-links" id="nav-menu">
             <li onclick="switchPage('home')" id="nav-home" class="active">Home</li>
             <li onclick="switchPage('free')" id="nav-free">Free Code</li>
@@ -51,13 +50,11 @@
 
     <section id="page-home" class="page-section active">
         <section class="hero"><h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1><p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts and premium algorithms.</p></section>
-        
         <div class="home-grid" data-aos="fade-up" data-aos-delay="300">
             <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection completely free.</p></div>
             <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end code.</p></div>
             <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #b06ab3;">AI Prompts</h2><p>Browse engineered prompts.</p></div>
         </div>
-        
         <div style="max-width: 800px; margin: 60px auto 20px auto; padding: 20px; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid #333;" data-aos="fade-up">
             <h2 style="color: #00d2ff; text-align: center; margin-bottom: 20px;">🏆 Top Creators</h2>
             <div id="leaderboard-list"><p style="text-align: center; color: #888;">Loading ranks...</p></div>
@@ -83,6 +80,7 @@
     <section id="page-prompts" class="page-section">
         <section class="hero"><h1>AI <span>Prompts Library</span></h1></section>
         <div class="prompt-section-wrapper" data-aos="fade-up" style="max-width: 800px; margin: 0 auto; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto 30px auto;"><input type="text" id="search-prompts" class="search-bar" style="border-color: #b06ab3;" onkeyup="filterPrompts()" placeholder="🔍 Search prompts..."></div>
             <h3 class="prompt-section-title" style="color: #00d2ff; text-align: center; margin-bottom: 20px;">Live <span>Community Prompts</span></h3>
             <div id="dynamic-prompts"></div>
         </div>
@@ -144,12 +142,26 @@
                     <h3 style="color: #fff; margin-bottom: 15px;">My Tickets</h3><div id="my-tickets-list"></div>
                 </div>
                 <div id="prof-sec-creator" class="prof-section" style="display: none; text-align: left;">
-                    <div id="creator-lock" style="display: block; text-align: center; padding: 40px; background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; border-radius: 8px;"><h3 style="color: #f5af19; margin-bottom: 10px;">⭐ Premium Feature</h3><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">You must have an active Premium Membership to become a Creator.</p><button class="submit-btn premium-btn" style="width: auto;" onclick="switchPage('pricing')">Upgrade to Premium</button></div>
+                    <div id="creator-lock" style="display: block; text-align: center; padding: 40px; background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; border-radius: 8px;"><h3 style="color: #f5af19; margin-bottom: 10px;">⭐ Premium Access</h3><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">You must have an active Premium Membership to become a Creator.</p><button class="submit-btn premium-btn" style="width: auto;" onclick="switchPage('pricing')">Upgrade to Premium</button></div>
                     <div id="creator-unlocked" style="display: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px;"><div><p style="color: #888; font-size: 0.85rem; margin-bottom: 5px;">Available Balance (80% Cut)</p><h2 style="color: #00ff88; margin: 0;">₹<span id="cr-earnings">0</span></h2></div><button onclick="requestPayout()" style="background: transparent; border: 1px solid #00ff88; color: #00ff88; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">Request Payout</button></div>
-                        <h3 style="color: #b06ab3; margin-bottom: 10px;">Upload to Premium Room</h3>
-                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit your high-quality code. Admin will review it, and if approved, it goes live!</p>
-                        <form onsubmit="submitCreatorCode(event)" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;"><input type="text" id="cr-title" placeholder="Code Title" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><select id="cr-cat" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website (Link)</option></select><input type="number" id="cr-price" placeholder="Price to sell at (₹)" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px;"></textarea><button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button></form>
+                        <h3 style="color: #b06ab3; margin-bottom: 10px;">Upload Content</h3>
+                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit Free Codes, Premium Codes, or AI Prompts. Staff will review it before it goes live!</p>
+                        
+                        <form onsubmit="submitCreatorCode(event)" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;">
+                            <select id="cr-type" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;" onchange="toggleCreatorFields()">
+                                <option value="premium">Premium Code (Earn ₹)</option>
+                                <option value="free">Free Code (Earn 🤍)</option>
+                                <option value="prompt">AI Prompt</option>
+                            </select>
+                            <input type="text" id="cr-title" placeholder="Title" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <select id="cr-cat" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                                <option value="Single Page">Single Page Code</option><option value="Full Website">Full Website (Link)</option>
+                            </select>
+                            <input type="number" id="cr-price" placeholder="Price to sell at (₹)" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px;"></textarea>
+                            <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button>
+                        </form>
                     </div>
                 </div>
             </div>

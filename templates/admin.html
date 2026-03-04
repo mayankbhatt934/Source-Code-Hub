@@ -16,24 +16,15 @@
         .unban-btn { border-color: #00ff88; color: #00ff88; }
         .unban-btn:hover { background: #00ff88; color: #000; }
         .manage-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #333; }
-        
-        /* FIXED: Forces exactly 3 columns on PC, stacks on mobile */
         .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
         @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="admin-container">
-        {% if not logged_in %}
-        <div class="admin-card" style="max-width: 400px; margin: 100px auto; text-align: center;">
-            <h2 style="color: #00d2ff; margin-bottom: 20px;">Staff Login</h2>
-            {% if error %}<p style="color: #ff5f56; font-size: 0.9rem; margin-bottom: 15px;">{{ error }}</p>{% endif %}
-            <form method="POST"><input type="text" name="username" placeholder="Username" required style="width: 100%; padding: 12px; margin-bottom: 15px;"><input type="password" name="password" placeholder="Password" required style="width: 100%; padding: 12px; margin-bottom: 20px;"><button type="submit" class="submit-btn" style="width: 100%;">Login</button></form>
-        </div>
-        {% else %}
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h1 style="color: #00d2ff;">Staff Dashboard</h1>
-            <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Logout</a>
+            <a href="/" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Exit Panel</a>
         </div>
         
         <div class="admin-grid">
@@ -102,8 +93,8 @@
                     else tDiv.innerHTML = d.tickets.map(t => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #00d2ff;"><strong style="color:#00d2ff;">${t.email}</strong><br><p style="font-size:0.9rem; color:#fff; margin:5px 0;"><b>${t.subject}</b>: ${t.message}</p><textarea id="reply-${t.id}" placeholder="Type reply..." style="width:100%; height:50px; margin-top:5px;"></textarea><button onclick="replyTicket(${t.id})" style="background: #00d2ff; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Send Reply</button></div>`).join('');
 
                     const cDiv = document.getElementById('creator-codes-list');
-                    if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending codes.</p>';
-                    else cDiv.innerHTML = d.pending_codes.map(c => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;"><strong style="color:#f5af19;">${c.creator}</strong> submitted <b>${c.title}</b> for ₹${c.price}.<br><button onclick="approveCreatorCode(${c.id})" style="background: #f5af19; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve</button><button onclick="deletePremium(${c.id})" style="background: #ff5f56; color: #fff; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px; margin-left: 5px;">Reject</button></div>`).join('');
+                    if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending content.</p>';
+                    else cDiv.innerHTML = d.pending_codes.map(c => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;"><strong style="color:#f5af19;">${c.creator}</strong> submitted a <b>${c.type.toUpperCase()}</b>: ${c.title}.<br><button onclick="approveSubmission(${c.id}, '${c.type}')" style="background: #f5af19; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="background: #ff5f56; color: #fff; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px; margin-left: 5px;">Reject</button></div>`).join('');
                 }
             }
 
@@ -114,7 +105,9 @@
             async function unbanUser(email) { if(!confirm(`Unban?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
             async function submitRoleUpdate(e) { e.preventDefault(); await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked }) }); e.target.reset(); alert('Updated'); }
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
-            async function approveCreatorCode(id) { await fetch(`/admin/approve-creator-code/${id}`, { method: 'POST' }); loadAdminData(); loadManageContent(); }
+            
+            async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
+            async function deleteSubmission(id, type) { if(confirm("Reject this?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
             
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); }
@@ -122,19 +115,14 @@
             
             async function loadManageContent() {
                 const res = await fetch('/api/content'); if(res.ok) { const d = await res.json();
-                    document.getElementById('manage-codes-list').innerHTML = d.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title}</span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
-                    document.getElementById('manage-premium-list').innerHTML = d.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}</span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
-                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
-                    document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+                    document.getElementById('manage-codes-list').innerHTML = d.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title}</span><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'free')">Del</button></div>`).join('');
+                    document.getElementById('manage-premium-list').innerHTML = d.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}</span><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'premium')">Del</button></div>`).join('');
+                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deleteSubmission(${p.id}, 'prompt')">Del</button></div>`).join('');
                 }
             }
-            async function deleteCode(id) { if(confirm("Del?")) { await fetch(`/admin/delete-code/${id}`, { method: 'DELETE' }); loadManageContent(); } }
-            async function deletePremium(id) { if(confirm("Del?")) { await fetch(`/admin/delete-premium/${id}`, { method: 'DELETE' }); loadManageContent(); loadAdminData(); } }
-            async function deletePrompt(id) { if(confirm("Del?")) { await fetch(`/admin/delete-prompt/${id}`, { method: 'DELETE' }); loadManageContent(); } }
             
             window.onload = () => { loadAdminData(); loadManageContent(); };
         </script>
-        {% endif %}
     </div>
 </body>
 </html>

@@ -48,6 +48,25 @@
                     <h3 style="margin-bottom: 15px; color: #00ff88;">Pending Payments</h3>
                     <div id="pending-list">Loading...</div>
                 </div>
+                <div class="admin-card">
+                    <h3 style="margin-bottom: 15px; color: #ff007f;">🎁 Gift to User</h3>
+                    <form onsubmit="submitAdminGift(event)">
+                        <input type="email" id="gift-email" placeholder="Recipient's Email" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                        <select id="gift-type" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleGiftType()">
+                            <option value="membership">Membership Pass</option>
+                            <option value="code">Premium Code</option>
+                        </select>
+                        <select id="gift-membership-val" style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                            <option value="Weekly Pass">Weekly Pass</option>
+                            <option value="Monthly Pass">Monthly Pass</option>
+                            <option value="Yearly Pass">Yearly Pass</option>
+                            <option value="Lifetime Pass">Lifetime Pass</option>
+                        </select>
+                        <select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;">
+                            </select>
+                        <button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button>
+                    </form>
+                </div>
             </div>
 
             <div>
@@ -61,6 +80,14 @@
                         </select>
                         <textarea id="code-content" placeholder="Paste the raw code here..." required style="width: 100%; height: 150px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea>
                         <button type="submit" class="submit-btn" style="width: 100%;">Publish Free Code</button>
+                    </form>
+                </div>
+                <div class="admin-card" style="padding: 15px;">
+                    <h3 style="margin-bottom: 15px; color: #b06ab3;">+ Add AI Prompt</h3>
+                    <form onsubmit="submitNewPrompt(event)">
+                        <input type="text" id="prompt-title" placeholder="Prompt Title" required style="width: 100%; padding: 10px; margin-bottom: 10px;">
+                        <textarea id="prompt-content" placeholder="Paste prompt text..." required style="width: 100%; height: 60px; padding: 10px; margin-bottom: 10px;"></textarea>
+                        <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Publish Prompt</button>
                     </form>
                 </div>
             </div>
@@ -79,14 +106,6 @@
                         <button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish Premium Code</button>
                     </form>
                 </div>
-                <div class="admin-card" style="padding: 15px;">
-                    <h3 style="margin-bottom: 15px; color: #b06ab3;">+ Add AI Prompt</h3>
-                    <form onsubmit="submitNewPrompt(event)">
-                        <input type="text" id="prompt-title" placeholder="Prompt Title" required style="width: 100%; padding: 10px; margin-bottom: 10px;">
-                        <textarea id="prompt-content" placeholder="Paste prompt text..." required style="width: 100%; height: 60px; padding: 10px; margin-bottom: 10px;"></textarea>
-                        <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Publish Prompt</button>
-                    </form>
-                </div>
             </div>
         </div>
 
@@ -100,17 +119,34 @@
         </div>
 
         <script>
-            // NEW: Changes text box placeholder based on category
             function toggleInputType(selectId, inputId) {
                 const val = document.getElementById(selectId).value;
                 const inputEl = document.getElementById(inputId);
-                if (val.includes('Full Website')) {
-                    inputEl.placeholder = "Paste your Google Drive or Dropbox Download Link here...";
-                    inputEl.style.height = "60px";
-                } else {
-                    inputEl.placeholder = "Paste the raw code here...";
-                    inputEl.style.height = "150px";
-                }
+                if (val.includes('Full Website')) { inputEl.placeholder = "Paste your Google Drive or Dropbox Download Link here..."; inputEl.style.height = "60px"; } 
+                else { inputEl.placeholder = "Paste the raw code here..."; inputEl.style.height = "150px"; }
+            }
+
+            function toggleGiftType() {
+                const type = document.getElementById('gift-type').value;
+                if(type === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; }
+                else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; }
+            }
+
+            async function submitAdminGift(e) {
+                e.preventDefault();
+                const btn = e.target.querySelector('button'); btn.innerText = "Sending...";
+                const type = document.getElementById('gift-type').value;
+                const value = type === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value;
+                try {
+                    const res = await fetch('/admin/gift', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: document.getElementById('gift-email').value, type: type, value: value })
+                    });
+                    const data = await res.json();
+                    if(res.ok) { alert(data.message); e.target.reset(); toggleGiftType(); }
+                    else { alert("Error: " + data.message); }
+                } catch(err) { alert("Server error."); }
+                btn.innerText = "Send Gift";
             }
 
             async function loadAdminData() {
@@ -128,6 +164,7 @@
                             <div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;">
                                 <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>User:</strong> ${tx.email}</p>
                                 <p style="font-size: 0.9rem; margin-bottom: 5px;"><strong>Plan:</strong> ${tx.plan} (₹${tx.amount})</p>
+                                ${tx.is_gift ? `<p style="font-size: 0.8rem; color: #ff007f; margin-bottom: 5px;">🎁 GIFT TO: ${tx.gift_email}</p>` : ''}
                                 <button onclick="approvePayment(${tx.id})" style="background: #00ff88; color: #000; font-weight: bold; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve Payment</button>
                             </div>
                         `).join('');
@@ -141,29 +178,9 @@
                 if(res.ok) { alert("Payment Approved!"); loadAdminData(); }
             }
 
-            async function submitNewCode(e) {
-                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
-                try {
-                    const res = await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) });
-                    if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('code-category', 'code-content'); }
-                } catch(err) { alert("Server error."); } btn.innerText = "Publish Free Code";
-            }
-
-            async function submitNewPremium(e) {
-                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
-                try {
-                    const res = await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) });
-                    if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('prem-category', 'prem-content'); }
-                } catch(err) { alert("Server error."); } btn.innerText = "Publish Premium Code";
-            }
-
-            async function submitNewPrompt(e) {
-                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
-                try {
-                    const res = await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) });
-                    if (res.ok) { e.target.reset(); loadManageContent(); }
-                } catch(err) { alert("Server error."); } btn.innerText = "Publish Prompt";
-            }
+            async function submitNewCode(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing..."; try { const res = await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('code-category', 'code-content'); } } catch(err) { alert("Server error."); } btn.innerText = "Publish Free Code"; }
+            async function submitNewPremium(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing..."; try { const res = await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('prem-category', 'prem-content'); } } catch(err) { alert("Server error."); } btn.innerText = "Publish Premium Code"; }
+            async function submitNewPrompt(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing..."; try { const res = await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); if (res.ok) { e.target.reset(); loadManageContent(); } } catch(err) { alert("Server error."); } btn.innerText = "Publish Prompt"; }
 
             async function loadManageContent() {
                 try {
@@ -173,6 +190,10 @@
                         document.getElementById('manage-codes-list').innerHTML = data.codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No codes published.</p>' : data.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title} <br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
                         document.getElementById('manage-premium-list').innerHTML = data.premium_codes.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No premium codes.</p>' : data.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}<br><i style="color:#aaa;">(${c.category})</i></span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
                         document.getElementById('manage-prompts-list').innerHTML = data.prompts.length === 0 ? '<p style="color: #666; font-size: 0.9rem;">No prompts published.</p>' : data.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
+                        
+                        // Populate Gift dropdown
+                        const giftCodeSelect = document.getElementById('gift-code-val');
+                        giftCodeSelect.innerHTML = data.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                     }
                 } catch(err) { console.log("Failed to load manage content"); }
             }

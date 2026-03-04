@@ -7,7 +7,6 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    
     <style>
         .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
         .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
@@ -26,9 +25,7 @@
     <header>
         <div style="display: flex; flex-direction: column;">
             <div class="logo" onclick="switchPage('home')">SOURCE CODE <span>HUB</span></div>
-            <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px; letter-spacing: 0.5px;">
-                By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a>
-            </span>
+            <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px; letter-spacing: 0.5px;">By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></span>
         </div>
         <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
         <ul class="nav-links" id="nav-menu">
@@ -42,67 +39,60 @@
     </header>
 
     <section id="page-home" class="page-section active">
-        <section class="hero">
-            <h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1>
-            <p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts, engineered AI prompts, and premium algorithms.</p>
-        </section>
+        <section class="hero"><h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1><p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts, engineered AI prompts, and premium algorithms.</p></section>
         <div class="home-grid" data-aos="fade-up" data-aos-delay="300">
-            <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection of Python scripts, web layouts, and logic algorithms completely free of charge.</p></div>
-            <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end, production-ready code. Requires a premium pass and account login.</p></div>
-            <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #00d2ff;">AI Prompts</h2><p>Browse categorized collections of highly-engineered prompts to generate perfect UI/UX designs via AI.</p></div>
+            <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection completely free.</p></div>
+            <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end code.</p></div>
+            <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #00d2ff;">AI Prompts</h2><p>Browse engineered prompts.</p></div>
         </div>
     </section>
 
     <section id="page-free" class="page-section">
-        <section class="hero"><h1>Free <span>Source Codes</span></h1><p>A growing library of free scripts. Copy and paste directly into your projects.</p></section>
-        <div class="category-tabs">
-            <button id="btn-free-single" class="cat-tab free-tab-btn active" onclick="switchCategoryTab('free', 'single')">Single Page Codes</button>
-            <button id="btn-free-full" class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button>
-        </div>
-        <div id="free-single-content" class="free-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading live codes...</p></div>
-        <div id="free-full-content" class="free-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading live codes...</p></div>
+        <section class="hero"><h1>Free <span>Source Codes</span></h1></section>
+        <div class="category-tabs"><button id="btn-free-single" class="cat-tab free-tab-btn active" onclick="switchCategoryTab('free', 'single')">Single Page Codes</button><button id="btn-free-full" class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button></div>
+        <div id="free-single-content" class="free-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
+        <div id="free-full-content" class="free-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
     </section>
 
     <section id="page-premium" class="page-section">
-        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Buy individual files or unlock everything with a Premium Membership.</p></section>
-        <div class="category-tabs">
-            <button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active" onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button>
-            <button id="btn-prem-full" class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website Codes</button>
-        </div>
+        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Buy for yourself or click 🎁 to gift to a friend!</p></section>
+        <div class="category-tabs"><button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active" onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button><button id="btn-prem-full" class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website Codes</button></div>
         <div id="prem-single-content" class="prem-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
         <div id="prem-full-content" class="prem-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
     </section>
 
     <section id="page-prompts" class="page-section">
-        <section class="hero"><h1>AI <span>Prompts Library</span></h1><p>Explore our dynamically updated collection of highly-engineered prompts.</p></section>
-        <div class="prompt-section-wrapper" data-aos="fade-up">
-            <h3 class="prompt-section-title">Live <span>Community Prompts</span></h3>
-            <div id="dynamic-prompts"><p style="text-align: center; color: #888;">Loading live prompts...</p></div>
-        </div>
+        <section class="hero"><h1>AI <span>Prompts Library</span></h1></section>
+        <div class="prompt-section-wrapper" data-aos="fade-up"><h3 class="prompt-section-title">Live <span>Community Prompts</span></h3><div id="dynamic-prompts"></div></div>
     </section>
 
     <section id="page-pricing" class="page-section">
-        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Choose the perfect plan to unlock all exclusive source codes forever.</p></section>
+        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Buy for yourself or gift permanent access to a friend!</p></section>
         <div class="pricing-grid" data-aos="fade-up">
-            
             <div class="pricing-card">
                 <h3 class="plan-name">Monthly</h3><div class="plan-price">₹499<span>/mo</span></div>
                 <ul class="plan-benefits"><li>30 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul>
-                <button class="submit-btn" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button>
+                    <button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Monthly Pass', 499, null, true)" title="Gift this plan">🎁</button>
+                </div>
             </div>
-            
             <div class="pricing-card popular">
                 <h3 class="plan-name" style="color: #fff;">Lifetime</h3><div class="plan-price" style="color: #f5af19;">₹3999<span>/once</span></div>
                 <ul class="plan-benefits"><li>Permanent lifetime access</li><li>Unlimited downloads forever</li><li>Priority VIP support</li></ul>
-                <button class="submit-btn premium-btn" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn premium-btn" style="flex: 1;" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button>
+                    <button class="submit-btn" style="width: auto; background: #333; color: white; border: 1px solid #f5af19;" onclick="openUPIModal('Lifetime Pass', 3999, null, true)" title="Gift this plan">🎁</button>
+                </div>
             </div>
-            
             <div class="pricing-card">
                 <h3 class="plan-name">Yearly</h3><div class="plan-price">₹2499<span>/yr</span></div>
                 <ul class="plan-benefits"><li>365 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul>
-                <button class="submit-btn" onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button>
+                    <button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Yearly Pass', 2499, null, true)" title="Gift this plan">🎁</button>
+                </div>
             </div>
-
         </div>
     </section>
 
@@ -118,20 +108,10 @@
                 <div class="flip-container" id="flip-container">
                     <div class="flip-inner" id="flip-inner-box">
                         <div class="flip-front">
-                            <form id="login-form" onsubmit="handleLogin(event)">
-                                <div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div>
-                                <div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div>
-                                <button type="submit" class="submit-btn auth-action-btn">Login</button>
-                                <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p>
-                            </form>
+                            <form id="login-form" onsubmit="handleLogin(event)"><div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Login</button><p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p></form>
                         </div>
                         <div class="flip-back">
-                            <form id="register-form" onsubmit="handleRegistration(event)">
-                                <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div>
-                                <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div>
-                                <div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div>
-                                <button type="submit" class="submit-btn auth-action-btn">Register</button>
-                            </form>
+                            <form id="register-form" onsubmit="handleRegistration(event)"><div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div><div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Register</button></form>
                         </div>
                     </div>
                 </div>
@@ -143,27 +123,17 @@
         <div class="center-box" style="max-width: 600px; position: relative;">
             <div style="position: absolute; top: 20px; right: 20px;"><button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button></div>
             <h2 style="color: #00d2ff; margin-bottom: 30px;">My Profile</h2>
-            
-            <div class="profile-avatar-wrapper">
-                <img id="profile-img" src="https://ui-avatars.com/api/?name=User&background=00d2ff&color=fff" alt="Profile">
-                <label for="upload-photo" class="upload-btn">📷 Change Photo</label>
-                <input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
-            </div>
-            
+            <div class="profile-avatar-wrapper"><img id="profile-img" src="https://ui-avatars.com/api/?name=User&background=00d2ff&color=fff" alt="Profile"><label for="upload-photo" class="upload-btn">📷 Change Photo</label><input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)"></div>
             <div id="profile-status-badge" class="status-badge basic">Basic Account</div>
             <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Expires: <span></span></p>
-            
             <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 30px; margin-bottom: 40px;">
                 <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Email Address</label><input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888;"></div>
                 <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Full Name</label><input type="text" id="prof-name" required></div>
                 <button type="submit" class="submit-btn">Save Changes</button>
             </form>
-
             <div style="border-top: 1px solid #333; padding-top: 30px;">
                 <h3 style="color: #f5af19; margin-bottom: 15px;">My Unlocked Codes</h3>
-                <div id="my-purchases-list">
-                    <p style="color: #888; font-size: 0.9rem;">Loading your unlocked files...</p>
-                </div>
+                <div id="my-purchases-list"><p style="color: #888; font-size: 0.9rem;">Loading your unlocked files...</p></div>
             </div>
         </div>
     </section>
@@ -174,11 +144,15 @@
             <h2 style="color: #00d2ff; margin-bottom: 10px;">Secure Checkout</h2>
             <p id="modal-plan-desc" style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;"></p>
             <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00d2ff;">
-            <div style="margin-bottom: 20px;">
-                <p style="font-size: 0.8rem; color: #888;">Mobile Users:</p>
-                <a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a>
-            </div>
+            <div style="margin-bottom: 20px;"><p style="font-size: 0.8rem; color: #888;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a></div>
+            
             <form onsubmit="submitUPIPayment(event)">
+                <div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 15px; text-align: left;">
+                    <label style="font-size: 0.85rem; color: #ff007f; font-weight: bold; margin-bottom: 5px; display: block;">🎁 Recipient's Email Address</label>
+                    <input type="email" id="modal-gift-email" placeholder="friend@example.com" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;">
+                    <p style="font-size: 0.75rem; color: #aaa; margin-top: 5px;">They must have an account on this site first!</p>
+                </div>
+
                 <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after payment is complete.</p>
                 <button type="submit" class="submit-btn premium-btn">I have completed the payment</button>
             </form>
@@ -189,27 +163,12 @@
         <div class="upi-modal">
             <span class="close-modal" onclick="closeResetModal()">&times;</span>
             <h2 style="color: #00d2ff; margin-bottom: 10px;">Reset Password</h2>
-            <form id="request-code-form" onsubmit="handleRequestCode(event)">
-                <input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;">
-                <button type="submit" class="submit-btn">Send Code</button>
-            </form>
-            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;">
-                <input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;">
-                <input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;">
-                <button type="submit" class="submit-btn premium-btn">Update Password</button>
-            </form>
+            <form id="request-code-form" onsubmit="handleRequestCode(event)"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"><button type="submit" class="submit-btn">Send Code</button></form>
+            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn">Update Password</button></form>
         </div>
     </div>
-
     <div id="prompt-modal-overlay" class="upi-modal-overlay">
-        <div class="upi-modal" style="max-width: 600px; width: 90%;">
-            <span class="close-modal" onclick="closePromptModal()">&times;</span>
-            <h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 15px; font-size: 1.4rem;">Prompt Title</h2>
-            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border: 1px solid #333; text-align: left; max-height: 350px; overflow-y: auto; margin-bottom: 20px;">
-                <p id="modal-prompt-text" style="color: #ccc; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p>
-            </div>
-            <button class="submit-btn premium-btn" style="width: 100%;" onclick="copyFromModal(this)">Copy Prompt</button>
-        </div>
+        <div class="upi-modal" style="max-width: 600px; width: 90%;"><span class="close-modal" onclick="closePromptModal()">&times;</span><h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 15px; font-size: 1.4rem;">Prompt Title</h2><div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border: 1px solid #333; text-align: left; max-height: 350px; overflow-y: auto; margin-bottom: 20px;"><p id="modal-prompt-text" style="color: #ccc; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p></div><button class="submit-btn premium-btn" style="width: 100%;" onclick="copyFromModal(this)">Copy Prompt</button></div>
     </div>
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>

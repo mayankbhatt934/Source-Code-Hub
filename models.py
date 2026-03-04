@@ -20,6 +20,9 @@ class Transaction(db.Model):
     plan = db.Column(db.String(50))
     code_id = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(50), default='Pending')
+    # NEW GIFTING COLUMNS
+    is_gift = db.Column(db.Boolean, default=False)
+    gift_recipient_email = db.Column(db.String(100), nullable=True)
 
 class UserCodePurchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)

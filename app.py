@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, PremiumCode, AIPrompt, UserCodePurchase
 
-# --- FOLDER PATH CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
@@ -16,17 +15,14 @@ app.secret_key = 'super_secret_key_change_this_later'
 ADMIN_USERNAME = 'mayank'
 ADMIN_PASSWORD = 'password123'
 
-# --- SMART DATABASE CONFIGURATION ---
 DB_URL = os.environ.get('DATABASE_URL')
 if DB_URL:
     if DB_URL.startswith("postgres://"):
         DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 else:
-    if os.environ.get('VERCEL'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/sourcehub.db'
-    else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "sourcehub.db")}'
+    if os.environ.get('VERCEL'): app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/sourcehub.db'
+    else: app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "sourcehub.db")}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
@@ -56,11 +52,9 @@ def home():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    existing_user = User.query.filter_by(email=data.get('email')).first()
-    if existing_user: return jsonify({"status": "error", "message": "Email is already registered!"}), 400
+    if User.query.filter_by(email=data.get('email')).first(): return jsonify({"status": "error", "message": "Email is already registered!"}), 400
     hashed_password = generate_password_hash(data.get('password'), method='pbkdf2:sha256')
-    new_user = User(name=data.get('name'), email=data.get('email'), password=hashed_password)
-    db.session.add(new_user)
+    db.session.add(User(name=data.get('name'), email=data.get('email'), password=hashed_password))
     db.session.commit()
     return jsonify({"status": "success", "message": "Account created successfully!"})
 
@@ -83,8 +77,7 @@ def get_profile():
     if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
-        user.is_premium = False
-        db.session.commit()
+        user.is_premium = False; db.session.commit()
     expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else ("Lifetime Access" if user.is_premium else None)
     return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo})
 
@@ -104,8 +97,7 @@ def forgot_password():
     user = User.query.filter_by(email=email).first()
     if not user: return jsonify({"status": "success", "message": "If this email exists, a code was sent."})
     code = str(random.randint(100000, 999999))
-    new_reset = PasswordReset(email=email, code=code, expiry=datetime.utcnow() + timedelta(minutes=15))
-    db.session.add(new_reset)
+    db.session.add(PasswordReset(email=email, code=code, expiry=datetime.utcnow() + timedelta(minutes=15)))
     db.session.commit()
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
@@ -129,8 +121,7 @@ def reset_password():
     user = User.query.filter_by(email=data.get('email')).first()
     if user:
         user.password = generate_password_hash(data.get('new_password'), method='pbkdf2:sha256')
-        db.session.delete(reset_entry)
-        db.session.commit()
+        db.session.delete(reset_entry); db.session.commit()
         return jsonify({"status": "success", "message": "Password updated successfully!"})
     return jsonify({"status": "error", "message": "User not found!"}), 404
 
@@ -140,12 +131,19 @@ def submit_upi_payment():
     data = request.json
     if 'user_email' not in session: return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
     
+    # NEW: If it's a gift, check if recipient exists first!
+    if data.get('is_gift'):
+        recipient = User.query.filter_by(email=data.get('gift_email')).first()
+        if not recipient: return jsonify({"status": "error", "message": "Recipient email not found! They must create an account first."}), 404
+
     new_tx = Transaction(
         email=session['user_email'], 
         utr_number=data.get('utr_number'), 
         amount=data.get('amount'), 
         plan=data.get('plan'), 
-        code_id=data.get('code_id'), 
+        code_id=data.get('code_id'),
+        is_gift=data.get('is_gift', False),
+        gift_recipient_email=data.get('gift_email'),
         status='Pending'
     )
     db.session.add(new_tx)
@@ -156,13 +154,10 @@ def submit_upi_payment():
 def my_purchases():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
-    
     purchases = UserCodePurchase.query.filter_by(email=user.email).all()
     purchased_code_ids = [p.code_id for p in purchases]
-    
     codes = PremiumCode.query.filter(PremiumCode.id.in_(purchased_code_ids)).all()
     code_list = [{"id": c.id, "title": c.title, "category": c.category, "code": c.code} for c in codes]
-    
     return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
 
 # --- ADMIN ROUTES ---
@@ -186,7 +181,7 @@ def admin_logout():
 def admin_data():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
     revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
-    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "utr": t.utr_number} for t in Transaction.query.filter_by(status='Pending').all()]
+    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "utr": t.utr_number, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
     return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": SiteAnalytics.query.first().page_views, "pending_payments": pending_list})
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
@@ -195,7 +190,10 @@ def approve_payment(tx_id):
     tx = Transaction.query.get(tx_id)
     if tx:
         tx.status = 'Success'
-        user = User.query.filter_by(email=tx.email).first()
+        # Check if gift, give to target email
+        target_email = tx.gift_recipient_email if tx.is_gift else tx.email
+        user = User.query.filter_by(email=target_email).first()
+        
         if user:
             if 'Pass' in tx.plan:
                 user.is_premium = True
@@ -204,13 +202,32 @@ def approve_payment(tx_id):
                 elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
                 elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
             elif tx.code_id:
-                new_purchase = UserCodePurchase(email=user.email, code_id=tx.code_id)
-                db.session.add(new_purchase)
+                db.session.add(UserCodePurchase(email=user.email, code_id=tx.code_id))
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404
 
-# --- DYNAMIC CONTENT ROUTES ---
+# NEW ADMIN GIFTING ROUTE
+@app.route('/admin/gift', methods=['POST'])
+def admin_gift():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    user = User.query.filter_by(email=data.get('email')).first()
+    if not user: return jsonify({"status": "error", "message": "User email not found."}), 404
+    
+    if data.get('type') == 'membership':
+        user.is_premium = True
+        plan = data.get('value')
+        if plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+        elif plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+        elif plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+        elif plan == 'Lifetime Pass': user.premium_expiry = None
+    elif data.get('type') == 'code':
+        db.session.add(UserCodePurchase(email=user.email, code_id=data.get('value')))
+    
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Gift sent successfully!"})
+
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:
@@ -226,46 +243,40 @@ def get_content():
 @app.route('/admin/add-code', methods=['POST'])
 def admin_add_code():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    new_code = FreeCode(title=request.json.get('title'), category=request.json.get('category'), code=request.json.get('code'))
-    db.session.add(new_code)
-    db.session.commit()
-    return jsonify({"status": "success"})
+    db.session.add(FreeCode(title=request.json.get('title'), category=request.json.get('category'), code=request.json.get('code')))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/add-premium', methods=['POST'])
 def admin_add_premium():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    new_premium = PremiumCode(title=request.json.get('title'), category=request.json.get('category'), price=int(request.json.get('price')), code=request.json.get('code'))
-    db.session.add(new_premium)
-    db.session.commit()
-    return jsonify({"status": "success"})
+    db.session.add(PremiumCode(title=request.json.get('title'), category=request.json.get('category'), price=int(request.json.get('price')), code=request.json.get('code')))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/add-prompt', methods=['POST'])
 def admin_add_prompt():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    new_prompt = AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text'))
-    db.session.add(new_prompt)
-    db.session.commit()
-    return jsonify({"status": "success"})
+    db.session.add(AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text')))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/delete-code/<int:code_id>', methods=['DELETE'])
 def delete_code(code_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    code = FreeCode.query.get(code_id)
-    if code: db.session.delete(code); db.session.commit(); return jsonify({"status": "success"})
+    c = FreeCode.query.get(code_id)
+    if c: db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
 @app.route('/admin/delete-premium/<int:code_id>', methods=['DELETE'])
 def delete_premium(code_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    code = PremiumCode.query.get(code_id)
-    if code: db.session.delete(code); db.session.commit(); return jsonify({"status": "success"})
+    c = PremiumCode.query.get(code_id)
+    if c: db.session.delete(c); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
 @app.route('/admin/delete-prompt/<int:prompt_id>', methods=['DELETE'])
 def delete_prompt(prompt_id):
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    prompt = AIPrompt.query.get(prompt_id)
-    if prompt: db.session.delete(prompt); db.session.commit(); return jsonify({"status": "success"})
+    p = AIPrompt.query.get(prompt_id)
+    if p: db.session.delete(p); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
 if __name__ == '__main__':

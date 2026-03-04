@@ -55,11 +55,11 @@
                     <h3 style="margin-bottom: 15px; color: #00d2ff;">+ Add Free Code</h3>
                     <form onsubmit="submitNewCode(event)">
                         <input type="text" id="code-title" placeholder="Code Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
-                        <select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                        <select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('code-category', 'code-content')">
                             <option value="Single Page">Single Page Code</option>
-                            <option value="Full Website">Full Website Code</option>
+                            <option value="Full Website">Full Website Code (Download Link)</option>
                         </select>
-                        <textarea id="code-content" placeholder="Paste the code here..." required style="width: 100%; height: 150px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea>
+                        <textarea id="code-content" placeholder="Paste the raw code here..." required style="width: 100%; height: 150px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea>
                         <button type="submit" class="submit-btn" style="width: 100%;">Publish Free Code</button>
                     </form>
                 </div>
@@ -70,9 +70,9 @@
                     <h3 style="margin-bottom: 15px; color: #f5af19;">+ Add Premium Code</h3>
                     <form onsubmit="submitNewPremium(event)">
                         <input type="text" id="prem-title" placeholder="Premium Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
-                        <select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                        <select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('prem-category', 'prem-content')">
                             <option value="Single Page">Single Page Code</option>
-                            <option value="Full Website">Full Website Code</option>
+                            <option value="Full Website">Full Website Code (Download Link)</option>
                         </select>
                         <input type="number" id="prem-price" placeholder="Price (e.g., 49)" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
                         <textarea id="prem-content" placeholder="Paste the locked code here..." required style="width: 100%; height: 100px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea>
@@ -100,6 +100,19 @@
         </div>
 
         <script>
+            // NEW: Changes text box placeholder based on category
+            function toggleInputType(selectId, inputId) {
+                const val = document.getElementById(selectId).value;
+                const inputEl = document.getElementById(inputId);
+                if (val.includes('Full Website')) {
+                    inputEl.placeholder = "Paste your Google Drive or Dropbox Download Link here...";
+                    inputEl.style.height = "60px";
+                } else {
+                    inputEl.placeholder = "Paste the raw code here...";
+                    inputEl.style.height = "150px";
+                }
+            }
+
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
                 if (res.ok) {
@@ -132,7 +145,7 @@
                 e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
                 try {
                     const res = await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) });
-                    if (res.ok) { e.target.reset(); loadManageContent(); }
+                    if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('code-category', 'code-content'); }
                 } catch(err) { alert("Server error."); } btn.innerText = "Publish Free Code";
             }
 
@@ -140,7 +153,7 @@
                 e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Publishing...";
                 try {
                     const res = await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) });
-                    if (res.ok) { e.target.reset(); loadManageContent(); }
+                    if (res.ok) { e.target.reset(); loadManageContent(); toggleInputType('prem-category', 'prem-content'); }
                 } catch(err) { alert("Server error."); } btn.innerText = "Publish Premium Code";
             }
 

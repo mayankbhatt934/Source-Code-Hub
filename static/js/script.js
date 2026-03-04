@@ -16,9 +16,13 @@ function switchPage(pageId) {
 
 function toggleMobileMenu() { document.getElementById('nav-menu').classList.toggle('show'); }
 
+// FIXED TAB LOGIC
 function switchCategoryTab(section, category) {
+    // 1. Hide all content and remove active class from all buttons
     document.querySelectorAll(`.${section}-tab-content`).forEach(el => el.style.display = 'none');
     document.querySelectorAll(`.${section}-tab-btn`).forEach(el => el.classList.remove('active'));
+    
+    // 2. Show the targeted content and make the exact button active
     document.getElementById(`${section}-${category}-content`).style.display = 'block';
     document.getElementById(`btn-${section}-${category}`).classList.add('active');
 }
@@ -203,16 +207,30 @@ async function loadDynamicContent() {
         if (!res.ok) return;
         const data = await res.json();
 
+        // 1. HELPER TO GENERATE CODE HTML (HANDLES LINKS & BLURRING!)
         const generateCodeHTML = (codes, isPremiumSection = false) => {
-            if (codes.length === 0) return '<p style="text-align: center; color: #888;">No codes available in this category yet.</p>';
+            if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items available in this category yet.</p>';
             return codes.map((item, index) => {
                 const isLocked = isPremiumSection && !isPremiumUser; 
                 const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
                 const mainColor = isPremiumSection ? '#f5af19' : '#00d2ff';
+                const isFullWebsite = item.category.includes("Full Website");
                 
                 let html = `
-                    <div class="code-wrapper" data-aos="fade-up" style="margin-bottom: 40px; position: relative;">
-                        <div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>
+                    <div class="code-wrapper" style="margin-bottom: 40px; position: relative;">
+                        <div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
+
+                // If it's a Full Website, show a Download box instead of raw code
+                if (isFullWebsite) {
+                    html += `
+                        <div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">📁</div>
+                            <h3 style="color: #fff; margin-bottom: 20px;">Full Website Source Files</h3>
+                            <a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;">Download Files</a>
+                        </div>`;
+                } else {
+                    // It's a Single Page Code, show the normal code block
+                    html += `
                         <div class="code-container" style="${blurStyle}">
                             <div class="code-header">
                                 <div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
@@ -220,13 +238,15 @@ async function loadDynamicContent() {
                             </div>
                             <pre id="code-${item.id}">${item.code}</pre>
                         </div>`;
+                }
 
+                // Add the locked overlay with the Buy button
                 if (isLocked) {
                     html += `
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;">
                             <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div>
                             <h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3>
-                            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px; margin-right: 10px;" onclick="openUPIModal('Single Code - ${item.title}', ${item.price})">Buy for ₹${item.price}</button>
+                            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px; margin-right: 10px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price})">Buy for ₹${item.price}</button>
                             <button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">View Memberships</button>
                         </div>`;
                 }
@@ -236,12 +256,12 @@ async function loadDynamicContent() {
         };
 
         const freeSingle = data.codes.filter(c => c.category === 'Single Page' || c.category === 'Single Page Code');
-        const freeFull = data.codes.filter(c => c.category === 'Full Website' || c.category === 'Full Website Code');
+        const freeFull = data.codes.filter(c => c.category.includes('Full Website'));
         if(document.getElementById('free-single-content')) document.getElementById('free-single-content').innerHTML = generateCodeHTML(freeSingle);
         if(document.getElementById('free-full-content')) document.getElementById('free-full-content').innerHTML = generateCodeHTML(freeFull);
 
         const premSingle = data.premium_codes.filter(c => c.category === 'Single Page' || c.category === 'Single Page Code');
-        const premFull = data.premium_codes.filter(c => c.category === 'Full Website' || c.category === 'Full Website Code');
+        const premFull = data.premium_codes.filter(c => c.category.includes('Full Website'));
         if(document.getElementById('premium-single-content')) document.getElementById('premium-single-content').innerHTML = generateCodeHTML(premSingle, true);
         if(document.getElementById('premium-full-content')) document.getElementById('premium-full-content').innerHTML = generateCodeHTML(premFull, true);
 

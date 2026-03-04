@@ -237,3 +237,36 @@ async function handleLogin(e) {
         } else { alert("Error: " + data.message); }
     } catch (err) { alert("Error occurred."); }
 }
+
+// --- AUTO-LOGIN CHECKER ON PAGE RELOAD ---
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Secretly ask the backend if a session cookie still exists
+        const res = await fetch('/api/profile');
+        
+        if (res.ok) {
+            const data = await res.json();
+            
+            // The backend remembered them! Restore their logged-in state.
+            isLoggedIn = true;
+            document.getElementById('nav-login').innerText = "Profile";
+            
+            // If they are premium, instantly unlock the room again
+            if (data.is_premium) {
+                const block = document.getElementById('premium-code-block');
+                if (block) {
+                    block.style.filter = 'none';
+                    block.style.pointerEvents = 'auto';
+                    block.style.opacity = '1';
+                    block.style.userSelect = 'auto';         
+                    block.style.webkitUserSelect = 'auto';   
+                    
+                    const unlockBtn = document.getElementById('premium-unlock-btn');
+                    if (unlockBtn) unlockBtn.style.display = 'none';
+                }
+            }
+        }
+    } catch (e) {
+        console.log("No active session found.");
+    }
+});

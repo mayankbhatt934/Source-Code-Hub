@@ -4,10 +4,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from models import db, User, Transaction, SiteAnalytics
 
+# --- FOLDER PATH CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
-DB_PATH = os.path.join(BASE_DIR, 'sourcehub.db')
+
+# --- VERCEL SERVERLESS DATABASE FIX ---
+# Vercel has a read-only file system. We must put the database in the /tmp/ folder when live.
+if os.environ.get('VERCEL'):
+    DB_PATH = '/tmp/sourcehub.db'
+else:
+    DB_PATH = os.path.join(BASE_DIR, 'sourcehub.db')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = 'super_secret_key_change_this_later' 

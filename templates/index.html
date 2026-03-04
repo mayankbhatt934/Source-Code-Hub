@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Source Code Hub</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
 </head>
 <body>
 
@@ -14,12 +16,8 @@
 
     <header>
         <div style="display: flex; flex-direction: column;">
-            
-            <div class="logo" onclick="switchPage('home')" style="cursor: pointer; display: flex; align-items: center;">
-                <img src="{{ url_for('static', filename='logo.png') }}" alt="Source Code Hub Logo" style="height: 55px; border-radius: 8px;">
-            </div>
-            
-            <span style="font-size: 0.7rem; color: #888; margin-top: 5px; margin-left: 5px; letter-spacing: 0.5px;">
+            <div class="logo" onclick="switchPage('home')">SOURCE CODE <span>HUB</span></div>
+            <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px; letter-spacing: 0.5px;">
                 By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a>
             </span>
         </div>

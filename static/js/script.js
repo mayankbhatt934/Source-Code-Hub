@@ -273,7 +273,7 @@ function openUPIModal(plan, price) {
     
     const myUPI_ID = "mayankbhatt934@oksbi"; // <--- DO NOT FORGET TO CHANGE THIS!
     
-    const name = "SourceHub Premium";
+    const name = "Source Code Hub Premium";
     const upiLink = `upi://pay?pa=${myUPI_ID}&pn=${name}&am=${price}&cu=INR`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
     

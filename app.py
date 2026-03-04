@@ -176,9 +176,9 @@ def forgot_password():
 
     if sender_email and sender_password:
         try:
-            msg = MIMEText(f"Your SourceHub password reset code is: {code}\n\nThis code expires in 15 minutes.")
-            msg['Subject'] = 'SourceHub - Password Reset Code'
-            msg['From'] = f"SourceHub Support <{sender_email}>"
+            msg = MIMEText(f"Your Source Code Hub password reset code is: {code}\n\nThis code expires in 15 minutes.")
+            msg['Subject'] = 'Source Code Hub - Password Reset Code'
+            msg['From'] = f"Source Code Hub Support <{sender_email}>"
             msg['To'] = email
 
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:

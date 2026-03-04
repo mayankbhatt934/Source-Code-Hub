@@ -187,6 +187,17 @@
         </div>
     </div>
 
+    <div id="prompt-modal-overlay" class="upi-modal-overlay">
+        <div class="upi-modal" style="max-width: 600px; width: 90%;">
+            <span class="close-modal" onclick="closePromptModal()">&times;</span>
+            <h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 15px; font-size: 1.4rem;">Prompt Title</h2>
+            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border: 1px solid #333; text-align: left; max-height: 350px; overflow-y: auto; margin-bottom: 20px;">
+                <p id="modal-prompt-text" style="color: #ccc; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p>
+            </div>
+            <button class="submit-btn premium-btn" style="width: 100%;" onclick="copyFromModal(this)">Copy Prompt</button>
+        </div>
+    </div>
+
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>

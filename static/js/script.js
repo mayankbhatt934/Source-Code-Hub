@@ -16,13 +16,9 @@ function switchPage(pageId) {
 
 function toggleMobileMenu() { document.getElementById('nav-menu').classList.toggle('show'); }
 
-// FIXED TAB LOGIC
 function switchCategoryTab(section, category) {
-    // 1. Hide all content and remove active class from all buttons
     document.querySelectorAll(`.${section}-tab-content`).forEach(el => el.style.display = 'none');
     document.querySelectorAll(`.${section}-tab-btn`).forEach(el => el.classList.remove('active'));
-    
-    // 2. Show the targeted content and make the exact button active
     document.getElementById(`${section}-${category}-content`).style.display = 'block';
     document.getElementById(`btn-${section}-${category}`).classList.add('active');
 }
@@ -41,17 +37,6 @@ function copyPrompt(btn, text) {
     const originalText = btn.innerText;
     btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000";
     setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000);
-}
-
-function togglePromptView(id, btnElement) {
-    const textBlock = document.getElementById(id);
-    if (textBlock.style.display === 'none' || textBlock.style.display === '') {
-        textBlock.style.display = 'block';
-        btnElement.innerText = "Hide"; btnElement.style.color = "#fff"; btnElement.style.background = "#b06ab3";
-    } else {
-        textBlock.style.display = 'none';
-        btnElement.innerText = "View"; btnElement.style.color = "#b06ab3"; btnElement.style.background = "transparent";
-    }
 }
 
 // =========================================
@@ -207,7 +192,6 @@ async function loadDynamicContent() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // 1. HELPER TO GENERATE CODE HTML (HANDLES LINKS & BLURRING!)
         const generateCodeHTML = (codes, isPremiumSection = false) => {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items available in this category yet.</p>';
             return codes.map((item, index) => {
@@ -220,7 +204,6 @@ async function loadDynamicContent() {
                     <div class="code-wrapper" style="margin-bottom: 40px; position: relative;">
                         <div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
 
-                // If it's a Full Website, show a Download box instead of raw code
                 if (isFullWebsite) {
                     html += `
                         <div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);">
@@ -229,7 +212,6 @@ async function loadDynamicContent() {
                             <a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;">Download Files</a>
                         </div>`;
                 } else {
-                    // It's a Single Page Code, show the normal code block
                     html += `
                         <div class="code-container" style="${blurStyle}">
                             <div class="code-header">
@@ -240,7 +222,6 @@ async function loadDynamicContent() {
                         </div>`;
                 }
 
-                // Add the locked overlay with the Buy button
                 if (isLocked) {
                     html += `
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;">
@@ -265,19 +246,15 @@ async function loadDynamicContent() {
         if(document.getElementById('premium-single-content')) document.getElementById('premium-single-content').innerHTML = generateCodeHTML(premSingle, true);
         if(document.getElementById('premium-full-content')) document.getElementById('premium-full-content').innerHTML = generateCodeHTML(premFull, true);
 
+        // RESTORED CLEAN PROMPT UI!
         const promptContainer = document.getElementById('dynamic-prompts');
         if (promptContainer) {
             promptContainer.innerHTML = data.prompts.length === 0 ? '<p style="text-align: center; color: #888;">No prompts published yet.</p>' : data.prompts.map((item) => `
-                <div class="prompt-box" style="margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span>
-                        <div>
-                            <button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; margin-right: 5px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="togglePromptView('prompt-text-${item.id}', this)">View</button>
-                            <button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button>
-                        </div>
-                    </div>
-                    <div id="prompt-text-${item.id}" style="display: none; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.6); border-radius: 5px; color: #ccc; font-size: 0.9rem; line-height: 1.5; border-left: 3px solid #b06ab3;">
-                        ${item.prompt_text}
+                <div class="prompt-box" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;">
+                    <span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="openPromptModal(\`${item.title.replace(/`/g, '\\`')}\`, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">View</button>
+                        <button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button>
                     </div>
                 </div>
             `).join('');
@@ -285,6 +262,32 @@ async function loadDynamicContent() {
     } catch (err) { console.error("Error loading dynamic content:", err); }
 }
 
+// =========================================
+// AI PROMPT MODAL LOGIC (NEW!)
+// =========================================
+let currentModalPromptText = ""; 
+
+function openPromptModal(title, text) {
+    document.getElementById('modal-prompt-title').innerText = title;
+    document.getElementById('modal-prompt-text').innerText = text;
+    currentModalPromptText = text;
+    document.getElementById('prompt-modal-overlay').style.display = 'flex';
+}
+
+function closePromptModal() { document.getElementById('prompt-modal-overlay').style.display = 'none'; }
+
+function copyFromModal(btnElement) {
+    navigator.clipboard.writeText(currentModalPromptText);
+    const originalText = btnElement.innerText;
+    btnElement.innerText = "Copied!";
+    btnElement.style.background = "#00ff88"; 
+    btnElement.style.color = "#000";
+    setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000);
+}
+
+// =========================================
+// FORGOT PASSWORD
+// =========================================
 function openResetModal() { document.getElementById('reset-modal-overlay').style.display = 'flex'; document.getElementById('request-code-form').style.display = 'block'; document.getElementById('verify-code-form').style.display = 'none'; document.getElementById('reset-email').value = ''; }
 function closeResetModal() { document.getElementById('reset-modal-overlay').style.display = 'none'; }
 async function handleRequestCode(e) { e.preventDefault(); const email = document.getElementById('reset-email').value; const btn = e.target.querySelector('button'); btn.innerText = "Sending..."; try { const res = await fetch('/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); if (res.ok) { document.getElementById('request-code-form').style.display = 'none'; document.getElementById('verify-code-form').style.display = 'block'; } else { alert("Error."); } } catch (err) { alert("Server error."); } btn.innerText = "Send Code"; }

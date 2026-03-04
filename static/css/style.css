@@ -20,7 +20,12 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px 50px;
-    background: transparent; /* Reverted back to your original transparent look */
+    
+    /* The Transparent Blur Magic */
+    background: rgba(0, 0, 0, 0.3); /* Mostly transparent dark tint */
+    backdrop-filter: blur(12px); /* The blur effect */
+    -webkit-backdrop-filter: blur(12px); /* Fix for Safari/iOS users */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Super faint line to separate it from the page */
 }
 
 .logo { font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; cursor: pointer; z-index: 1001;}

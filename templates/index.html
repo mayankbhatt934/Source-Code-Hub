@@ -138,13 +138,20 @@
         </div>
     </section>
 
-    <div id="upi-modal-overlay" class="upi-modal-overlay">
-        <div class="upi-modal">
-            <span class="close-modal" onclick="closeUPIModal()">&times;</span>
-            <h2 style="color: #00d2ff; margin-bottom: 10px;">Secure Checkout</h2>
+    <div id="upi-modal-overlay" class="upi-modal-overlay" onclick="if(event.target === this) closeUPIModal()">
+        <div class="upi-modal" style="max-height: 90vh; overflow-y: auto; position: relative;">
+            <span class="close-modal" onclick="closeUPIModal()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer;">&times;</span>
+            <h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px;">Secure Checkout</h2>
             <p id="modal-plan-desc" style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;"></p>
-            <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00d2ff;">
-            <div style="margin-bottom: 20px;"><p style="font-size: 0.8rem; color: #888;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a></div>
+            
+            <div style="text-align: center;">
+                <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 200px; height: 200px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00d2ff; display: inline-block;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 0.8rem; color: #888;">Mobile Users:</p>
+                <a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 5px;">Pay via App</a>
+            </div>
             
             <form onsubmit="submitUPIPayment(event)">
                 <div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 15px; text-align: left;">
@@ -154,21 +161,29 @@
                 </div>
 
                 <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after payment is complete.</p>
-                <button type="submit" class="submit-btn premium-btn">I have completed the payment</button>
+                <button type="submit" class="submit-btn premium-btn" style="margin-bottom: 10px;">I have completed the payment</button>
             </form>
         </div>
     </div>
 
-    <div id="reset-modal-overlay" class="upi-modal-overlay">
-        <div class="upi-modal">
-            <span class="close-modal" onclick="closeResetModal()">&times;</span>
-            <h2 style="color: #00d2ff; margin-bottom: 10px;">Reset Password</h2>
+    <div id="reset-modal-overlay" class="upi-modal-overlay" onclick="if(event.target === this) closeResetModal()">
+        <div class="upi-modal" style="max-height: 90vh; overflow-y: auto; position: relative;">
+            <span class="close-modal" onclick="closeResetModal()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer;">&times;</span>
+            <h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px;">Reset Password</h2>
             <form id="request-code-form" onsubmit="handleRequestCode(event)"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"><button type="submit" class="submit-btn">Send Code</button></form>
-            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn">Update Password</button></form>
+            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn" style="margin-bottom: 10px;">Update Password</button></form>
         </div>
     </div>
-    <div id="prompt-modal-overlay" class="upi-modal-overlay">
-        <div class="upi-modal" style="max-width: 600px; width: 90%;"><span class="close-modal" onclick="closePromptModal()">&times;</span><h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 15px; font-size: 1.4rem;">Prompt Title</h2><div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border: 1px solid #333; text-align: left; max-height: 350px; overflow-y: auto; margin-bottom: 20px;"><p id="modal-prompt-text" style="color: #ccc; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p></div><button class="submit-btn premium-btn" style="width: 100%;" onclick="copyFromModal(this)">Copy Prompt</button></div>
+
+    <div id="prompt-modal-overlay" class="upi-modal-overlay" onclick="if(event.target === this) closePromptModal()">
+        <div class="upi-modal" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative;">
+            <span class="close-modal" onclick="closePromptModal()" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer;">&times;</span>
+            <h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 15px; font-size: 1.4rem; margin-top: 10px; padding-right: 30px;">Prompt Title</h2>
+            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; border: 1px solid #333; text-align: left; max-height: 40vh; overflow-y: auto; margin-bottom: 20px;">
+                <p id="modal-prompt-text" style="color: #ccc; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p>
+            </div>
+            <button class="submit-btn premium-btn" style="width: 100%; margin-bottom: 10px;" onclick="copyFromModal(this)">Copy Prompt</button>
+        </div>
     </div>
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>

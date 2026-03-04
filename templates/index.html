@@ -10,11 +10,18 @@
 <body>
 
     <div class="glass-bg"></div>
-    <a href="#" target="_blank" class="floating-dm"><span>DM for Help</span></a>
+    <a href="https://ig.me/m/mayank.code.ai" target="_blank" class="floating-dm"><span>DM for Help</span></a>
 
     <header data-aos="fade-down">
-        <div class="logo" onclick="switchPage('home')">SOURCE<span>HUB</span></div>
+        <div style="display: flex; flex-direction: column;">
+            <div class="logo" onclick="switchPage('home')">SOURCE<span>HUB</span></div>
+            <a href="https://instagram.com/mayank.code.ai" target="_blank" style="font-size: 0.65rem; color: #aaa; text-decoration: none; margin-top: -5px; letter-spacing: 1px; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#aaa'">
+                By @mayank.code.ai
+            </a>
+        </div>
+        
         <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
+        
         <ul class="nav-links" id="nav-menu">
             <li onclick="switchPage('home')" id="nav-home" class="active">Home</li>
             <li onclick="switchPage('free')" id="nav-free">Free Code</li>
@@ -225,8 +232,8 @@ def execute_premium_trade():
     </div>
 
     <footer>
-        <p>Created for SourceHub</p>
-    </footer>
+    <p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a></p>
+</footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

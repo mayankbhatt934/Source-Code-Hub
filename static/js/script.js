@@ -6,6 +6,9 @@ function switchPage(pageId) {
         targetPage.classList.add('active');
         if(document.getElementById(`nav-${pageId}`)) document.getElementById(`nav-${pageId}`).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Mark notifications as read if they open the page
+        if(pageId === 'notifications') fetch('/api/notifications/read', {method: 'POST'}).then(() => document.getElementById('notif-badge').style.display = 'none');
     }
     if(window.innerWidth <= 768) document.getElementById('nav-menu').classList.remove('show');
 }
@@ -16,72 +19,90 @@ function switchCategoryTab(section, category) {
     document.getElementById(`${section}-${category}-content`).style.display = 'block';
     document.getElementById(`btn-${section}-${category}`).classList.add('active');
 }
-function copyMainCode(elementId, btnElement) {
-    navigator.clipboard.writeText(document.getElementById(elementId).innerText);
-    const originalText = btnElement.innerText;
-    btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000";
-    setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000);
-}
-function copyPrompt(btn, text) {
-    navigator.clipboard.writeText(text); const originalText = btn.innerText;
-    btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000";
-    setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000);
+function copyMainCode(elementId, btnElement) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
+function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
+
+// NEW: Search Filter Logic
+function filterCodes(type) {
+    const query = document.getElementById(`search-${type}`).value.toLowerCase();
+    const tabs = ['single', 'full'];
+    tabs.forEach(tab => {
+        document.querySelectorAll(`#${type}-${tab}-content .code-wrapper`).forEach(el => {
+            const title = el.querySelector('.code-title span').innerText.toLowerCase();
+            el.style.display = title.includes(query) ? 'block' : 'none';
+        });
+    });
 }
 
 let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false;
 function switchAuthPage() { isLoggedIn ? switchPage('profile') : switchPage('login'); }
 function toggleFlipCard() { isFlipped = !isFlipped; document.getElementById('flip-inner-box').style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; }
-function setAuthMode(mode) {
-    const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg');
-    if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } 
-    else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); }
-}
+function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); } }
 
 async function handleRegistration(e) { e.preventDefault(); try { const res = await fetch('/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('reg-name').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); setAuthMode('normal'); } else { alert("Error: " + data.message); } } catch (err) { alert("Server error."); } }
-
-async function handleLogin(e) { 
-    e.preventDefault(); 
-    try { 
-        const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('log-email').value, password: document.getElementById('log-password').value }) }); 
-        const data = await res.json(); 
-        
-        if (res.ok) { 
-            isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; await loadUserProfile(); loadDynamicContent(); switchPage('profile'); 
-        } else { 
-            // NEW: Trigger the giant lockdown screen if the server says 403 (Banned)
-            if (res.status === 403) {
-                document.getElementById('banned-screen-overlay').style.display = 'flex';
-            } else {
-                alert("Error: " + data.message); 
-            }
-        } 
-    } catch (err) { alert("Server error."); } 
-}
-
-async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); loadDynamicContent(); switchPage('home'); }
+async function handleLogin(e) { e.preventDefault(); try { const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('log-email').value, password: document.getElementById('log-password').value }) }); const data = await res.json(); if (res.ok) { isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; await loadUserProfile(); loadDynamicContent(); } else { alert("Error: " + data.message); } } catch (err) { alert("Server error."); } }
+async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
 
 async function loadUserProfile() {
     try {
         const res = await fetch('/api/profile');
-        
-        // NEW: If they refresh the page while banned, instantly lock them out!
-        if (res.status === 403) {
-            document.getElementById('banned-screen-overlay').style.display = 'flex';
-            await fetch('/logout', { method: 'POST' }); // Silently wipe their session
-            return;
-        }
-
         if (res.ok) {
             isLoggedIn = true; document.getElementById('nav-login').innerText = "Dashboard";
+            document.getElementById('nav-notifications').style.display = 'block';
+            
             const user = await res.json(); isPremiumUser = user.is_premium;
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             document.getElementById('profile-img').src = user.photo ? user.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             const badge = document.getElementById('profile-status-badge'), expiryText = document.getElementById('profile-expiry');
             if (user.is_premium) { badge.className = 'status-badge premium'; badge.innerText = 'Premium Member ⭐'; if (user.expiry) { expiryText.style.display = 'block'; expiryText.innerHTML = `Expires/Status: <span>${user.expiry}</span>`; } } 
             else { badge.className = 'status-badge basic'; badge.innerText = 'Basic Account'; expiryText.style.display = 'none'; }
-            loadMyPurchases();
+            
+            // NEW: BANNED USER JAIL
+            if (user.is_banned) {
+                ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'none');
+                let banner = document.getElementById('ban-banner');
+                if(!banner) {
+                    banner = document.createElement('div'); banner.id = 'ban-banner';
+                    banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: #ff5f56; color: #fff; text-align: center; padding: 10px; z-index: 999999; font-weight: bold; box-shadow: 0 5px 15px rgba(255,95,86,0.3);';
+                    banner.innerText = '🚫 Your account is restricted. You can only view your profile and notifications.';
+                    document.body.appendChild(banner);
+                }
+                const activePage = document.querySelector('.page-section.active');
+                if(!activePage || !['page-profile', 'page-notifications'].includes(activePage.id)) switchPage('notifications');
+            } else {
+                const banner = document.getElementById('ban-banner'); if(banner) banner.remove();
+                ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block');
+                if(document.querySelector('.page-section.active').id === 'page-login') switchPage('profile');
+            }
+
+            loadMyPurchases(); loadNotifications();
         }
     } catch (err) { console.log("Not logged in"); }
+}
+
+async function loadNotifications() {
+    try {
+        const res = await fetch('/api/notifications');
+        if (res.ok) {
+            const data = await res.json();
+            const unread = data.filter(n => !n.is_read).length;
+            if (unread > 0) {
+                const badge = document.getElementById('notif-badge');
+                badge.innerText = unread; badge.style.display = 'inline-block';
+            }
+            
+            const container = document.getElementById('notifications-list');
+            if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; }
+            container.innerHTML = data.map(n => `
+                <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span>
+                    </div>
+                    <p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p>
+                </div>
+            `).join('');
+        }
+    } catch(e) {}
 }
 
 async function updateProfileName(e) { e.preventDefault(); const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('prof-name').value }) }); if (res.ok) { alert("Profile updated!"); loadUserProfile(); } }
@@ -97,37 +118,18 @@ function openUPIModal(planName, price, codeId = null, giftMode = false) {
     document.getElementById('upi-mobile-link').href = upiURL;
     document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`;
     document.getElementById('modal-sender-upi').value = '';
-    const giftContainer = document.getElementById('gift-email-container');
-    const giftInput = document.getElementById('modal-gift-email');
-    if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } 
-    else { giftContainer.style.display = 'none'; giftInput.required = false; }
+    const giftContainer = document.getElementById('gift-email-container'); const giftInput = document.getElementById('modal-gift-email');
+    if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } else { giftContainer.style.display = 'none'; giftInput.required = false; }
     document.getElementById('upi-modal-overlay').style.display = 'flex';
 }
 function closeUPIModal() { document.getElementById('upi-modal-overlay').style.display = 'none'; }
-
-async function submitUPIPayment(e) {
-    e.preventDefault();
-    let giftEmail = null;
-    if(isGifting) { giftEmail = document.getElementById('modal-gift-email').value; if(!giftEmail) { alert("Please enter the recipient's email address!"); return; } }
-    const upiID = document.getElementById('modal-sender-upi').value;
-    if (!upiID || !upiID.includes('@')) { alert("Please enter a valid UPI ID containing an '@' symbol."); return; }
-    const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Verifying...";
-    try {
-        const res = await fetch('/submit-upi-payment', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail })
-        });
-        const data = await res.json();
-        if (res.ok) { alert(data.message); closeUPIModal(); e.target.reset(); } else { alert("Error: " + data.message); }
-    } catch(err) { alert("Server error processing payment."); } btn.innerText = originalText;
-}
+async function submitUPIPayment(e) { e.preventDefault(); let giftEmail = null; if(isGifting) { giftEmail = document.getElementById('modal-gift-email').value; if(!giftEmail) { alert("Please enter recipient's email!"); return; } } const upiID = document.getElementById('modal-sender-upi').value; if (!upiID || !upiID.includes('@')) { alert("Please enter a valid UPI ID with an '@' symbol."); return; } const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Verifying..."; try { const res = await fetch('/submit-upi-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail }) }); const data = await res.json(); if (res.ok) { alert(data.message); closeUPIModal(); e.target.reset(); loadNotifications(); } else { alert("Error: " + data.message); } } catch(err) { alert("Server error."); } btn.innerText = originalText; }
 
 async function loadMyPurchases() {
     try {
         const res = await fetch('/api/my-purchases');
         if (res.ok) {
-            const data = await res.json();
-            const container = document.getElementById('my-purchases-list');
+            const data = await res.json(); const container = document.getElementById('my-purchases-list');
             if (data.is_premium) { container.innerHTML = `<div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;"><h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p><button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button></div>`; return; }
             if (data.codes.length === 0) { container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">You haven\'t unlocked any individual files yet.</p>'; return; }
             container.innerHTML = data.codes.map(item => {
@@ -135,7 +137,7 @@ async function loadMyPurchases() {
                 else { return `<div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: #fff; margin-bottom: 10px;">${item.title}</h4><div style="background: #111; padding: 10px; border-radius: 5px; position: relative;"><button onclick="copyPrompt(this, \`${item.code.replace(/`/g, '\\`')}\`)" style="position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Copy</button><pre style="color: #00ff88; font-size: 0.85rem; margin: 0; max-height: 100px; overflow: hidden; font-family: monospace;">${item.code}</pre></div></div>`; }
             }).join('');
         }
-    } catch (err) { console.log("Failed to load purchases"); }
+    } catch (err) {}
 }
 
 async function loadDynamicContent() {
@@ -144,25 +146,12 @@ async function loadDynamicContent() {
         const generateCodeHTML = (codes, isPremiumSection = false) => {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items available in this category yet.</p>';
             return codes.map((item, index) => {
-                const isLocked = isPremiumSection && !isPremiumUser; 
-                const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
-                const mainColor = isPremiumSection ? '#f5af19' : '#00d2ff';
-                const isFullWebsite = item.category.includes("Full Website");
-                
+                const isLocked = isPremiumSection && !isPremiumUser; const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
+                const mainColor = isPremiumSection ? '#f5af19' : '#00d2ff'; const isFullWebsite = item.category.includes("Full Website");
                 let html = `<div class="code-wrapper" style="margin-bottom: 40px; position: relative;"><div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
                 if (isFullWebsite) { html += `<div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);"><div style="font-size: 3rem; margin-bottom: 15px;">📁</div><h3 style="color: #fff; margin-bottom: 20px;">Full Website Source Files</h3><a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;">Download Files</a></div>`; } 
                 else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this)">Copy Script</button></div><pre id="code-${item.id}">${item.code}</pre></div>`; }
-
-                if (isLocked) {
-                    html += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;">
-                                <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3>
-                                <div style="display: flex; justify-content: center; gap: 10px;">
-                                    <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id})">Buy for ₹${item.price}</button>
-                                    <button class="submit-btn" style="width: auto; padding: 10px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id}, true)" title="Gift this code">🎁</button>
-                                    <button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">View Memberships</button>
-                                </div>
-                            </div>`;
-                }
+                if (isLocked) { html += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;"><div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3><div style="display: flex; justify-content: center; gap: 10px;"><button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id})">Buy for ₹${item.price}</button><button class="submit-btn" style="width: auto; padding: 10px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id}, true)" title="Gift this code">🎁</button><button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">View Memberships</button></div></div>`; }
                 html += `</div>`; return html;
             }).join('');
         };
@@ -172,14 +161,9 @@ async function loadDynamicContent() {
         const premSingle = data.premium_codes.filter(c => c.category === 'Single Page' || c.category === 'Single Page Code'); const premFull = data.premium_codes.filter(c => c.category.includes('Full Website'));
         if(document.getElementById('prem-single-content')) document.getElementById('prem-single-content').innerHTML = generateCodeHTML(premSingle, true);
         if(document.getElementById('prem-full-content')) document.getElementById('prem-full-content').innerHTML = generateCodeHTML(premFull, true);
-        
         const promptContainer = document.getElementById('dynamic-prompts');
-        if (promptContainer) {
-            promptContainer.innerHTML = data.prompts.length === 0 ? '<p style="text-align: center; color: #888;">No prompts published yet.</p>' : data.prompts.map((item) => `
-                <div class="prompt-box" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;"><span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span><div style="display: flex; gap: 10px;"><button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="openPromptModal(\`${item.title.replace(/`/g, '\\`')}\`, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">View</button><button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button></div></div>
-            `).join('');
-        }
-    } catch (err) { console.error("Error loading dynamic content:", err); }
+        if (promptContainer) { promptContainer.innerHTML = data.prompts.length === 0 ? '<p style="text-align: center; color: #888;">No prompts published yet.</p>' : data.prompts.map((item) => `<div class="prompt-box" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;"><span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span><div style="display: flex; gap: 10px;"><button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="openPromptModal(\`${item.title.replace(/`/g, '\\`')}\`, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">View</button><button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button></div></div>`).join(''); }
+    } catch (err) {}
 }
 
 let currentModalPromptText = ""; 

@@ -15,6 +15,9 @@
         .cat-tab.premium-tab.active { background: #f5af19; border-color: #f5af19; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .search-bar { width: 100%; padding: 15px; border-radius: 30px; border: 1px solid #333; background: rgba(0,0,0,0.5); color: #fff; outline: none; text-align: center; font-size: 1rem; transition: 0.3s; margin-bottom: 30px; }
+        .search-bar:focus { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
+        .premium-search:focus { border-color: #f5af19; box-shadow: 0 0 15px rgba(245, 175, 25, 0.2); }
     </style>
 </head>
 <body>
@@ -34,6 +37,7 @@
             <li onclick="switchPage('premium')" id="nav-premium">Premium Room</li>
             <li onclick="switchPage('prompts')" id="nav-prompts">AI Prompts</li>
             <li onclick="switchPage('pricing')" id="nav-pricing">Pricing</li>
+            <li onclick="switchPage('notifications')" id="nav-notifications" style="display: none;">🔔 Alerts <span id="notif-badge" style="background: #ff5f56; color: #fff; border-radius: 50%; padding: 2px 7px; font-size: 0.7rem; margin-left: 5px; display: none;">0</span></li>
             <li onclick="switchAuthPage()" id="nav-login" class="login-nav-btn">Account</li>
         </ul>
     </header>
@@ -49,6 +53,7 @@
 
     <section id="page-free" class="page-section">
         <section class="hero"><h1>Free <span>Source Codes</span></h1></section>
+        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-free" class="search-bar" onkeyup="filterCodes('free')" placeholder="🔍 Search free codes..."></div>
         <div class="category-tabs"><button id="btn-free-single" class="cat-tab free-tab-btn active" onclick="switchCategoryTab('free', 'single')">Single Page Codes</button><button id="btn-free-full" class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button></div>
         <div id="free-single-content" class="free-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
         <div id="free-full-content" class="free-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
@@ -56,6 +61,7 @@
 
     <section id="page-premium" class="page-section">
         <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Buy for yourself or click 🎁 to gift to a friend!</p></section>
+        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-prem" class="search-bar premium-search" onkeyup="filterCodes('prem')" placeholder="🔍 Search premium codes..."></div>
         <div class="category-tabs"><button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active" onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button><button id="btn-prem-full" class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website Codes</button></div>
         <div id="prem-single-content" class="prem-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
         <div id="prem-full-content" class="prem-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading premium codes...</p></div>
@@ -69,53 +75,27 @@
     <section id="page-pricing" class="page-section">
         <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Buy for yourself or gift permanent access to a friend!</p></section>
         <div class="pricing-grid" data-aos="fade-up">
-            <div class="pricing-card">
-                <h3 class="plan-name">Monthly</h3><div class="plan-price">₹499<span>/mo</span></div>
-                <ul class="plan-benefits"><li>30 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul>
-                <div style="display: flex; gap: 10px;">
-                    <button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button>
-                    <button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Monthly Pass', 499, null, true)" title="Gift this plan">🎁</button>
-                </div>
-            </div>
-            <div class="pricing-card popular">
-                <h3 class="plan-name" style="color: #fff;">Lifetime</h3><div class="plan-price" style="color: #f5af19;">₹3999<span>/once</span></div>
-                <ul class="plan-benefits"><li>Permanent lifetime access</li><li>Unlimited downloads forever</li><li>Priority VIP support</li></ul>
-                <div style="display: flex; gap: 10px;">
-                    <button class="submit-btn premium-btn" style="flex: 1;" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button>
-                    <button class="submit-btn" style="width: auto; background: #333; color: white; border: 1px solid #f5af19;" onclick="openUPIModal('Lifetime Pass', 3999, null, true)" title="Gift this plan">🎁</button>
-                </div>
-            </div>
-            <div class="pricing-card">
-                <h3 class="plan-name">Yearly</h3><div class="plan-price">₹2499<span>/yr</span></div>
-                <ul class="plan-benefits"><li>365 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul>
-                <div style="display: flex; gap: 10px;">
-                    <button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button>
-                    <button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Yearly Pass', 2499, null, true)" title="Gift this plan">🎁</button>
-                </div>
-            </div>
+            <div class="pricing-card"><h3 class="plan-name">Monthly</h3><div class="plan-price">₹499<span>/mo</span></div><ul class="plan-benefits"><li>30 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button><button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Monthly Pass', 499, null, true)" title="Gift this plan">🎁</button></div></div>
+            <div class="pricing-card popular"><h3 class="plan-name" style="color: #fff;">Lifetime</h3><div class="plan-price" style="color: #f5af19;">₹3999<span>/once</span></div><ul class="plan-benefits"><li>Permanent lifetime access</li><li>Unlimited downloads forever</li><li>Priority VIP support</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn premium-btn" style="flex: 1;" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button><button class="submit-btn" style="width: auto; background: #333; color: white; border: 1px solid #f5af19;" onclick="openUPIModal('Lifetime Pass', 3999, null, true)" title="Gift this plan">🎁</button></div></div>
+            <div class="pricing-card"><h3 class="plan-name">Yearly</h3><div class="plan-price">₹2499<span>/yr</span></div><ul class="plan-benefits"><li>365 days premium access</li><li>Download all source codes</li><li>Standard support</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button><button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Yearly Pass', 2499, null, true)" title="Gift this plan">🎁</button></div></div>
         </div>
     </section>
 
     <section id="page-login" class="page-section">
         <div class="center-box">
             <h2 id="auth-main-title">Access <span id="login-title-span" style="color:#00d2ff;">Account</span></h2>
-            <div class="auth-toggle" id="auth-toggle">
-                <div class="toggle-bg"></div>
-                <button class="active" id="btn-normal" onclick="setAuthMode('normal')">Login</button>
-                <button id="btn-premium" onclick="setAuthMode('premium')">Register</button>
-            </div>
-            <div class="auth-form-wrapper">
-                <div class="flip-container" id="flip-container">
-                    <div class="flip-inner" id="flip-inner-box">
-                        <div class="flip-front">
-                            <form id="login-form" onsubmit="handleLogin(event)"><div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Login</button><p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p></form>
-                        </div>
-                        <div class="flip-back">
-                            <form id="register-form" onsubmit="handleRegistration(event)"><div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div><div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Register</button></form>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="auth-toggle" id="auth-toggle"><div class="toggle-bg"></div><button class="active" id="btn-normal" onclick="setAuthMode('normal')">Login</button><button id="btn-premium" onclick="setAuthMode('premium')">Register</button></div>
+            <div class="auth-form-wrapper"><div class="flip-container" id="flip-container"><div class="flip-inner" id="flip-inner-box">
+                <div class="flip-front"><form id="login-form" onsubmit="handleLogin(event)"><div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Login</button><p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p></form></div>
+                <div class="flip-back"><form id="register-form" onsubmit="handleRegistration(event)"><div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div><div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="reg-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Register</button></form></div>
+            </div></div></div>
+        </div>
+    </section>
+
+    <section id="page-notifications" class="page-section">
+        <div class="center-box" style="max-width: 600px; text-align: left;">
+            <h2 style="color: #00d2ff; margin-bottom: 20px; text-align: center;">Alerts & Updates</h2>
+            <div id="notifications-list"><p style="text-align: center; color: #888;">No new notifications.</p></div>
         </div>
     </section>
 
@@ -141,37 +121,25 @@
     <div id="upi-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeUPIModal()">
         <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
             <div onclick="closeUPIModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; transition: 0.3s;" onmouseover="this.style.background='#ff5f56'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</div>
-            
             <h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px; font-size: 1.6rem;">Secure Checkout</h2>
             <p id="modal-plan-desc" style="color: #ccc; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.4;"></p>
-            
-            <div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
-                <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;">
-            </div>
-            
-            <div style="margin-bottom: 25px;">
-                <p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p>
-                <a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay via App</a>
-            </div>
-            
+            <div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;"><img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;"></div>
+            <div style="margin-bottom: 25px;"><p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay via App</a></div>
             <form onsubmit="submitUPIPayment(event)">
                 <div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 20px; text-align: left; background: rgba(255, 0, 127, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ff007f;">
                     <label style="font-size: 0.9rem; color: #ff007f; font-weight: bold; margin-bottom: 8px; display: block;">🎁 Recipient's Email Address</label>
                     <input type="email" id="modal-gift-email" placeholder="friend@example.com" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;">
                     <p style="font-size: 0.8rem; color: #aaa; margin-top: 8px; margin-bottom: 0;">They must have an account on this site first!</p>
                 </div>
-
                 <div class="form-group" style="margin-bottom: 15px; text-align: left;">
                     <label style="font-size: 0.85rem; color: #00ff88; font-weight: bold; margin-bottom: 8px; display: block;">✅ Your UPI ID (To verify your payment)</label>
                     <input type="text" id="modal-sender-upi" placeholder="e.g., yourname@okhdfcbank" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #00ff88; color: white; border-radius: 5px;">
                 </div>
-
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Click below ONLY after payment is complete.</p>
                 <button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 5px;">I have completed the payment</button>
             </form>
         </div>
     </div>
-
     <div id="reset-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeResetModal()">
         <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
             <div onclick="closeResetModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; transition: 0.3s;" onmouseover="this.style.background='#ff5f56'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</div>
@@ -180,7 +148,6 @@
             <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px;">Update Password</button></form>
         </div>
     </div>
-
     <div id="prompt-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closePromptModal()">
         <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: left; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
             <div onclick="closePromptModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; transition: 0.3s;" onmouseover="this.style.background='#ff5f56'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</div>
@@ -188,13 +155,6 @@
             <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; border: 1px solid #222; max-height: 40vh; overflow-y: auto; margin-bottom: 25px;"><p id="modal-prompt-text" style="color: #ddd; font-size: 1rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p></div>
             <button class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem;" onclick="copyFromModal(this)">Copy Prompt</button>
         </div>
-    </div>
-
-    <div id="banned-screen-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 9999999; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
-        <div style="font-size: 5rem; margin-bottom: 20px;">🚫</div>
-        <h1 style="color: #ff5f56; font-size: 3rem; margin-bottom: 10px;">Account Suspended</h1>
-        <p style="color: #ccc; font-size: 1.1rem; max-width: 500px; margin-bottom: 30px; line-height: 1.5;">Your access to Source Code Hub has been restricted by the Administrator due to a violation of our terms.</p>
-        <button class="submit-btn" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; width: auto; padding: 10px 30px;" onclick="location.reload()">Return to Homepage as Guest</button>
     </div>
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>

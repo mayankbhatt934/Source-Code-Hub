@@ -11,10 +11,8 @@ class User(db.Model):
     is_premium = db.Column(db.Boolean, default=False)
     premium_expiry = db.Column(db.DateTime, nullable=True)
     profile_photo = db.Column(db.Text, nullable=True)
-    
-    # NEW BAN COLUMNS
     is_banned = db.Column(db.Boolean, default=False)
-    ban_expiry = db.Column(db.DateTime, nullable=True) # Null means permanent if is_banned is True
+    ban_expiry = db.Column(db.DateTime, nullable=True)
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -31,6 +29,15 @@ class UserCodePurchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
     code_id = db.Column(db.Integer, nullable=False)
+
+# NEW: NOTIFICATION ENGINE
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False) # 'all' for global
+    title = db.Column(db.String(150), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
 
 class SiteAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)

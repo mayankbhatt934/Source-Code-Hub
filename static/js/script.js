@@ -1,4 +1,14 @@
+// NEW: Added isBannedUser variable to track jail status globally
+let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false;
+
 function switchPage(pageId) {
+    // SECURITY GUARD: If banned, mathematically block access to these pages
+    if (isBannedUser && ['home', 'free', 'premium', 'prompts', 'pricing'].includes(pageId)) {
+        let banner = document.getElementById('ban-banner');
+        if(banner) banner.style.display = 'block'; // Show popup again if they try to escape
+        return; 
+    }
+
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
     const targetPage = document.getElementById(`page-${pageId}`);
@@ -7,7 +17,6 @@ function switchPage(pageId) {
         if(document.getElementById(`nav-${pageId}`)) document.getElementById(`nav-${pageId}`).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
-        // Mark notifications as read if they open the page
         if(pageId === 'notifications') fetch('/api/notifications/read', {method: 'POST'}).then(() => document.getElementById('notif-badge').style.display = 'none');
     }
     if(window.innerWidth <= 768) document.getElementById('nav-menu').classList.remove('show');
@@ -22,7 +31,6 @@ function switchCategoryTab(section, category) {
 function copyMainCode(elementId, btnElement) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
 function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
 
-// NEW: Search Filter Logic
 function filterCodes(type) {
     const query = document.getElementById(`search-${type}`).value.toLowerCase();
     const tabs = ['single', 'full'];
@@ -34,14 +42,13 @@ function filterCodes(type) {
     });
 }
 
-let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false;
 function switchAuthPage() { isLoggedIn ? switchPage('profile') : switchPage('login'); }
 function toggleFlipCard() { isFlipped = !isFlipped; document.getElementById('flip-inner-box').style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; }
 function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); } }
 
 async function handleRegistration(e) { e.preventDefault(); try { const res = await fetch('/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('reg-name').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); setAuthMode('normal'); } else { alert("Error: " + data.message); } } catch (err) { alert("Server error."); } }
 async function handleLogin(e) { e.preventDefault(); try { const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('log-email').value, password: document.getElementById('log-password').value }) }); const data = await res.json(); if (res.ok) { isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; await loadUserProfile(); loadDynamicContent(); } else { alert("Error: " + data.message); } } catch (err) { alert("Server error."); } }
-async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
+async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; isBannedUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
 
 async function loadUserProfile() {
     try {
@@ -50,15 +57,18 @@ async function loadUserProfile() {
             isLoggedIn = true; document.getElementById('nav-login').innerText = "Dashboard";
             document.getElementById('nav-notifications').style.display = 'block';
             
-            const user = await res.json(); isPremiumUser = user.is_premium;
+            const user = await res.json(); 
+            isPremiumUser = user.is_premium;
+            isBannedUser = user.is_banned; // NEW: Set ban status
+
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             document.getElementById('profile-img').src = user.photo ? user.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             const badge = document.getElementById('profile-status-badge'), expiryText = document.getElementById('profile-expiry');
             if (user.is_premium) { badge.className = 'status-badge premium'; badge.innerText = 'Premium Member ⭐'; if (user.expiry) { expiryText.style.display = 'block'; expiryText.innerHTML = `Expires/Status: <span>${user.expiry}</span>`; } } 
             else { badge.className = 'status-badge basic'; badge.innerText = 'Basic Account'; expiryText.style.display = 'none'; }
             
-            // NEW: BANNED USER JAIL (CENTERED POPUP)
-            if (user.is_banned) {
+            // CENTERED BANNED JAIL POPUP
+            if (isBannedUser) {
                 ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'none');
                 let banner = document.getElementById('ban-banner');
                 if(!banner) {
@@ -66,6 +76,8 @@ async function loadUserProfile() {
                     banner.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: rgba(20,20,20,0.95); border: 2px solid #ff5f56; color: #fff; text-align: center; padding: 25px; border-radius: 12px; z-index: 999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); backdrop-filter: blur(5px);';
                     banner.innerHTML = ' <div style="font-size: 2.5rem; margin-bottom: 10px;">🚫</div><h3 style="color: #ff5f56; margin-bottom: 10px;">Account Restricted</h3><p style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px; line-height: 1.4;">Your access has been limited. You can only view your profile and notifications.</p><button onclick="this.parentElement.style.display=\'none\'" style="background: #ff5f56; color: #fff; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s;">I Understand</button>';
                     document.body.appendChild(banner);
+                } else {
+                    banner.style.display = 'block';
                 }
                 const activePage = document.querySelector('.page-section.active');
                 if(!activePage || !['page-profile', 'page-notifications'].includes(activePage.id)) switchPage('notifications');
@@ -94,7 +106,7 @@ async function loadNotifications() {
             const container = document.getElementById('notifications-list');
             if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; }
             container.innerHTML = data.map(n => `
-                <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;">
+                <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                         <strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span>
                     </div>
@@ -113,7 +125,7 @@ function openUPIModal(planName, price, codeId = null, giftMode = false) {
     if (!isLoggedIn) { alert("Please login or create an account first!"); switchAuthPage(); return; }
     selectedPlan = planName; selectedAmount = price; selectedCodeId = codeId; isGifting = giftMode;
     const desc = giftMode ? `GIFT - ${planName}` : `Source Code Hub - ${planName}`;
-    const upiURL = `upi://pay?pa=mayankbhatt934@oksbi&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`;
+    const upiURL = `upi://pay?pa=mayank.code.ai@okaxis&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`;
     document.getElementById('upi-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`;
     document.getElementById('upi-mobile-link').href = upiURL;
     document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`;
@@ -130,6 +142,13 @@ async function loadMyPurchases() {
         const res = await fetch('/api/my-purchases');
         if (res.ok) {
             const data = await res.json(); const container = document.getElementById('my-purchases-list');
+            
+            // SECURITY GUARD: Lock the locker if user is banned
+            if (isBannedUser) {
+                container.innerHTML = '<div style="background: rgba(255, 95, 86, 0.1); border: 1px solid #ff5f56; padding: 15px; border-radius: 8px; text-align: center;"><p style="color: #ff5f56; font-size: 0.95rem; margin: 0; font-weight: bold;">🚫 Your premium privileges and purchases are locked while your account is restricted.</p></div>'; 
+                return; 
+            }
+
             if (data.is_premium) { container.innerHTML = `<div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;"><h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p><button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button></div>`; return; }
             if (data.codes.length === 0) { container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">You haven\'t unlocked any individual files yet.</p>'; return; }
             container.innerHTML = data.codes.map(item => {

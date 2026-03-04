@@ -400,4 +400,15 @@ def delete_submission():
     if obj: db.session.delete(obj); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
+# --- SECURITY: PREVENT VERCEL FROM CACHING PRIVATE PAGES ---
+@app.after_request
+def add_cache_control(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+if __name__ == '__main__': 
+    app.run(debug=True)
+    
 if __name__ == '__main__': app.run(debug=True)

@@ -72,6 +72,14 @@
 
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
+                
+                // SECURITY GUARD: If the API blocks them, force refresh to clear the cache!
+                if (res.status === 401) {
+                    document.body.innerHTML = '<h2 style="color:#ff5f56; text-align:center; margin-top:50px;">Session Expired. Redirecting...</h2>';
+                    setTimeout(() => window.location.reload(true), 1000);
+                    return;
+                }
+
                 if (res.ok) {
                     const d = await res.json();
                     document.getElementById('stat-users').innerText = d.total_users; document.getElementById('stat-premium').innerText = d.premium_users; document.getElementById('stat-revenue').innerText = d.total_revenue; document.getElementById('stat-views').innerText = d.page_views;

@@ -86,12 +86,27 @@ def get_profile():
     
     if user.is_banned and user.ban_expiry and datetime.utcnow() > user.ban_expiry:
         user.is_banned = False; user.ban_expiry = None; db.session.commit()
-
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
         user.is_premium = False; db.session.commit()
     
+    # NEW: DYNAMIC BADGE ALGORITHM
+    badges = []
+    if user.is_banned:
+        badges.append({"name": "Banned 🚫", "class": "badge-banned"})
+    else:
+        if user.role == 'owner': badges.append({"name": "Owner 👑", "class": "badge-owner"})
+        elif user.role == 'admin': badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
+        elif user.role == 'staff': badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
+        
+        if user.is_friend: badges.append({"name": "Friend 🤝", "class": "badge-friend"})
+        
+        # Only show member/premium if they aren't high-tier staff
+        if user.role not in ['owner', 'admin']:
+            if user.is_premium: badges.append({"name": "Premium Member ⭐", "class": "badge-premium"})
+            elif user.role == 'member': badges.append({"name": "Member", "class": "badge-basic"})
+
     expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else ("Lifetime Access" if user.is_premium else None)
-    return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo, "is_banned": user.is_banned})
+    return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo, "is_banned": user.is_banned, "badges": badges, "role": user.role})
 
 @app.route('/api/update-profile', methods=['POST'])
 def update_profile():
@@ -248,6 +263,19 @@ def admin_unban_user():
         db.session.add(Notification(email=user.email, title="Account Restored ✅", message="Your ban has been lifted. You can now browse the platform again."))
         db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "User not found."}), 404
+
+# NEW: ROLE & BADGE MANAGER
+@app.route('/admin/update-role', methods=['POST'])
+def admin_update_role():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    user = User.query.filter_by(email=data.get('email')).first()
+    if not user: return jsonify({"status": "error", "message": "User not found!"}), 404
+    
+    user.role = data.get('role', 'member')
+    user.is_friend = data.get('is_friend', False)
+    db.session.commit()
+    return jsonify({"status": "success", "message": f"Updated {user.email} to {user.role.upper()}."})
 
 @app.route('/api/content', methods=['GET'])
 def get_content():

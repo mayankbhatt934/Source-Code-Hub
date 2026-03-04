@@ -1,11 +1,9 @@
-// NEW: Added isBannedUser variable to track jail status globally
 let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false;
 
 function switchPage(pageId) {
-    // SECURITY GUARD: If banned, mathematically block access to these pages
     if (isBannedUser && ['home', 'free', 'premium', 'prompts', 'pricing'].includes(pageId)) {
         let banner = document.getElementById('ban-banner');
-        if(banner) banner.style.display = 'block'; // Show popup again if they try to escape
+        if(banner) banner.style.display = 'block'; 
         return; 
     }
 
@@ -21,13 +19,16 @@ function switchPage(pageId) {
     }
     if(window.innerWidth <= 768) document.getElementById('nav-menu').classList.remove('show');
 }
+
 function toggleMobileMenu() { document.getElementById('nav-menu').classList.toggle('show'); }
+
 function switchCategoryTab(section, category) {
     document.querySelectorAll(`.${section}-tab-content`).forEach(el => el.style.display = 'none');
     document.querySelectorAll(`.${section}-tab-btn`).forEach(el => el.classList.remove('active'));
     document.getElementById(`${section}-${category}-content`).style.display = 'block';
     document.getElementById(`btn-${section}-${category}`).classList.add('active');
 }
+
 function copyMainCode(elementId, btnElement) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
 function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
 
@@ -59,13 +60,32 @@ async function loadUserProfile() {
             
             const user = await res.json(); 
             isPremiumUser = user.is_premium;
-            isBannedUser = user.is_banned; // NEW: Set ban status
+            isBannedUser = user.is_banned; 
 
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             document.getElementById('profile-img').src = user.photo ? user.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
-            const badge = document.getElementById('profile-status-badge'), expiryText = document.getElementById('profile-expiry');
-            if (user.is_premium) { badge.className = 'status-badge premium'; badge.innerText = 'Premium Member ⭐'; if (user.expiry) { expiryText.style.display = 'block'; expiryText.innerHTML = `Expires/Status: <span>${user.expiry}</span>`; } } 
-            else { badge.className = 'status-badge basic'; badge.innerText = 'Basic Account'; expiryText.style.display = 'none'; }
+            
+            // DYNAMIC BADGE RENDERER
+            const badgeContainer = document.getElementById('profile-status-badge');
+            badgeContainer.innerHTML = ''; 
+            badgeContainer.className = ''; 
+            badgeContainer.style.cssText = 'display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 5px;';
+            
+            user.badges.forEach(b => {
+                let color = '#888'; let bg = 'rgba(0,0,0,0.5)'; let border = '#333'; let fontStyle = 'font-weight: normal;';
+                if(b.class === 'badge-premium') { color = '#f5af19'; border = '#f5af19'; bg = 'rgba(245, 175, 25, 0.1)'; }
+                if(b.class === 'badge-owner') { color = '#ff00ff'; border = '#ff00ff'; bg = 'rgba(255, 0, 255, 0.1)'; fontStyle = 'font-weight: bold; text-shadow: 0 0 10px rgba(255,0,255,0.5);'; }
+                if(b.class === 'badge-admin') { color = '#00d2ff'; border = '#00d2ff'; bg = 'rgba(0, 210, 255, 0.1)'; }
+                if(b.class === 'badge-staff') { color = '#00ff88'; border = '#00ff88'; bg = 'rgba(0, 255, 136, 0.1)'; }
+                if(b.class === 'badge-friend') { color = '#ff5f56'; border = '#ff5f56'; bg = 'rgba(255, 95, 86, 0.1)'; }
+                if(b.class === 'badge-banned') { color = '#fff'; border = '#ff0000'; bg = '#ff0000'; }
+
+                badgeContainer.innerHTML += `<span style="padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; border: 1px solid ${border}; background: ${bg}; color: ${color}; ${fontStyle}">${b.name}</span>`;
+            });
+
+            const expiryText = document.getElementById('profile-expiry');
+            if (user.expiry && !user.is_banned) { expiryText.style.display = 'block'; expiryText.innerHTML = `Access: <span>${user.expiry}</span>`; }
+            else { expiryText.style.display = 'none'; }
             
             // CENTERED BANNED JAIL POPUP
             if (isBannedUser) {
@@ -98,10 +118,7 @@ async function loadNotifications() {
         if (res.ok) {
             const data = await res.json();
             const unread = data.filter(n => !n.is_read).length;
-            if (unread > 0) {
-                const badge = document.getElementById('notif-badge');
-                badge.innerText = unread; badge.style.display = 'inline-block';
-            }
+            if (unread > 0) { const badge = document.getElementById('notif-badge'); badge.innerText = unread; badge.style.display = 'inline-block'; }
             
             const container = document.getElementById('notifications-list');
             if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; }
@@ -142,13 +159,7 @@ async function loadMyPurchases() {
         const res = await fetch('/api/my-purchases');
         if (res.ok) {
             const data = await res.json(); const container = document.getElementById('my-purchases-list');
-            
-            // SECURITY GUARD: Lock the locker if user is banned
-            if (isBannedUser) {
-                container.innerHTML = '<div style="background: rgba(255, 95, 86, 0.1); border: 1px solid #ff5f56; padding: 15px; border-radius: 8px; text-align: center;"><p style="color: #ff5f56; font-size: 0.95rem; margin: 0; font-weight: bold;">🚫 Your premium privileges and purchases are locked while your account is restricted.</p></div>'; 
-                return; 
-            }
-
+            if (isBannedUser) { container.innerHTML = '<div style="background: rgba(255, 95, 86, 0.1); border: 1px solid #ff5f56; padding: 15px; border-radius: 8px; text-align: center;"><p style="color: #ff5f56; font-size: 0.95rem; margin: 0; font-weight: bold;">🚫 Your premium privileges and purchases are locked while your account is restricted.</p></div>'; return; }
             if (data.is_premium) { container.innerHTML = `<div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;"><h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p><button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button></div>`; return; }
             if (data.codes.length === 0) { container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">You haven\'t unlocked any individual files yet.</p>'; return; }
             container.innerHTML = data.codes.map(item => {

@@ -174,10 +174,14 @@ def approve_payment(tx_id):
         tx.status = 'Success'
         user = User.query.filter_by(email=tx.email).first()
         if user:
+            # Activate Premium Membership
             user.is_premium = True
-            if tx.plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
-            elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-            elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
+            if tx.plan == 'Monthly Pass': 
+                user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+            elif tx.plan == 'Yearly Pass': 
+                user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+            elif tx.plan == 'Lifetime Pass': 
+                user.premium_expiry = None # None means it never expires!
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404

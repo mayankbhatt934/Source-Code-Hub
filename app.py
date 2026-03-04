@@ -1,8 +1,10 @@
-import os
+import os, random, smtplib
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from models import db, User, Transaction, SiteAnalytics
+# Add PasswordReset to this import line!
+from models import db, User, Transaction, SiteAnalytics, PasswordReset
 
 # --- FOLDER PATH CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -150,6 +152,63 @@ def execute_premium_trade():
 execute_premium_trade()"""
     
     return jsonify({"status": "success", "code": premium_script})
+
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.json.get('email')
+    user = User.query.filter_by(email=email).first()
+    
+    if not user:
+        # Security best practice: Don't reveal if an email exists or not
+        return jsonify({"status": "success", "message": "If this email exists, a code was sent."})
+
+    # Generate a 6-digit code and set expiry to 15 minutes
+    code = str(random.randint(100000, 999999))
+    expiry = datetime.utcnow() + timedelta(minutes=15)
+
+    new_reset = PasswordReset(email=email, code=code, expiry=expiry)
+    db.session.add(new_reset)
+    db.session.commit()
+
+    # Email Sending Logic
+    sender_email = os.environ.get('MAIL_USERNAME')
+    sender_password = os.environ.get('MAIL_PASSWORD')
+
+    if sender_email and sender_password:
+        try:
+            msg = MIMEText(f"Your SourceHub password reset code is: {code}\n\nThis code expires in 15 minutes.")
+            msg['Subject'] = 'SourceHub - Password Reset Code'
+            msg['From'] = f"SourceHub Support <{sender_email}>"
+            msg['To'] = email
+
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, email, msg.as_string())
+        except Exception as e:
+            print("Email failed to send:", e)
+
+    return jsonify({"status": "success", "message": "Code sent to your email!"})
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.json
+    email = data.get('email')
+    code = data.get('code')
+    new_password = data.get('new_password')
+
+    reset_entry = PasswordReset.query.filter_by(email=email, code=code).first()
+
+    if not reset_entry or datetime.utcnow() > reset_entry.expiry:
+        return jsonify({"status": "error", "message": "Invalid or expired code!"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        db.session.delete(reset_entry) # Clean up the code so it can't be reused
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Password updated successfully!"})
+
+    return jsonify({"status": "error", "message": "User not found!"}), 404
 
 # --- PAYMENT ROUTES ---
 @app.route('/submit-upi-payment', methods=['POST'])

@@ -363,3 +363,62 @@ async function handleLogin(e) {
         }
     } catch (err) { alert("Error occurred."); }
 }
+
+// =========================================
+// PASSWORD RESET LOGIC
+// =========================================
+function openResetModal() {
+    document.getElementById('reset-modal-overlay').style.display = 'flex';
+    document.getElementById('request-code-form').style.display = 'block';
+    document.getElementById('verify-code-form').style.display = 'none';
+    document.getElementById('reset-email').value = '';
+}
+
+function closeResetModal() {
+    document.getElementById('reset-modal-overlay').style.display = 'none';
+}
+
+async function handleRequestCode(e) {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value;
+    const btn = e.target.querySelector('button');
+    btn.innerText = "Sending...";
+    
+    try {
+        const res = await fetch('/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            document.getElementById('request-code-form').style.display = 'none';
+            document.getElementById('verify-code-form').style.display = 'block';
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) { alert("Server error."); }
+    btn.innerText = "Send Code";
+}
+
+async function handleResetPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value;
+    const code = document.getElementById('reset-code').value;
+    const newPassword = document.getElementById('reset-new-password').value;
+    
+    try {
+        const res = await fetch('/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, new_password: newPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert("Password updated successfully! You can now log in.");
+            closeResetModal();
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) { alert("Server error."); }
+}

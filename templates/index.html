@@ -90,7 +90,7 @@ print_lyrics()</pre>
         <div class="code-wrapper" id="premium-code-block" style="filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none; -webkit-user-select: none;">
             <div class="code-title" style="color: #f5af19;"><span>⭐ Advanced AI Trading Bot</span></div>
             <div class="code-container">
-                <div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: #f5af19;">Locked</button></div>
+                <div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><button class="copy-main-btn" style="background: #f5af19;" onclick="copyMainCode('premium-secret-code', this)">Copy Script</button></div>
                 <pre id="premium-secret-code">
 # ----------------------------------------
 # PREMIUM AI TRADING ALGORITHM [LOCKED]
@@ -99,7 +99,7 @@ print_lyrics()</pre>
 # Purchase Premium to unlock and inject the real code here!
 def execute_premium_trade():
     pass
-</pre>
+                </pre>
             </div>
         </div>
         <div id="premium-unlock-btn" style="text-align: center; margin-top: -30px; position: relative; z-index: 10;">
@@ -128,7 +128,7 @@ def execute_premium_trade():
             <div class="pricing-card">
                 <h3 class="plan-name">Weekly</h3><div class="plan-price">₹199<span>/wk</span></div>
                 <ul class="plan-benefits"><li>7 days premium access</li><li>Download locked source codes</li></ul>
-                <button class="submit-btn" onclick="openUPIModal('Weekly', 1)">Subscribe Now</button>
+                <button class="submit-btn" onclick="openUPIModal('Weekly', 199)">Subscribe Now</button>
             </div>
             <div class="pricing-card popular">
                 <h3 class="plan-name" style="color: #fff;">Monthly</h3><div class="plan-price" style="color: #f5af19;">₹499<span>/mo</span></div>
@@ -165,6 +165,10 @@ def execute_premium_trade():
                                 <div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div>
                                 <div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div>
                                 <button type="submit" class="submit-btn auth-action-btn">Login</button>
+                                
+                                <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;">
+                                    <a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color='#aaa'">Forgot Password?</a>
+                                </p>
                             </form>
                             <p class="flip-text" id="flip-to-reg-text">Don't have an account? <span onclick="toggleFlipCard()">Create one</span></p>
                         </div>
@@ -231,9 +235,29 @@ def execute_premium_trade():
         </div>
     </div>
 
+    <div id="reset-modal-overlay" class="upi-modal-overlay">
+        <div class="upi-modal">
+            <span class="close-modal" onclick="closeResetModal()">&times;</span>
+            <h2 style="color: #00d2ff; margin-bottom: 10px;">Reset Password</h2>
+            
+            <form id="request-code-form" onsubmit="handleRequestCode(event)">
+                <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 15px;">Enter your email to receive a 6-digit reset code.</p>
+                <div class="form-group"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"></div>
+                <button type="submit" class="submit-btn">Send Code</button>
+            </form>
+
+            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;">
+                <p style="color: #00ff88; font-size: 0.9rem; margin-bottom: 15px;">Code sent! Please check your email.</p>
+                <div class="form-group"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 10px;"></div>
+                <div class="form-group"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 15px;"></div>
+                <button type="submit" class="submit-btn premium-btn">Update Password</button>
+            </form>
+        </div>
+    </div>
+
     <footer>
-    <p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a></p>
-</footer>
+        <p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none; font-weight: 600; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color='#00d2ff'">@mayank.code.ai</a></p>
+    </footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

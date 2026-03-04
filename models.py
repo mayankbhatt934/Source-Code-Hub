@@ -25,3 +25,10 @@ class Transaction(db.Model):
 class SiteAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     page_views = db.Column(db.Integer, default=0)
+
+    # Add this below your SiteAnalytics class in models.py
+class PasswordReset(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(10), nullable=False)
+    expiry = db.Column(db.DateTime, nullable=False)

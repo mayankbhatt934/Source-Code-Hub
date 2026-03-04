@@ -16,7 +16,10 @@
         .unban-btn { border-color: #00ff88; color: #00ff88; }
         .unban-btn:hover { background: #00ff88; color: #000; }
         .manage-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #333; }
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        
+        /* FIXED: Forces exactly 3 columns on PC, stacks on mobile */
+        .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -32,25 +35,45 @@
             <h1 style="color: #00d2ff;">Staff Dashboard</h1>
             <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Logout</a>
         </div>
+        
         <div class="admin-grid">
             <div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">Overview</h3><p style="margin-bottom: 8px; color: #ccc;">Users: <span id="stat-users" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Premium: <span id="stat-premium" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Revenue: <span style="color: #00ff88; font-weight: bold;">₹<span id="stat-revenue">0</span></span></p><p style="margin-bottom: 8px; color: #ccc;">Views: <span id="stat-views" style="color: #fff; font-weight: bold;">0</span></p></div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00ff88;">Incoming Payments</h3><div id="pending-list">Loading...</div></div>
                 <div class="admin-card" style="border-color: #ff007f;"><h3 style="margin-bottom: 15px; color: #ff007f;">💸 Payout Requests</h3><div id="payout-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
             </div>
+            
             <div>
                 <div class="admin-card" style="border-color: #f5af19;"><h3 style="margin-bottom: 15px; color: #f5af19;">🌟 Creator Submissions</h3><div id="creator-codes-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
                 <div class="admin-card" style="border-color: #00d2ff;"><h3 style="margin-bottom: 15px; color: #00d2ff;">🛠️ Support Tickets</h3><div id="support-tickets-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
-                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #ff007f;">🎁 Gift to User</h3><form onsubmit="submitAdminGift(event)"><input type="email" id="gift-email" placeholder="Recipient's Email" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="gift-type" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleGiftType()"><option value="membership">Membership Pass</option><option value="code">Premium Code</option></select><select id="gift-membership-val" style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="Weekly Pass">Weekly Pass</option><option value="Monthly Pass">Monthly Pass</option><option value="Yearly Pass">Yearly Pass</option><option value="Lifetime Pass">Lifetime Pass</option></select><select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;"></select><button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button></form></div>
+                
+                <div class="admin-card" style="border-color: #b06ab3;">
+                    <h3 style="margin-bottom: 15px; color: #b06ab3;">+ Add AI Prompt</h3>
+                    <form onsubmit="submitNewPrompt(event)">
+                        <input type="text" id="prompt-title" placeholder="Prompt Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;">
+                        <textarea id="prompt-content" placeholder="Paste prompt text..." required style="width: 100%; height: 80px; padding: 12px; margin-bottom: 12px;"></textarea>
+                        <button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Publish Prompt</button>
+                    </form>
+                </div>
             </div>
+            
             <div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00d2ff;">+ Free Code</h3><form onsubmit="submitNewCode(event)"><input type="text" id="code-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><textarea id="code-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn" style="width: 100%;">Publish</button></form></div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">+ Premium Code</h3><form onsubmit="submitNewPremium(event)"><input type="text" id="prem-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><input type="number" id="prem-price" placeholder="Price" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><textarea id="prem-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish</button></form></div>
                 <div class="admin-card" style="border-color: #b06ab3;"><h3 style="margin-bottom: 15px; color: #b06ab3;">👑 Roles</h3><form onsubmit="submitRoleUpdate(event)"><input type="email" id="role-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #b06ab3;"><select id="role-select" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="member">Standard</option><option value="staff">Staff 🛠️</option><option value="admin">Admin 🛡️</option><option value="owner">Owner 👑</option></select><div style="margin-bottom: 15px;"><label style="color: #ccc; font-size: 0.9rem;"><input type="checkbox" id="role-friend"> Grant 'Friend 🤝'</label></div><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Update</button></form></div>
                 <div class="admin-card" style="border-color: #ff5f56;"><h3 style="margin-bottom: 15px; color: #ff5f56;">🚫 Bans</h3><form onsubmit="submitBanUser(event)"><input type="email" id="ban-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #ff5f56;"><input type="number" id="ban-duration" placeholder="Days (0=Perm)" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Ban</button></form><div id="banned-users-list" style="margin-top: 15px;"></div></div>
+                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #ff007f;">🎁 Gift to User</h3><form onsubmit="submitAdminGift(event)"><input type="email" id="gift-email" placeholder="Recipient's Email" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="gift-type" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleGiftType()"><option value="membership">Membership Pass</option><option value="code">Premium Code</option></select><select id="gift-membership-val" style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="Weekly Pass">Weekly Pass</option><option value="Monthly Pass">Monthly Pass</option><option value="Yearly Pass">Yearly Pass</option><option value="Lifetime Pass">Lifetime Pass</option></select><select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;"></select><button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button></form></div>
             </div>
         </div>
-        <div class="admin-card"><h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Content</h2><div class="admin-grid"><div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div><div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div></div></div>
+        
+        <div class="admin-card">
+            <h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Content</h2>
+            <div class="admin-grid">
+                <div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div>
+                <div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div>
+                <div><h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3><div id="manage-prompts-list"></div></div>
+            </div>
+        </div>
 
         <script>
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Link..."; e.style.height = "60px"; } else { e.placeholder = "Code..."; e.style.height = "100px"; } }
@@ -92,18 +115,22 @@
             async function submitRoleUpdate(e) { e.preventDefault(); await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked }) }); e.target.reset(); alert('Updated'); }
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveCreatorCode(id) { await fetch(`/admin/approve-creator-code/${id}`, { method: 'POST' }); loadAdminData(); loadManageContent(); }
+            
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); }
+            async function submitNewPrompt(e) { e.preventDefault(); await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); e.target.reset(); loadManageContent(); }
             
             async function loadManageContent() {
                 const res = await fetch('/api/content'); if(res.ok) { const d = await res.json();
                     document.getElementById('manage-codes-list').innerHTML = d.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title}</span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
                     document.getElementById('manage-premium-list').innerHTML = d.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}</span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
+                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
                     document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                 }
             }
             async function deleteCode(id) { if(confirm("Del?")) { await fetch(`/admin/delete-code/${id}`, { method: 'DELETE' }); loadManageContent(); } }
             async function deletePremium(id) { if(confirm("Del?")) { await fetch(`/admin/delete-premium/${id}`, { method: 'DELETE' }); loadManageContent(); loadAdminData(); } }
+            async function deletePrompt(id) { if(confirm("Del?")) { await fetch(`/admin/delete-prompt/${id}`, { method: 'DELETE' }); loadManageContent(); } }
             
             window.onload = () => { loadAdminData(); loadManageContent(); };
         </script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Source Code Hub</title>
+    <title>Staff Dashboard - Source Code Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 20px; }
@@ -23,58 +23,34 @@
     <div class="admin-container">
         {% if not logged_in %}
         <div class="admin-card" style="max-width: 400px; margin: 100px auto; text-align: center;">
-            <h2 style="color: #00d2ff; margin-bottom: 20px;">Admin/Staff Login</h2>
+            <h2 style="color: #00d2ff; margin-bottom: 20px;">Staff Login</h2>
             {% if error %}<p style="color: #ff5f56; font-size: 0.9rem; margin-bottom: 15px;">{{ error }}</p>{% endif %}
-            <form method="POST">
-                <input type="text" name="username" placeholder="Username" required style="width: 100%; padding: 12px; margin-bottom: 15px;">
-                <input type="password" name="password" placeholder="Password" required style="width: 100%; padding: 12px; margin-bottom: 20px;">
-                <button type="submit" class="submit-btn" style="width: 100%;">Login</button>
-            </form>
+            <form method="POST"><input type="text" name="username" placeholder="Username" required style="width: 100%; padding: 12px; margin-bottom: 15px;"><input type="password" name="password" placeholder="Password" required style="width: 100%; padding: 12px; margin-bottom: 20px;"><button type="submit" class="submit-btn" style="width: 100%;">Login</button></form>
         </div>
-        
         {% else %}
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h1 style="color: #00d2ff;">Staff Dashboard</h1>
             <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Logout</a>
         </div>
-
         <div class="admin-grid">
             <div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">Overview</h3><p style="margin-bottom: 8px; color: #ccc;">Users: <span id="stat-users" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Premium: <span id="stat-premium" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Revenue: <span style="color: #00ff88; font-weight: bold;">₹<span id="stat-revenue">0</span></span></p><p style="margin-bottom: 8px; color: #ccc;">Views: <span id="stat-views" style="color: #fff; font-weight: bold;">0</span></p></div>
-                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00ff88;">Payments</h3><div id="pending-list">Loading...</div></div>
+                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00ff88;">Incoming Payments</h3><div id="pending-list">Loading...</div></div>
+                <div class="admin-card" style="border-color: #ff007f;"><h3 style="margin-bottom: 15px; color: #ff007f;">💸 Payout Requests</h3><div id="payout-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
+            </div>
+            <div>
+                <div class="admin-card" style="border-color: #f5af19;"><h3 style="margin-bottom: 15px; color: #f5af19;">🌟 Creator Submissions</h3><div id="creator-codes-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
+                <div class="admin-card" style="border-color: #00d2ff;"><h3 style="margin-bottom: 15px; color: #00d2ff;">🛠️ Support Tickets</h3><div id="support-tickets-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #ff007f;">🎁 Gift to User</h3><form onsubmit="submitAdminGift(event)"><input type="email" id="gift-email" placeholder="Recipient's Email" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="gift-type" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleGiftType()"><option value="membership">Membership Pass</option><option value="code">Premium Code</option></select><select id="gift-membership-val" style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="Weekly Pass">Weekly Pass</option><option value="Monthly Pass">Monthly Pass</option><option value="Yearly Pass">Yearly Pass</option><option value="Lifetime Pass">Lifetime Pass</option></select><select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;"></select><button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button></form></div>
             </div>
-
             <div>
-                <div class="admin-card" style="border-color: #00d2ff;">
-                    <h3 style="margin-bottom: 15px; color: #00d2ff;">🛠️ Support Tickets</h3>
-                    <div id="support-tickets-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div>
-                </div>
-
-                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00d2ff;">+ Free Code</h3><form onsubmit="submitNewCode(event)"><input type="text" id="code-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Code (Download Link)</option></select><textarea id="code-content" placeholder="Paste raw code..." required style="width: 100%; height: 100px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea><button type="submit" class="submit-btn" style="width: 100%;">Publish</button></form></div>
-                <div class="admin-card" style="padding: 15px;"><h3 style="margin-bottom: 15px; color: #b06ab3;">+ AI Prompt</h3><form onsubmit="submitNewPrompt(event)"><input type="text" id="prompt-title" placeholder="Title" required style="width: 100%; padding: 10px; margin-bottom: 10px;"><textarea id="prompt-content" placeholder="Paste prompt..." required style="width: 100%; height: 60px; padding: 10px; margin-bottom: 10px;"></textarea><button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Publish</button></form></div>
-            </div>
-
-            <div>
-                <div class="admin-card" style="border-color: #f5af19;">
-                    <h3 style="margin-bottom: 15px; color: #f5af19;">🌟 Creator Submissions</h3>
-                    <div id="creator-codes-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div>
-                </div>
-
-                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">+ Premium Code</h3><form onsubmit="submitNewPremium(event)"><input type="text" id="prem-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Code (Download Link)</option></select><input type="number" id="prem-price" placeholder="Price" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><textarea id="prem-content" placeholder="Paste locked code..." required style="width: 100%; height: 100px; padding: 12px; margin-bottom: 12px; font-family: monospace;"></textarea><button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish</button></form></div>
-                <div class="admin-card" style="border-color: #b06ab3;"><h3 style="margin-bottom: 15px; color: #b06ab3;">👑 Roles</h3><form onsubmit="submitRoleUpdate(event)"><input type="email" id="role-email" placeholder="User Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #b06ab3;"><select id="role-select" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="member">Standard</option><option value="staff">Staff 🛠️</option><option value="admin">Admin 🛡️</option><option value="owner">Owner 👑</option></select><div style="margin-bottom: 15px; text-align: left;"><label style="color: #ccc; font-size: 0.9rem; display: flex; align-items: center; gap: 10px;"><input type="checkbox" id="role-friend" style="width: auto;"> Grant 'Friend 🤝'</label></div><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Update</button></form></div>
-                <div class="admin-card" style="border-color: #ff5f56;"><h3 style="margin-bottom: 15px; color: #ff5f56;">🚫 Bans</h3><form onsubmit="submitBanUser(event)"><input type="email" id="ban-email" placeholder="User Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #ff5f56;"><input type="number" id="ban-duration" placeholder="Days (0 = Perm)" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Ban</button></form><div id="banned-users-list" style="margin-top: 15px;"></div></div>
+                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00d2ff;">+ Free Code</h3><form onsubmit="submitNewCode(event)"><input type="text" id="code-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><textarea id="code-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn" style="width: 100%;">Publish</button></form></div>
+                <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">+ Premium Code</h3><form onsubmit="submitNewPremium(event)"><input type="text" id="prem-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><input type="number" id="prem-price" placeholder="Price" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><textarea id="prem-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish</button></form></div>
+                <div class="admin-card" style="border-color: #b06ab3;"><h3 style="margin-bottom: 15px; color: #b06ab3;">👑 Roles</h3><form onsubmit="submitRoleUpdate(event)"><input type="email" id="role-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #b06ab3;"><select id="role-select" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="member">Standard</option><option value="staff">Staff 🛠️</option><option value="admin">Admin 🛡️</option><option value="owner">Owner 👑</option></select><div style="margin-bottom: 15px;"><label style="color: #ccc; font-size: 0.9rem;"><input type="checkbox" id="role-friend"> Grant 'Friend 🤝'</label></div><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Update</button></form></div>
+                <div class="admin-card" style="border-color: #ff5f56;"><h3 style="margin-bottom: 15px; color: #ff5f56;">🚫 Bans</h3><form onsubmit="submitBanUser(event)"><input type="email" id="ban-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #ff5f56;"><input type="number" id="ban-duration" placeholder="Days (0=Perm)" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Ban</button></form><div id="banned-users-list" style="margin-top: 15px;"></div></div>
             </div>
         </div>
-
-        <div class="admin-card">
-            <h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Content</h2>
-            <div class="admin-grid">
-                <div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div>
-                <div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div>
-                <div><h3 style="color: #b06ab3; margin-bottom: 15px;">Prompts</h3><div id="manage-prompts-list"></div></div>
-            </div>
-        </div>
+        <div class="admin-card"><h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Content</h2><div class="admin-grid"><div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div><div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div></div></div>
 
         <script>
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Link..."; e.style.height = "60px"; } else { e.placeholder = "Code..."; e.style.height = "100px"; } }
@@ -90,47 +66,45 @@
                     if (d.pending_payments.length === 0) pDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payments.</p>';
                     else pDiv.innerHTML = d.pending_payments.map(tx => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;"><p style="font-size: 0.9rem; margin-bottom: 5px;">${tx.email}</p><p style="font-size: 0.9rem; margin-bottom: 5px;">${tx.plan} (₹${tx.amount})</p><p style="font-size: 0.9rem; margin-bottom: 5px;"><span style="color: #00ff88;">${tx.sender_upi}</span></p><button onclick="approvePayment(${tx.id})" style="background: #00ff88; color: #000; font-weight: bold; border: none; padding: 5px 15px; cursor: pointer; border-radius: 4px;">Approve</button></div>`).join('');
 
+                    const payDiv = document.getElementById('payout-list');
+                    if (d.payouts.length === 0) payDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payouts.</p>';
+                    else payDiv.innerHTML = d.payouts.map(p => `<div style="background: rgba(255,0,127,0.1); padding: 15px; border-radius: 8px; border-left: 3px solid #ff007f; margin-bottom: 10px;"><p style="color: #fff; margin-bottom: 5px;"><b>${p.email}</b></p><p style="color: #00ff88; font-weight: bold; margin-bottom: 5px;">₹${p.amount}</p><p style="color: #aaa; font-size: 0.8rem; margin-bottom: 10px;">UPI: ${p.upi}</p><button onclick="approvePayout(${p.id})" style="background: #ff007f; color: #fff; font-weight: bold; border: none; padding: 5px 15px; cursor: pointer; border-radius: 4px;">Mark Paid</button></div>`).join('');
+
                     const bDiv = document.getElementById('banned-users-list');
                     if (d.banned_users.length === 0) bDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No banned users.</p>';
                     else bDiv.innerHTML = d.banned_users.map(u => `<div class="manage-item" style="border-left-color: #ff5f56; flex-direction: column; align-items: flex-start;"><div style="width: 100%; display: flex; justify-content: space-between;"><span style="font-size: 0.85rem; color: #fff;">${u.email}</span><button class="unban-btn" onclick="unbanUser('${u.email}')">Unban</button></div><span style="font-size: 0.75rem; color: #aaa;">Exp: ${u.expiry}</span></div>`).join('');
 
-                    // TICKETS
                     const tDiv = document.getElementById('support-tickets-list');
                     if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">All caught up!</p>';
                     else tDiv.innerHTML = d.tickets.map(t => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #00d2ff;"><strong style="color:#00d2ff;">${t.email}</strong><br><p style="font-size:0.9rem; color:#fff; margin:5px 0;"><b>${t.subject}</b>: ${t.message}</p><textarea id="reply-${t.id}" placeholder="Type reply..." style="width:100%; height:50px; margin-top:5px;"></textarea><button onclick="replyTicket(${t.id})" style="background: #00d2ff; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Send Reply</button></div>`).join('');
 
-                    // CREATORS
                     const cDiv = document.getElementById('creator-codes-list');
                     if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending codes.</p>';
-                    else cDiv.innerHTML = d.pending_codes.map(c => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;"><strong style="color:#f5af19;">${c.creator}</strong> wants to sell <b>${c.title}</b> for ₹${c.price}.<br><button onclick="approveCreatorCode(${c.id})" style="background: #f5af19; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve to Live Site</button><button onclick="deletePremium(${c.id})" style="background: #ff5f56; color: #fff; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px; margin-left: 5px;">Reject</button></div>`).join('');
+                    else cDiv.innerHTML = d.pending_codes.map(c => `<div style="background: rgba(0,0,0,0.5); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 3px solid #f5af19;"><strong style="color:#f5af19;">${c.creator}</strong> submitted <b>${c.title}</b> for ₹${c.price}.<br><button onclick="approveCreatorCode(${c.id})" style="background: #f5af19; color: #000; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px;">Approve</button><button onclick="deletePremium(${c.id})" style="background: #ff5f56; color: #fff; font-weight: bold; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px; margin-left: 5px;">Reject</button></div>`).join('');
                 }
             }
 
             async function approvePayment(id) { if(!confirm("Approve?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }
+            async function approvePayout(id) { if(!confirm("Did you send the money via UPI?")) return; await fetch(`/admin/approve-payout/${id}`, { method: 'POST' }); loadAdminData(); }
             async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); }
             async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
             async function unbanUser(email) { if(!confirm(`Unban?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
-            async function submitRoleUpdate(e) { e.preventDefault(); await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked }) }); e.target.reset(); alert('Role Updated'); }
-            
+            async function submitRoleUpdate(e) { e.preventDefault(); await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked }) }); e.target.reset(); alert('Updated'); }
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveCreatorCode(id) { await fetch(`/admin/approve-creator-code/${id}`, { method: 'POST' }); loadAdminData(); loadManageContent(); }
-
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); }
-            async function submitNewPrompt(e) { e.preventDefault(); await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); e.target.reset(); loadManageContent(); }
-
+            
             async function loadManageContent() {
                 const res = await fetch('/api/content'); if(res.ok) { const d = await res.json();
                     document.getElementById('manage-codes-list').innerHTML = d.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><span style="font-size: 0.8rem;">${c.title}</span><button class="delete-btn" onclick="deleteCode(${c.id})">Del</button></div>`).join('');
                     document.getElementById('manage-premium-list').innerHTML = d.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><span style="font-size: 0.8rem;">${c.title} - ₹${c.price}</span><button class="delete-btn" onclick="deletePremium(${c.id})">Del</button></div>`).join('');
-                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><span style="font-size: 0.8rem;">${p.title}</span><button class="delete-btn" onclick="deletePrompt(${p.id})">Del</button></div>`).join('');
                     document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                 }
             }
             async function deleteCode(id) { if(confirm("Del?")) { await fetch(`/admin/delete-code/${id}`, { method: 'DELETE' }); loadManageContent(); } }
             async function deletePremium(id) { if(confirm("Del?")) { await fetch(`/admin/delete-premium/${id}`, { method: 'DELETE' }); loadManageContent(); loadAdminData(); } }
-            async function deletePrompt(id) { if(confirm("Del?")) { await fetch(`/admin/delete-prompt/${id}`, { method: 'DELETE' }); loadManageContent(); } }
-
+            
             window.onload = () => { loadAdminData(); loadManageContent(); };
         </script>
         {% endif %}

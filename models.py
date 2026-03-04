@@ -1,7 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import string, random
 
 db = SQLAlchemy()
+
+def generate_ref_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,6 +19,17 @@ class User(db.Model):
     ban_expiry = db.Column(db.DateTime, nullable=True)
     role = db.Column(db.String(20), default='member') 
     is_friend = db.Column(db.Boolean, default=False)
+    # NEW: WALLET & REFERRALS
+    referral_code = db.Column(db.String(10), unique=True, default=generate_ref_code)
+    earnings = db.Column(db.Integer, default=0)
+
+class PayoutRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    upi_id = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), default='Pending')
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,7 +65,6 @@ class PasswordReset(db.Model):
     code = db.Column(db.String(10), nullable=False)
     expiry = db.Column(db.DateTime, nullable=False)
 
-# NEW: SOCIAL PROOF & CREATOR TRACKING
 class FreeCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -69,7 +83,7 @@ class PremiumCode(db.Model):
     views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
     creator_email = db.Column(db.String(100), default='admin')
-    is_approved = db.Column(db.Boolean, default=True) # Admin codes are True, User codes are False until approved
+    is_approved = db.Column(db.Boolean, default=True)
 
 class CodeLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,7 +91,6 @@ class CodeLike(db.Model):
     code_type = db.Column(db.String(20), nullable=False)
     code_id = db.Column(db.Integer, nullable=False)
 
-# NEW: SUPPORT TICKETS
 class SupportTicket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)

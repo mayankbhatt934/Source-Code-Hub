@@ -122,6 +122,35 @@ def update_profile():
     db.session.commit()
     return jsonify({"status": "success", "message": "Profile updated!"})
 
+@app.route('/api/get-premium-code', methods=['GET'])
+def get_premium_code():
+    # 1. Check if logged in
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    # 2. Check if they are actually Premium in the database
+    user = User.query.filter_by(email=session['user_email']).first()
+    if not user or not user.is_premium:
+        return jsonify({"error": "Upgrade to Premium required"}), 403
+
+    # 3. The REAL code is kept safely here on the server!
+    premium_script = """# ----------------------------------------
+# PREMIUM AI TRADING ALGORITHM [UNLOCKED]
+# ----------------------------------------
+import advanced_neural_net
+import market_data
+import time
+
+def execute_premium_trade():
+    print("Connecting to live market data...")
+    time.sleep(1)
+    print("Analyzing neural net predictions...")
+    return "Trade Executed: BUY 100 SHARES"
+
+execute_premium_trade()"""
+    
+    return jsonify({"status": "success", "code": premium_script})
+
 # --- PAYMENT ROUTES ---
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():

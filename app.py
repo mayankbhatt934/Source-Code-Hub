@@ -85,7 +85,7 @@ def get_profile():
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
         user.is_premium = False
         db.session.commit()
-    expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else "Lifetime Access"
+    expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else ("Lifetime Access" if user.is_premium else None)
     return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo})
 
 @app.route('/api/update-profile', methods=['POST'])
@@ -134,12 +134,12 @@ def reset_password():
         return jsonify({"status": "success", "message": "Password updated successfully!"})
     return jsonify({"status": "error", "message": "User not found!"}), 404
 
+# --- UPI PAYMENT & MY PURCHASES LOGIC ---
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():
     data = request.json
     if 'user_email' not in session: return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
     
-    # NEW: Captures the specific code_id if they are buying a single file
     new_tx = Transaction(
         email=session['user_email'], 
         utr_number=data.get('utr_number'), 
@@ -152,30 +152,6 @@ def submit_upi_payment():
     db.session.commit()
     return jsonify({"status": "success", "message": "Payment submitted! Admin will verify."})
 
-@app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
-def approve_payment(tx_id):
-    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    tx = Transaction.query.get(tx_id)
-    if tx:
-        tx.status = 'Success'
-        user = User.query.filter_by(email=tx.email).first()
-        if user:
-            # Check if it's a full membership or a single code purchase
-            if 'Pass' in tx.plan:
-                user.is_premium = True
-                if tx.plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
-                elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-                elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
-                elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
-            elif tx.code_id:
-                # NEW: Grant them permanent access to this single code
-                new_purchase = UserCodePurchase(email=user.email, code_id=tx.code_id)
-                db.session.add(new_purchase)
-        db.session.commit()
-        return jsonify({"status": "success"})
-    return jsonify({"error": "Transaction not found"}), 404
-
-# NEW: API to load the user's purchased codes
 @app.route('/api/my-purchases', methods=['GET'])
 def my_purchases():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
@@ -189,6 +165,7 @@ def my_purchases():
     
     return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
 
+# --- ADMIN ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     error = None
@@ -220,18 +197,20 @@ def approve_payment(tx_id):
         tx.status = 'Success'
         user = User.query.filter_by(email=tx.email).first()
         if user:
-            # Activate Premium Membership
-            user.is_premium = True
-            if tx.plan == 'Monthly Pass': 
-                user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-            elif tx.plan == 'Yearly Pass': 
-                user.premium_expiry = datetime.utcnow() + timedelta(days=365)
-            elif tx.plan == 'Lifetime Pass': 
-                user.premium_expiry = None # None means it never expires!
+            if 'Pass' in tx.plan:
+                user.is_premium = True
+                if tx.plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+                elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+                elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+                elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
+            elif tx.code_id:
+                new_purchase = UserCodePurchase(email=user.email, code_id=tx.code_id)
+                db.session.add(new_purchase)
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404
 
+# --- DYNAMIC CONTENT ROUTES ---
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:

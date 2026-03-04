@@ -27,7 +27,7 @@ function switchPage(pageId) {
     document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
     document.getElementById('page-' + pageId).classList.add('active');
     const navItem = document.getElementById('nav-' + pageId);
-    if(navItem) navItem.classList.add('active');
+    if (navItem) navItem.classList.add('active');
     document.getElementById('nav-menu').classList.remove('show');
     setTimeout(() => AOS.refresh(), 100);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -51,7 +51,7 @@ function setAuthMode(mode) {
     }
 }
 
-let isLoggedIn = false; 
+let isLoggedIn = false;
 
 function switchAuthPage() {
     if (isLoggedIn) {
@@ -67,12 +67,12 @@ async function loadProfile() {
     try {
         const res = await fetch('/api/profile');
         const data = await res.json();
-        
-        if(res.ok) {
+
+        if (res.ok) {
             document.getElementById('prof-name').value = data.name;
             document.getElementById('prof-email').value = data.email;
-            
-            if(data.photo) {
+
+            if (data.photo) {
                 document.getElementById('profile-img').src = data.photo;
             } else {
                 document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${data.name}&background=00d2ff&color=fff`;
@@ -80,21 +80,35 @@ async function loadProfile() {
 
             const badge = document.getElementById('profile-status-badge');
             const expiryText = document.getElementById('profile-expiry');
-            
-            if(data.is_premium) {
+
+            if (data.is_premium) {
                 badge.innerText = "Premium Account";
                 badge.className = "status-badge premium";
-                if(data.expiry) {
+                if (data.expiry) {
                     expiryText.style.display = 'block';
                     expiryText.innerHTML = `Expires: <span style="color:white;">${data.expiry}</span>`;
                 }
+                
+                // --- UNLOCK THE PREMIUM ROOM VISUALLY ---
+                const block = document.getElementById('premium-code-block');
+                if (block) {
+                    block.style.filter = 'none';
+                    block.style.pointerEvents = 'auto';
+                    block.style.opacity = '1';
+                    block.style.userSelect = 'auto';         // Enables highlighting
+                    block.style.webkitUserSelect = 'auto';   // Enables highlighting on Safari/iOS
+                    
+                    const unlockBtn = document.getElementById('premium-unlock-btn');
+                    if (unlockBtn) unlockBtn.style.display = 'none';
+                }
+                
             } else {
                 badge.innerText = "Basic Account";
                 badge.className = "status-badge basic";
                 expiryText.style.display = 'none';
             }
         }
-    } catch(e) { console.error("Failed to load profile", e); }
+    } catch (e) { console.error("Failed to load profile", e); }
 }
 
 async function updateProfileName(e) {
@@ -113,7 +127,7 @@ function uploadPhoto(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = async function (e) {
             const base64Image = e.target.result;
             document.getElementById('profile-img').src = base64Image;
             await fetch('/api/update-profile', {
@@ -131,12 +145,12 @@ async function handleLogout() {
     await fetch('/logout', { method: 'POST' });
     isLoggedIn = false;
     document.getElementById('nav-login').innerText = "Account";
-    
+
     // Lock premium room again
     const block = document.getElementById('premium-code-block');
     block.style.filter = 'blur(5px)'; block.style.pointerEvents = 'none'; block.style.opacity = '0.6';
     document.getElementById('premium-unlock-btn').style.display = 'block';
-    
+
     switchPage('home');
     alert("You have been logged out.");
 }
@@ -153,11 +167,11 @@ function openUPIModal(plan, price) {
     }
     currentPlan = plan;
     currentPrice = price;
-    const myUPI_ID = "mayankbhatt934@oksbi"; 
+    const myUPI_ID = "mayankbhatt934@oksbi";
     const name = "SourceHub Premium";
     const upiLink = `upi://pay?pa=${myUPI_ID}&pn=${name}&am=${price}&cu=INR`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
-    
+
     document.getElementById('modal-plan-desc').innerText = `Scan to pay ₹${price} for ${plan} Plan`;
     document.getElementById('upi-qr-code').src = qrUrl;
     document.getElementById('upi-mobile-link').href = upiLink;
@@ -175,46 +189,51 @@ async function submitUPIPayment(event) {
             body: JSON.stringify({ plan: currentPlan, amount: currentPrice, utr_number: "Manual Verification" })
         });
         const data = await response.json();
-        if(response.ok) {
+        if (response.ok) {
             alert(data.message);
             closeUPIModal();
         } else {
             alert("Error: " + data.message);
-            if(data.message.includes("login")) switchAuthPage();
+            if (data.message.includes("login")) switchAuthPage();
         }
     } catch (err) { alert("Server error. Try again."); }
 }
 
 // --- AUTH HOOKS ---
 async function handleRegistration(e) {
-    e.preventDefault(); 
+    e.preventDefault();
     const name = document.getElementById('reg-name').value, email = document.getElementById('reg-email').value, password = document.getElementById('reg-password').value;
     try {
         const res = await fetch('/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
         const data = await res.json();
-        if (data.status === 'success') { alert("Success! You can now log in."); document.getElementById('register-form').reset(); toggleFlipCard(); } 
+        if (data.status === 'success') { alert("Success! You can now log in."); document.getElementById('register-form').reset(); toggleFlipCard(); }
         else { alert("Error: " + data.message); }
     } catch (err) { alert("Error occurred."); }
 }
 
 async function handleLogin(e) {
-    e.preventDefault(); 
+    e.preventDefault();
     const email = document.getElementById('log-email').value, password = document.getElementById('log-password').value;
     try {
         const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
         const data = await res.json();
         if (data.status === 'success') {
-            document.getElementById('login-form').reset(); 
+            document.getElementById('login-form').reset();
             isLoggedIn = true;
             document.getElementById('nav-login').innerText = "Profile"; // Change nav button
-            
-            if(data.is_premium) {
+
+            // Find this block inside handleLogin:
+            if (data.is_premium) {
                 const block = document.getElementById('premium-code-block');
-                block.style.filter = 'none'; block.style.pointerEvents = 'auto'; block.style.opacity = '1';
+                block.style.filter = 'none';
+                block.style.pointerEvents = 'auto';
+                block.style.opacity = '1';
+                block.style.userSelect = 'auto'; // Add this line!
+                block.style.webkitUserSelect = 'auto'; // And this line!
                 document.getElementById('premium-unlock-btn').style.display = 'none';
             }
             loadProfile();
-            switchPage('profile'); 
+            switchPage('profile');
         } else { alert("Error: " + data.message); }
     } catch (err) { alert("Error occurred."); }
 }

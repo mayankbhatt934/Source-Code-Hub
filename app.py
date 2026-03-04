@@ -5,23 +5,33 @@ from datetime import datetime, timedelta
 from models import db, User, Transaction, SiteAnalytics
 
 # --- FOLDER PATH CONFIGURATION ---
-# Notice we removed the '..' because app.py is now in the main root folder!
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
-# --- VERCEL SERVERLESS DATABASE FIX ---
-if os.environ.get('VERCEL'):
-    DB_PATH = '/tmp/sourcehub.db'
-else:
-    DB_PATH = os.path.join(BASE_DIR, 'sourcehub.db')
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = 'super_secret_key_change_this_later' 
 
 ADMIN_USERNAME = 'mayank'
 ADMIN_PASSWORD = 'password123'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+# --- SMART DATABASE CONFIGURATION ---
+DB_URL = os.environ.get('DATABASE_URL')
+
+if DB_URL:
+    # 1. Cloud Database (Neon Postgres via Vercel env variables)
+    if DB_URL.startswith("postgres://"):
+        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
+else:
+    # 2. Local SQLite Fallback
+    if os.environ.get('VERCEL'):
+        # Just in case DATABASE_URL is missing on Vercel, it won't crash
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/sourcehub.db'
+    else:
+        # Standard local testing on your PC
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "sourcehub.db")}'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)

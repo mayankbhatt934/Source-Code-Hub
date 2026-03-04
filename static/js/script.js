@@ -1,6 +1,20 @@
 // =========================================
 // NAVIGATION & UI LOGIC
 // =========================================
+function togglePromptView(id, btnElement) {
+    const textBlock = document.getElementById(id);
+    if (textBlock.style.display === 'none' || textBlock.style.display === '') {
+        textBlock.style.display = 'block';
+        btnElement.innerText = "Hide";
+        btnElement.style.color = "#fff";
+        btnElement.style.background = "#b06ab3";
+    } else {
+        textBlock.style.display = 'none';
+        btnElement.innerText = "View";
+        btnElement.style.color = "#b06ab3";
+        btnElement.style.background = "transparent";
+    }
+}
 function switchPage(pageId) {
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
@@ -428,9 +442,17 @@ async function loadDynamicContent() {
                 promptContainer.innerHTML = '<p style="color: #888; text-align: center;">No AI prompts published yet. Check back soon!</p>';
             } else {
                 promptContainer.innerHTML = data.prompts.map((item) => `
-                    <div class="prompt-box" style="margin-bottom: 15px;">
-                        <span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span>
-                        <button class="copy-btn" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button>
+                    <div class="prompt-box" style="margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span>
+                            <div>
+                                <button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; margin-right: 5px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="togglePromptView('prompt-text-${item.id}', this)">View</button>
+                                <button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button>
+                            </div>
+                        </div>
+                        <div id="prompt-text-${item.id}" style="display: none; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.6); border-radius: 5px; color: #ccc; font-size: 0.9rem; line-height: 1.5; border-left: 3px solid #b06ab3;">
+                            ${item.prompt_text}
+                        </div>
                     </div>
                 `).join('');
             }

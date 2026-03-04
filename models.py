@@ -9,7 +9,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)
-    premium_expiry = db.Column(db.DateTime, nullable=True)
+    premium_expiry = db.Column(db.DateTime, nullable=True) # If null but is_premium is True, it means Lifetime
     profile_photo = db.Column(db.Text, nullable=True)
 
 class Transaction(db.Model):
@@ -17,8 +17,15 @@ class Transaction(db.Model):
     email = db.Column(db.String(100), nullable=False)
     utr_number = db.Column(db.String(100))
     amount = db.Column(db.Integer)
-    plan = db.Column(db.String(50))
+    plan = db.Column(db.String(50)) # Can be 'Weekly', 'Monthly', 'Lifetime', or 'Single Code'
+    code_id = db.Column(db.Integer, nullable=True) # Which code they bought (if it's a single purchase)
     status = db.Column(db.String(50), default='Pending')
+
+# NEW: Tracks individual code purchases
+class UserCodePurchase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    code_id = db.Column(db.Integer, nullable=False)
 
 class SiteAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,6 +40,15 @@ class PasswordReset(db.Model):
 class FreeCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
+    category = db.Column(db.String(50), nullable=False) # 'Single Page' or 'Full Website'
+    code = db.Column(db.Text, nullable=False)
+
+# NEW: Dynamic Premium Codes
+class PremiumCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    category = db.Column(db.String(50), nullable=False) # 'Single Page' or 'Full Website'
+    price = db.Column(db.Integer, nullable=False) # Individual price in ₹
     code = db.Column(db.Text, nullable=False)
 
 class AIPrompt(db.Model):

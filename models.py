@@ -5,36 +5,33 @@ db = SQLAlchemy()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False) 
+    password = db.Column(db.String(200), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)
-    premium_expiry = db.Column(db.DateTime, nullable=True) # Tracks when premium ends
-    profile_photo = db.Column(db.Text, default="") # Stores image as Base64 text
-    date_joined = db.Column(db.DateTime, default=datetime.utcnow)
+    premium_expiry = db.Column(db.DateTime, nullable=True)
+    profile_photo = db.Column(db.Text, nullable=True)
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False) 
-    utr_number = db.Column(db.String(50), nullable=False) 
-    amount = db.Column(db.Integer, nullable=False)
-    plan = db.Column(db.String(50), nullable=False)
-    status = db.Column(db.String(50), default="Pending")
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    email = db.Column(db.String(100), nullable=False)
+    utr_number = db.Column(db.String(100))
+    amount = db.Column(db.Integer)
+    plan = db.Column(db.String(50))
+    status = db.Column(db.String(50), default='Pending')
 
 class SiteAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     page_views = db.Column(db.Integer, default=0)
 
-    # Add this below your SiteAnalytics class in models.py
 class PasswordReset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(10), nullable=False)
     expiry = db.Column(db.DateTime, nullable=False)
 
-    class FreeCode(db.Model):
-     id = db.Column(db.Integer, primary_key=True)
+class FreeCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
     code = db.Column(db.Text, nullable=False)
 

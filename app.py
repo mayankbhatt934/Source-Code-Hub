@@ -3,8 +3,6 @@ from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-# Add PasswordReset to this import line!
-# Change your import line to look like this:
 from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, AIPrompt
 
 # --- FOLDER PATH CONFIGURATION ---
@@ -22,17 +20,13 @@ ADMIN_PASSWORD = 'password123'
 DB_URL = os.environ.get('DATABASE_URL')
 
 if DB_URL:
-    # 1. Cloud Database (Neon Postgres via Vercel env variables)
     if DB_URL.startswith("postgres://"):
         DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
 else:
-    # 2. Local SQLite Fallback
     if os.environ.get('VERCEL'):
-        # Just in case DATABASE_URL is missing on Vercel, it won't crash
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/sourcehub.db'
     else:
-        # Standard local testing on your PC
         app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "sourcehub.db")}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -94,7 +88,6 @@ def get_profile():
     
     user = User.query.filter_by(email=session['user_email']).first()
     
-    # Check if premium expired
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
         user.is_premium = False
         db.session.commit()
@@ -125,45 +118,15 @@ def update_profile():
     db.session.commit()
     return jsonify({"status": "success", "message": "Profile updated!"})
 
-@app.route('/api/get-premium-code', methods=['GET'])
-def get_premium_code():
-    # 1. Check if logged in
-    if 'user_email' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    # 2. Check if they are actually Premium in the database
-    user = User.query.filter_by(email=session['user_email']).first()
-    if not user or not user.is_premium:
-        return jsonify({"error": "Upgrade to Premium required"}), 403
-
-    # 3. The REAL code is kept safely here on the server!
-    premium_script = """# ----------------------------------------
-# PREMIUM AI TRADING ALGORITHM [UNLOCKED]
-# ----------------------------------------
-import advanced_neural_net
-import market_data
-import time
-
-def execute_premium_trade():
-    print("Connecting to live market data...")
-    time.sleep(1)
-    print("Analyzing neural net predictions...")
-    return "Trade Executed: BUY 100 SHARES"
-
-execute_premium_trade()"""
-    
-    return jsonify({"status": "success", "code": premium_script})
-
+# --- PASSWORD RESET ROUTES ---
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.json.get('email')
     user = User.query.filter_by(email=email).first()
     
     if not user:
-        # Security best practice: Don't reveal if an email exists or not
         return jsonify({"status": "success", "message": "If this email exists, a code was sent."})
 
-    # Generate a 6-digit code and set expiry to 15 minutes
     code = str(random.randint(100000, 999999))
     expiry = datetime.utcnow() + timedelta(minutes=15)
 
@@ -171,7 +134,6 @@ def forgot_password():
     db.session.add(new_reset)
     db.session.commit()
 
-    # Email Sending Logic
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
 
@@ -205,7 +167,7 @@ def reset_password():
     user = User.query.filter_by(email=email).first()
     if user:
         user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
-        db.session.delete(reset_entry) # Clean up the code so it can't be reused
+        db.session.delete(reset_entry)
         db.session.commit()
         return jsonify({"status": "success", "message": "Password updated successfully!"})
 
@@ -229,6 +191,33 @@ def submit_upi_payment():
     db.session.commit()
     return jsonify({"status": "success", "message": "Payment submitted! Admin will verify and activate your account shortly."})
 
+@app.route('/api/get-premium-code', methods=['GET'])
+def get_premium_code():
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = User.query.filter_by(email=session['user_email']).first()
+    if not user or not user.is_premium:
+        return jsonify({"error": "Upgrade to Premium required"}), 403
+
+    premium_script = """# ----------------------------------------
+# PREMIUM AI TRADING ALGORITHM [UNLOCKED]
+# ----------------------------------------
+import advanced_neural_net
+import market_data
+import time
+
+def execute_premium_trade():
+    print("Connecting to live market data...")
+    time.sleep(1)
+    print("Analyzing neural net predictions...")
+    return "Trade Executed: BUY 100 SHARES"
+
+execute_premium_trade()"""
+    
+    return jsonify({"status": "success", "code": premium_script})
+
+# --- ADMIN ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     error = None
@@ -269,7 +258,6 @@ def approve_payment(tx_id):
         user = User.query.filter_by(email=tx.email).first()
         if user:
             user.is_premium = True
-            # Calculate Expiry Date based on plan
             if tx.plan == 'Weekly': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
             elif tx.plan == 'Monthly': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
             elif tx.plan == 'Yearly': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
@@ -280,8 +268,6 @@ def approve_payment(tx_id):
 # ==========================================
 # DYNAMIC CONTENT ROUTES (FREE CODE & PROMPTS)
 # ==========================================
-
-# 1. API to send data to the frontend
 @app.route('/api/content', methods=['GET'])
 def get_content():
     codes = FreeCode.query.all()
@@ -292,7 +278,6 @@ def get_content():
     
     return jsonify({"codes": code_list, "prompts": prompt_list})
 
-# 2. Admin routes to add new content
 @app.route('/admin/add-code', methods=['POST'])
 def admin_add_code():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401

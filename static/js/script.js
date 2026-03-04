@@ -1,371 +1,253 @@
 // =========================================
-// INITIALIZATION & UI EFFECTS
+// NAVIGATION & UI LOGIC
 // =========================================
-AOS.init({ duration: 1000, once: false });
+function switchPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+    document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
+    
+    const targetPage = document.getElementById(`page-${pageId}`);
+    if(targetPage) {
+        targetPage.classList.add('active');
+        if(document.getElementById(`nav-${pageId}`)) {
+            document.getElementById(`nav-${pageId}`).classList.add('active');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    if(window.innerWidth <= 768) {
+        document.getElementById('nav-menu').classList.remove('show');
+    }
 
-const glass = document.querySelector('.glass-bg');
-document.addEventListener('mousemove', (e) => {
-    glass.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(0, 210, 255, 0.1), transparent 20%)`;
-});
-
-function toggleMobileMenu() { 
-    document.getElementById('nav-menu').classList.toggle('show'); 
+    if(pageId === 'premium') {
+        loadPremiumCode();
+    }
 }
 
-// =========================================
-// COPY FUNCTIONALITY
-// =========================================
-function copyMainCode(elementId, btn) {
+function toggleMobileMenu() {
+    document.getElementById('nav-menu').classList.toggle('show');
+}
+
+function copyMainCode(elementId, btnElement) {
     const code = document.getElementById(elementId).innerText;
     navigator.clipboard.writeText(code);
-    const originalColor = btn.style.background;
-    btn.innerText = 'Copied!'; 
-    btn.style.background = '#00ff88'; 
-    btn.style.color = '#000';
-    setTimeout(() => { 
-        btn.innerText = 'Copy Script'; 
-        btn.style.background = originalColor || '#00d2ff'; 
+    const originalText = btnElement.innerText;
+    btnElement.innerText = "Copied!";
+    btnElement.style.background = "#00ff88";
+    btnElement.style.color = "#000";
+    setTimeout(() => {
+        btnElement.innerText = originalText;
+        btnElement.style.background = "";
+        btnElement.style.color = "";
     }, 2000);
 }
 
 function copyPrompt(btn, text) {
     navigator.clipboard.writeText(text);
-    const original = btn.innerText;
-    btn.innerText = 'Copied!'; 
-    btn.classList.add('copied');
-    setTimeout(() => { 
-        btn.innerText = original; 
-        btn.classList.remove('copied'); 
+    const originalText = btn.innerText;
+    btn.innerText = "Copied!";
+    btn.style.background = "#00ff88";
+    btn.style.color = "#000";
+    setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.background = "";
+        btn.style.color = "";
     }, 2000);
 }
 
 // =========================================
-// NAVIGATION & AUTH UI
+// AUTHENTICATION & PROFILE LOGIC
 // =========================================
-let isLoggedIn = false; 
-
-function switchPage(pageId) {
-    document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-links li').forEach(link => link.classList.remove('active'));
-    document.getElementById('page-' + pageId).classList.add('active');
-    
-    const navItem = document.getElementById('nav-' + pageId);
-    if(navItem) navItem.classList.add('active');
-    
-    document.getElementById('nav-menu').classList.remove('show');
-    setTimeout(() => AOS.refresh(), 100);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+let isFlipped = false;
+let authMode = 'normal'; 
+let isLoggedIn = false;
+let isPremiumUser = false;
 
 function switchAuthPage() {
     if (isLoggedIn) {
-        loadProfile();
         switchPage('profile');
     } else {
         switchPage('login');
     }
 }
 
-let isFlipped = false;
 function toggleFlipCard() {
-    const innerBox = document.getElementById('flip-inner-box');
-    const mainTitle = document.getElementById('auth-main-title');
+    const inner = document.getElementById('flip-inner-box');
     isFlipped = !isFlipped;
-    innerBox.classList.toggle('flipped');
-    mainTitle.innerHTML = isFlipped 
-        ? `Create <span style="color:#00d2ff;">Account</span>` 
-        : `Access <span style="color:#00d2ff;">Account</span>`;
+    inner.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 }
 
 function setAuthMode(mode) {
-    const toggle = document.getElementById('auth-toggle');
-    const btnN = document.getElementById('btn-normal');
-    const btnP = document.getElementById('btn-premium');
-    const span = document.getElementById('login-title-span');
-    const flip = document.getElementById('flip-container');
-    const lock = document.getElementById('premium-lock-overlay');
-    
-    if (mode === 'premium') {
-        toggle.classList.add('premium-mode'); 
-        btnP.classList.add('active'); 
-        btnN.classList.remove('active'); 
-        span.style.color = '#f5af19'; 
-        flip.classList.add('blurred-locked'); 
-        lock.classList.add('show');
+    authMode = mode;
+    const btnNormal = document.getElementById('btn-normal');
+    const btnPremium = document.getElementById('btn-premium');
+    const toggleBg = document.querySelector('.toggle-bg');
+    const lockOverlay = document.getElementById('premium-lock-overlay');
+    const flipContainer = document.getElementById('flip-container');
+    const titleSpan = document.getElementById('login-title-span');
+
+    if (mode === 'normal') {
+        btnNormal.classList.add('active');
+        btnPremium.classList.remove('active');
+        toggleBg.style.left = '0';
+        lockOverlay.style.display = 'none';
+        flipContainer.style.display = 'block';
+        titleSpan.innerText = "Account";
+        titleSpan.style.color = "#00d2ff";
     } else {
-        toggle.classList.remove('premium-mode'); 
-        btnN.classList.add('active'); 
-        btnP.classList.remove('active'); 
-        span.style.color = '#00d2ff'; 
-        flip.classList.remove('blurred-locked'); 
-        lock.classList.remove('show');
+        btnPremium.classList.add('active');
+        btnNormal.classList.remove('active');
+        toggleBg.style.left = '50%';
+        lockOverlay.style.display = 'flex';
+        flipContainer.style.display = 'none';
+        titleSpan.innerText = "Premium";
+        titleSpan.style.color = "#f5af19";
     }
 }
 
-// =========================================
-// SESSION CHECKER & PREMIUM UNLOCKER
-// =========================================
+async function handleRegistration(e) {
+    e.preventDefault();
+    const name = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const password = document.getElementById('reg-password').value;
 
-// Auto-login checker on page reload
-document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const res = await fetch('/api/profile');
-        if (res.ok) {
-            const data = await res.json();
-            
-            isLoggedIn = true;
-            document.getElementById('nav-login').innerText = "Profile";
-            
-            if (data.is_premium) {
-                unlockPremiumRoom();
-            }
-        }
-    } catch (e) {
-        console.log("No active session found.");
-    }
-});
-
-// Helper function to safely unlock the room and fetch the real code
-function unlockPremiumRoom() {
-    const block = document.getElementById('premium-code-block');
-    if (block) {
-        // Securely fetch the real code from the Python backend
-        fetch('/api/get-premium-code')
-            .then(res => res.json())
-            .then(codeData => {
-                if (codeData.status === 'success') {
-                    const codeElement = document.getElementById('premium-secret-code');
-                    if (codeElement) codeElement.innerText = codeData.code;
-                }
-            })
-            .catch(err => console.error("Error fetching premium code", err));
-
-        // Remove the visual locks
-        block.style.filter = 'none';
-        block.style.pointerEvents = 'auto';
-        block.style.opacity = '1';
-        block.style.userSelect = 'auto';         
-        block.style.webkitUserSelect = 'auto';   
-        
-        const unlockBtn = document.getElementById('premium-unlock-btn');
-        if (unlockBtn) unlockBtn.style.display = 'none';
-    }
-}
-
-// =========================================
-// PROFILE LOGIC
-// =========================================
-async function loadProfile() {
-    try {
-        const res = await fetch('/api/profile');
+        const res = await fetch('/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+        });
         const data = await res.json();
-
+        
         if (res.ok) {
-            document.getElementById('prof-name').value = data.name;
-            document.getElementById('prof-email').value = data.email;
+            alert(data.message);
+            toggleFlipCard(); 
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        alert("Server error. Please try again.");
+    }
+}
 
-            if (data.photo) {
-                document.getElementById('profile-img').src = data.photo;
+async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('log-email').value;
+    const password = document.getElementById('log-password').value;
+
+    try {
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            isLoggedIn = true;
+            isPremiumUser = data.is_premium;
+            document.getElementById('nav-login').innerText = "Dashboard";
+            
+            await loadUserProfile();
+            switchPage('profile');
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        alert("Server error. Please try again.");
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch('/logout', { method: 'POST' });
+        isLoggedIn = false;
+        isPremiumUser = false;
+        document.getElementById('nav-login').innerText = "Account";
+        document.getElementById('login-form').reset();
+        switchPage('home');
+    } catch (err) {
+        alert("Error logging out.");
+    }
+}
+
+async function loadUserProfile() {
+    try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+            isLoggedIn = true;
+            document.getElementById('nav-login').innerText = "Dashboard";
+            
+            const user = await res.json();
+            document.getElementById('prof-name').value = user.name;
+            document.getElementById('prof-email').value = user.email;
+            
+            if (user.photo) {
+                document.getElementById('profile-img').src = user.photo;
             } else {
-                document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${data.name}&background=00d2ff&color=fff`;
+                document.getElementById('profile-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             }
 
             const badge = document.getElementById('profile-status-badge');
             const expiryText = document.getElementById('profile-expiry');
-
-            if (data.is_premium) {
-                badge.innerText = "Premium Account";
-                badge.className = "status-badge premium";
-                if (data.expiry) {
+            
+            if (user.is_premium) {
+                badge.className = 'status-badge premium';
+                badge.innerText = 'Premium Member ⭐';
+                if (user.expiry) {
                     expiryText.style.display = 'block';
-                    expiryText.innerHTML = `Expires: <span style="color:white;">${data.expiry}</span>`;
+                    expiryText.querySelector('span').innerText = user.expiry;
                 }
-                
-                unlockPremiumRoom();
-                
             } else {
-                badge.innerText = "Basic Account";
-                badge.className = "status-badge basic";
+                badge.className = 'status-badge basic';
+                badge.innerText = 'Basic Account';
                 expiryText.style.display = 'none';
             }
         }
-    } catch (e) { console.error("Failed to load profile", e); }
+    } catch (err) {
+        console.log("Not logged in");
+    }
 }
 
 async function updateProfileName(e) {
     e.preventDefault();
     const newName = document.getElementById('prof-name').value;
-    await fetch('/api/update-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName })
-    });
-    alert("Profile Updated Successfully!");
-    loadProfile();
-}
-
-function uploadPhoto(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const base64Image = e.target.result;
-            document.getElementById('profile-img').src = base64Image;
-            await fetch('/api/update-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photo: base64Image })
-            });
-            alert("Profile Photo Updated!");
-        }
-        reader.readAsDataURL(file);
-    }
-}
-
-async function handleLogout() {
-    await fetch('/logout', { method: 'POST' });
-    isLoggedIn = false;
-    document.getElementById('nav-login').innerText = "Account";
-    
-    // Lock premium room again visually
-    const block = document.getElementById('premium-code-block');
-    if (block) {
-        block.style.filter = 'blur(5px)'; 
-        block.style.pointerEvents = 'none'; 
-        block.style.opacity = '0.6';
-        block.style.userSelect = 'none';
-        block.style.webkitUserSelect = 'none';
-    }
-    
-    const unlockBtn = document.getElementById('premium-unlock-btn');
-    if (unlockBtn) unlockBtn.style.display = 'block';
-
-    // Wipe the real premium code out of the HTML so it can't be stolen after logout
-    const codeElement = document.getElementById('premium-secret-code');
-    if (codeElement) {
-        codeElement.innerText = `# ----------------------------------------
-# PREMIUM AI TRADING ALGORITHM [LOCKED]
-# ----------------------------------------
-# This code is safely hidden on the backend server.
-# Purchase Premium to unlock and inject the real code here!
-def execute_premium_trade():
-    pass`;
-    }
-    
-    switchPage('home');
-    alert("You have been logged out.");
-}
-
-// =========================================
-// GOOGLE PAY / UPI INTEGRATION
-// =========================================
-let currentPlan = "";
-let currentPrice = 0;
-
-function openUPIModal(plan, price) {
-    if (!isLoggedIn) {
-        alert("Please create an account or log in first!");
-        switchAuthPage();
-        return;
-    }
-    currentPlan = plan;
-    currentPrice = price;
-    
-    const myUPI_ID = "mayankbhatt934@oksbi"; // <--- DO NOT FORGET TO CHANGE THIS!
-    
-    const name = "Source Code Hub Premium";
-    const upiLink = `upi://pay?pa=${myUPI_ID}&pn=${name}&am=${price}&cu=INR`;
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
-    
-    document.getElementById('modal-plan-desc').innerText = `Scan to pay ₹${price} for ${plan} Plan`;
-    document.getElementById('upi-qr-code').src = qrUrl;
-    document.getElementById('upi-mobile-link').href = upiLink;
-    document.getElementById('upi-modal-overlay').style.display = 'flex';
-}
-
-function closeUPIModal() { 
-    document.getElementById('upi-modal-overlay').style.display = 'none'; 
-}
-
-async function submitUPIPayment(event) {
-    event.preventDefault();
     try {
-        const response = await fetch('/submit-upi-payment', {
+        const res = await fetch('/api/update-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plan: currentPlan, amount: currentPrice, utr_number: "Manual Verification" })
+            body: JSON.stringify({ name: newName })
         });
-        const data = await response.json();
-        
-        if(response.ok) {
-            alert(data.message);
-            closeUPIModal();
-        } else {
-            alert("Error: " + data.message);
-            if(data.message.includes("login")) switchAuthPage();
+        if (res.ok) {
+            alert("Profile updated successfully!");
+            loadUserProfile(); 
         }
-    } catch (err) { alert("Server error. Try again."); }
+    } catch (err) { alert("Error updating profile."); }
 }
 
-// =========================================
-// AUTHENTICATION HOOKS
-// =========================================
-async function handleRegistration(e) {
-    e.preventDefault(); 
-    const name = document.getElementById('reg-name').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-password').value;
-    
-    try {
-        const res = await fetch('/register', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ name, email, password }) 
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') { 
-            alert("Success! You can now log in."); 
-            document.getElementById('register-form').reset(); 
-            toggleFlipCard(); 
-        } else { 
-            alert("Error: " + data.message); 
-        }
-    } catch (err) { alert("Error occurred."); }
-}
+async function uploadPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-async function handleLogin(e) {
-    e.preventDefault(); 
-    const email = document.getElementById('log-email').value;
-    const password = document.getElementById('log-password').value;
-    
-    try {
-        const res = await fetch('/login', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ email, password }) 
-        });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-            document.getElementById('login-form').reset(); 
-            isLoggedIn = true;
-            document.getElementById('nav-login').innerText = "Profile"; 
-            
-            if(data.is_premium) {
-                unlockPremiumRoom();
+    const reader = new FileReader();
+    reader.onloadend = async function() {
+        const base64String = reader.result;
+        try {
+            const res = await fetch('/api/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photo: base64String })
+            });
+            if (res.ok) {
+                document.getElementById('profile-img').src = base64String;
+                alert("Photo updated!");
             }
-            
-            loadProfile();
-            switchPage('profile'); 
-        } else { 
-            alert("Error: " + data.message); 
-        }
-    } catch (err) { alert("Error occurred."); }
+        } catch (err) { alert("Failed to upload photo."); }
+    }
+    reader.readAsDataURL(file);
 }
 
 // =========================================
-// PASSWORD RESET LOGIC
+// FORGOT PASSWORD LOGIC
 // =========================================
 function openResetModal() {
     document.getElementById('reset-modal-overlay').style.display = 'flex';
@@ -422,3 +304,144 @@ async function handleResetPassword(e) {
         }
     } catch (err) { alert("Server error."); }
 }
+
+// =========================================
+// UPI & PREMIUM LOGIC
+// =========================================
+let selectedPlan = "";
+
+function openUPIModal(planName, price) {
+    if (!isLoggedIn) {
+        alert("Please create an account or login first to buy Premium!");
+        switchAuthPage();
+        return;
+    }
+    
+    selectedPlan = planName;
+    const upiID = "mayank.code.ai@okaxis"; 
+    const name = "Source Code Hub Premium";
+    const amount = price;
+    const desc = `${planName} Premium Plan`;
+
+    const upiURL = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR&tn=${encodeURIComponent(desc)}`;
+    
+    const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`;
+    document.getElementById('upi-qr-code').src = qrURL;
+    document.getElementById('upi-mobile-link').href = upiURL;
+    
+    document.getElementById('modal-plan-desc').innerText = `You selected the ${planName} Plan (₹${amount}). Scan the QR code or click the button below to pay.`;
+    document.getElementById('upi-modal-overlay').style.display = 'flex';
+}
+
+function closeUPIModal() {
+    document.getElementById('upi-modal-overlay').style.display = 'none';
+}
+
+async function submitUPIPayment(e) {
+    e.preventDefault();
+    
+    const utr = prompt("Please enter the 12-digit UPI Reference Number (UTR) from your payment app:");
+    if (!utr || utr.length < 10) {
+        alert("Valid UTR number is required to verify your payment.");
+        return;
+    }
+
+    let amount = 0;
+    if (selectedPlan === 'Weekly') amount = 199;
+    if (selectedPlan === 'Monthly') amount = 499;
+    if (selectedPlan === 'Yearly') amount = 3999;
+
+    try {
+        const res = await fetch('/submit-upi-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ utr_number: utr, plan: selectedPlan, amount: amount })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            alert(data.message);
+            closeUPIModal();
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        alert("Server error submitting payment.");
+    }
+}
+
+async function loadPremiumCode() {
+    try {
+        const res = await fetch('/api/get-premium-code');
+        if (res.ok) {
+            const data = await res.json();
+            const codeBlock = document.getElementById('premium-code-block');
+            const unlockBtn = document.getElementById('premium-unlock-btn');
+            
+            codeBlock.style.filter = 'none';
+            codeBlock.style.pointerEvents = 'auto';
+            codeBlock.style.opacity = '1';
+            codeBlock.style.userSelect = 'auto';
+            
+            document.getElementById('premium-secret-code').innerText = data.code;
+            unlockBtn.style.display = 'none'; 
+        }
+    } catch (err) {
+        console.log("Premium check failed");
+    }
+}
+
+// =========================================
+// DYNAMIC CONTENT LOADER (ADMIN DATA)
+// =========================================
+async function loadDynamicContent() {
+    try {
+        const res = await fetch('/api/content');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Inject Free Codes
+        const codeContainer = document.getElementById('dynamic-free-codes');
+        if (codeContainer) {
+            if (data.codes.length === 0) {
+                codeContainer.innerHTML = '<p style="color: #888; text-align: center;">No free codes published yet. Check back soon!</p>';
+            } else {
+                codeContainer.innerHTML = data.codes.map((item, index) => `
+                    <div class="code-wrapper" data-aos="fade-up" style="margin-bottom: 30px;">
+                        <div class="code-title"><span>0${index + 1}. ${item.title}</span></div>
+                        <div class="code-container">
+                            <div class="code-header">
+                                <div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+                                <button class="copy-main-btn" onclick="copyMainCode('dynamic-code-${item.id}', this)">Copy Script</button>
+                            </div>
+                            <pre id="dynamic-code-${item.id}">${item.code}</pre>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Inject AI Prompts
+        const promptContainer = document.getElementById('dynamic-prompts');
+        if (promptContainer) {
+            if (data.prompts.length === 0) {
+                promptContainer.innerHTML = '<p style="color: #888; text-align: center;">No AI prompts published yet. Check back soon!</p>';
+            } else {
+                promptContainer.innerHTML = data.prompts.map((item) => `
+                    <div class="prompt-box" style="margin-bottom: 15px;">
+                        <span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span>
+                        <button class="copy-btn" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (err) {
+        console.error("Error loading dynamic content:", err);
+    }
+}
+
+// Run startup checks
+document.addEventListener("DOMContentLoaded", () => {
+    loadUserProfile();
+    loadDynamicContent();
+});

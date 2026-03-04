@@ -20,9 +20,7 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px 50px;
-    background: rgba(10, 10, 10, 0.85); /* Dark background so text doesn't blend with the page */
-    backdrop-filter: blur(10px); /* Frosted glass effect */
-    border-bottom: 1px solid rgba(0, 210, 255, 0.1); /* Subtle glowing bottom border */
+    background: transparent; /* Reverted back to your original transparent look */
 }
 
 .logo { font-size: 1.5rem; font-weight: 600; letter-spacing: 2px; cursor: pointer; z-index: 1001;}

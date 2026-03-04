@@ -113,7 +113,7 @@ function openUPIModal(planName, price, codeId = null, giftMode = false) {
     if (!isLoggedIn) { alert("Please login or create an account first!"); switchAuthPage(); return; }
     selectedPlan = planName; selectedAmount = price; selectedCodeId = codeId; isGifting = giftMode;
     const desc = giftMode ? `GIFT - ${planName}` : `Source Code Hub - ${planName}`;
-    const upiURL = `upi://pay?pa=mayayankbhatt934@oksbi&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`;
+    const upiURL = `upi://pay?pa=mayankbhatt934@oksbi&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`;
     document.getElementById('upi-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`;
     document.getElementById('upi-mobile-link').href = upiURL;
     document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`;

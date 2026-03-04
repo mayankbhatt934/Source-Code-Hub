@@ -241,10 +241,12 @@ async function loadDynamicContent() {
         if(document.getElementById('free-single-content')) document.getElementById('free-single-content').innerHTML = generateCodeHTML(freeSingle);
         if(document.getElementById('free-full-content')) document.getElementById('free-full-content').innerHTML = generateCodeHTML(freeFull);
 
-        const premSingle = data.premium_codes.filter(c => c.category === 'Single Page' || c.category === 'Single Page Code');
+       const premSingle = data.premium_codes.filter(c => c.category === 'Single Page' || c.category === 'Single Page Code');
         const premFull = data.premium_codes.filter(c => c.category.includes('Full Website'));
-        if(document.getElementById('premium-single-content')) document.getElementById('premium-single-content').innerHTML = generateCodeHTML(premSingle, true);
-        if(document.getElementById('premium-full-content')) document.getElementById('premium-full-content').innerHTML = generateCodeHTML(premFull, true);
+        
+        // FIXED IDS HERE
+        if(document.getElementById('prem-single-content')) document.getElementById('prem-single-content').innerHTML = generateCodeHTML(premSingle, true);
+        if(document.getElementById('prem-full-content')) document.getElementById('prem-full-content').innerHTML = generateCodeHTML(premFull, true);
 
         // RESTORED CLEAN PROMPT UI!
         const promptContainer = document.getElementById('dynamic-prompts');

@@ -140,21 +140,31 @@
     </section>
 
     <section id="page-profile" class="page-section">
-        <div class="center-box" style="max-width: 500px; position: relative;">
+        <div class="center-box" style="max-width: 600px; position: relative;">
             <div style="position: absolute; top: 20px; right: 20px;"><button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button></div>
             <h2 style="color: #00d2ff; margin-bottom: 30px;">My Profile</h2>
+            
             <div class="profile-avatar-wrapper">
                 <img id="profile-img" src="https://ui-avatars.com/api/?name=User&background=00d2ff&color=fff" alt="Profile">
                 <label for="upload-photo" class="upload-btn">📷 Change Photo</label>
                 <input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)">
             </div>
+            
             <div id="profile-status-badge" class="status-badge basic">Basic Account</div>
             <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Expires: <span></span></p>
-            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 30px;">
+            
+            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 30px; margin-bottom: 40px;">
                 <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Email Address</label><input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888;"></div>
                 <div class="form-group"><label style="font-size: 0.8rem; color: #ccc;">Full Name</label><input type="text" id="prof-name" required></div>
                 <button type="submit" class="submit-btn">Save Changes</button>
             </form>
+
+            <div style="border-top: 1px solid #333; padding-top: 30px;">
+                <h3 style="color: #f5af19; margin-bottom: 15px;">My Unlocked Codes</h3>
+                <div id="my-purchases-list">
+                    <p style="color: #888; font-size: 0.9rem;">Loading your unlocked files...</p>
+                </div>
+            </div>
         </div>
     </section>
 

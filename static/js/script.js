@@ -128,6 +128,9 @@ async function loadUserProfile() {
                 badge.className = 'status-badge basic'; badge.innerText = 'Basic Account';
                 expiryText.style.display = 'none';
             }
+            
+            // ADD THIS LINE RIGHT HERE:
+            loadMyPurchases();
         }
     } catch (err) { console.log("Not logged in"); }
 }
@@ -153,12 +156,15 @@ async function uploadPhoto(e) {
 // =========================================
 let selectedPlan = "";
 let selectedAmount = 0;
+let selectedCodeId = null; // NEW: Track the specific code
 
-function openUPIModal(planName, price) {
+function openUPIModal(planName, price, codeId = null) {
     if (!isLoggedIn) { alert("Please login or create an account first to make a purchase!"); switchAuthPage(); return; }
     
     selectedPlan = planName;
     selectedAmount = price;
+    selectedCodeId = codeId; // Save it for the checkout
+    
     const upiID = "mayank.code.ai@okaxis"; 
     const desc = `Source Code Hub - ${planName}`;
     const upiURL = `upi://pay?pa=${upiID}&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`;
@@ -177,7 +183,7 @@ async function submitUPIPayment(e) {
     if (!utr || utr.length < 10) { alert("Valid UTR number is required."); return; }
     const res = await fetch('/submit-upi-payment', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ utr_number: utr, plan: selectedPlan, amount: selectedAmount })
+        body: JSON.stringify({ utr_number: utr, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId })
     });
     const data = await res.json();
     if (res.ok) { alert(data.message); closeUPIModal(); } else { alert("Error: " + data.message); }
@@ -227,7 +233,7 @@ async function loadDynamicContent() {
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;">
                             <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div>
                             <h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3>
-                            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px; margin-right: 10px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price})">Buy for ₹${item.price}</button>
+                            <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px; margin-right: 10px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id})">Buy for ₹${item.price}</button>
                             <button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">View Memberships</button>
                         </div>`;
                 }
@@ -285,6 +291,58 @@ function copyFromModal(btnElement) {
     btnElement.style.background = "#00ff88"; 
     btnElement.style.color = "#000";
     setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000);
+}
+
+// =========================================
+// MY PURCHASES LOCKER
+// =========================================
+async function loadMyPurchases() {
+    try {
+        const res = await fetch('/api/my-purchases');
+        if (res.ok) {
+            const data = await res.json();
+            const container = document.getElementById('my-purchases-list');
+            
+            if (data.is_premium) {
+                container.innerHTML = `
+                    <div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;">
+                        <h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4>
+                        <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p>
+                        <button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button>
+                    </div>`;
+                return;
+            }
+
+            if (data.codes.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">You haven\'t purchased any individual files yet.</p>';
+                return;
+            }
+
+            container.innerHTML = data.codes.map(item => {
+                if (item.category.includes("Full Website")) {
+                    return `
+                        <div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="color: #fff; margin-bottom: 5px;">${item.title}</h4>
+                                <span style="font-size: 0.8rem; color: #888;">Full Website Source Files</span>
+                            </div>
+                            <a href="${item.code}" target="_blank" class="submit-btn" style="width: auto; padding: 8px 15px; text-decoration: none;">Download</a>
+                        </div>`;
+                } else {
+                    return `
+                        <div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                            <h4 style="color: #fff; margin-bottom: 10px;">${item.title}</h4>
+                            <div style="background: #111; padding: 10px; border-radius: 5px; position: relative;">
+                                <button onclick="copyPrompt(this, \`${item.code.replace(/`/g, '\\`')}\`)" style="position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Copy</button>
+                                <pre style="color: #00ff88; font-size: 0.85rem; margin: 0; max-height: 100px; overflow: hidden; font-family: monospace;">${item.code}</pre>
+                            </div>
+                        </div>`;
+                }
+            }).join('');
+        }
+    } catch (err) {
+        console.log("Failed to load purchases");
+    }
 }
 
 // =========================================

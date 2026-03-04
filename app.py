@@ -138,10 +138,56 @@ def reset_password():
 def submit_upi_payment():
     data = request.json
     if 'user_email' not in session: return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
-    new_tx = Transaction(email=session['user_email'], utr_number=data.get('utr_number'), amount=data.get('amount'), plan=data.get('plan'), status='Pending')
+    
+    # NEW: Captures the specific code_id if they are buying a single file
+    new_tx = Transaction(
+        email=session['user_email'], 
+        utr_number=data.get('utr_number'), 
+        amount=data.get('amount'), 
+        plan=data.get('plan'), 
+        code_id=data.get('code_id'), 
+        status='Pending'
+    )
     db.session.add(new_tx)
     db.session.commit()
     return jsonify({"status": "success", "message": "Payment submitted! Admin will verify."})
+
+@app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
+def approve_payment(tx_id):
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    tx = Transaction.query.get(tx_id)
+    if tx:
+        tx.status = 'Success'
+        user = User.query.filter_by(email=tx.email).first()
+        if user:
+            # Check if it's a full membership or a single code purchase
+            if 'Pass' in tx.plan:
+                user.is_premium = True
+                if tx.plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+                elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+                elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+                elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
+            elif tx.code_id:
+                # NEW: Grant them permanent access to this single code
+                new_purchase = UserCodePurchase(email=user.email, code_id=tx.code_id)
+                db.session.add(new_purchase)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"error": "Transaction not found"}), 404
+
+# NEW: API to load the user's purchased codes
+@app.route('/api/my-purchases', methods=['GET'])
+def my_purchases():
+    if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
+    user = User.query.filter_by(email=session['user_email']).first()
+    
+    purchases = UserCodePurchase.query.filter_by(email=user.email).all()
+    purchased_code_ids = [p.code_id for p in purchases]
+    
+    codes = PremiumCode.query.filter(PremiumCode.id.in_(purchased_code_ids)).all()
+    code_list = [{"id": c.id, "title": c.title, "category": c.category, "code": c.code} for c in codes]
+    
+    return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():

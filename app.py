@@ -12,6 +12,8 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = 'super_secret_key_change_this_later' 
 
+ADMIN_USERNAME = 'mayank'; ADMIN_PASSWORD = 'password123'
+
 DB_URL = os.environ.get('DATABASE_URL')
 if DB_URL:
     if DB_URL.startswith("postgres://"): DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
@@ -35,9 +37,10 @@ def send_system_email(to_email, subject, body):
         except: pass
 
 def check_admin_access():
+    if session.get('is_admin'): return True
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
-        if u and u.role in ['staff', 'admin', 'owner']: return True
+        if u and getattr(u, 'role', 'member') in ['staff', 'admin', 'owner']: return True
     return False
 
 @app.route('/force-db-reset')
@@ -78,13 +81,14 @@ def get_user_badges(user):
     badges = []
     if user.is_banned: badges.append({"name": "Banned 🚫", "class": "badge-banned"})
     else:
-        if user.role == 'owner': badges.append({"name": "Owner 👑", "class": "badge-owner"})
-        elif user.role == 'admin': badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
-        elif user.role == 'staff': badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
-        if user.is_friend: badges.append({"name": "Friend 🤝", "class": "badge-friend"})
-        if user.role not in ['owner', 'admin']:
+        r = getattr(user, 'role', 'member')
+        if r == 'owner': badges.append({"name": "Owner 👑", "class": "badge-owner"})
+        elif r == 'admin': badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
+        elif r == 'staff': badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
+        if getattr(user, 'is_friend', False): badges.append({"name": "Friend 🤝", "class": "badge-friend"})
+        if r not in ['owner', 'admin']:
             if user.is_premium: badges.append({"name": "Premium ⭐", "class": "badge-premium"})
-            elif user.role == 'member': badges.append({"name": "Member", "class": "badge-basic"})
+            elif r == 'member': badges.append({"name": "Member", "class": "badge-basic"})
     return badges
 
 @app.route('/api/profile', methods=['GET'])
@@ -95,7 +99,7 @@ def get_profile():
     if user.is_banned and user.ban_expiry and datetime.utcnow() > user.ban_expiry: user.is_banned = False; user.ban_expiry = None; db.session.commit()
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry: user.is_premium = False; db.session.commit()
     expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else ("Lifetime Access" if user.is_premium else None)
-    return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo, "is_banned": user.is_banned, "badges": get_user_badges(user), "role": user.role, "has_staff_access": user.role in ['staff', 'admin', 'owner'], "ref_code": user.referral_code, "earnings": user.earnings})
+    return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo, "is_banned": user.is_banned, "badges": get_user_badges(user), "role": getattr(user, 'role', 'member'), "has_staff_access": getattr(user, 'role', 'member') in ['staff', 'admin', 'owner'], "ref_code": getattr(user, 'referral_code', ''), "earnings": getattr(user, 'earnings', 0)})
 
 @app.route('/api/update-profile', methods=['POST'])
 def update_profile():
@@ -169,27 +173,26 @@ def interact_code():
     data = request.json; c_type = data.get('type'); c_id = data.get('id'); action = data.get('action')
     code = FreeCode.query.get(c_id) if c_type == 'free' else PremiumCode.query.get(c_id)
     if not code: return jsonify({"error": "Not found"}), 404
-    if action == 'view': code.views += 1; db.session.commit(); return jsonify({"status": "success", "views": code.views})
+    if action == 'view': 
+        if hasattr(code, 'views'): code.views += 1
+        db.session.commit(); return jsonify({"status": "success", "views": getattr(code, 'views', 0)})
     elif action == 'like':
         if 'user_email' not in session: return jsonify({"error": "Login to like"}), 401
         if CodeLike.query.filter_by(email=session['user_email'], code_type=c_type, code_id=c_id).first(): return jsonify({"error": "Already liked!"}), 400
-        db.session.add(CodeLike(email=session['user_email'], code_type=c_type, code_id=c_id)); code.likes += 1; db.session.commit(); return jsonify({"status": "success", "likes": code.likes})
+        db.session.add(CodeLike(email=session['user_email'], code_type=c_type, code_id=c_id))
+        if hasattr(code, 'likes'): code.likes += 1
+        db.session.commit(); return jsonify({"status": "success", "likes": getattr(code, 'likes', 0)})
 
 @app.route('/api/creator/upload', methods=['POST'])
 def creator_upload():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
-    if not user.is_premium and user.role not in ['admin', 'owner', 'staff']: return jsonify({"error": "Must be premium!"}), 403
+    if not user.is_premium and getattr(user, 'role', 'member') not in ['admin', 'owner', 'staff']: return jsonify({"error": "Must be premium!"}), 403
     
-    data = request.json
-    sub_type = data.get('sub_type')
-    
-    if sub_type == 'premium':
-        db.session.add(PremiumCode(title=data.get('title'), category=data.get('category'), price=int(data.get('price') or 0), code=data.get('code'), creator_email=user.email, is_approved=False))
-    elif sub_type == 'free':
-        db.session.add(FreeCode(title=data.get('title'), category=data.get('category'), code=data.get('code'), creator_email=user.email, is_approved=False))
-    elif sub_type == 'prompt':
-        db.session.add(AIPrompt(title=data.get('title'), prompt_text=data.get('code'), creator_email=user.email, is_approved=False))
+    data = request.json; sub_type = data.get('sub_type')
+    if sub_type == 'premium': db.session.add(PremiumCode(title=data.get('title'), category=data.get('category'), price=int(data.get('price') or 0), code=data.get('code'), creator_email=user.email, is_approved=False))
+    elif sub_type == 'free': db.session.add(FreeCode(title=data.get('title'), category=data.get('category'), code=data.get('code'), creator_email=user.email, is_approved=False))
+    elif sub_type == 'prompt': db.session.add(AIPrompt(title=data.get('title'), prompt_text=data.get('code'), creator_email=user.email, is_approved=False))
 
     db.session.add(Notification(email=user.email, title="Submission Sent 🚀", message="Your content was sent to the Staff for approval!"))
     db.session.commit(); return jsonify({"status": "success"})
@@ -200,7 +203,7 @@ def request_payout():
     user = User.query.filter_by(email=session['user_email']).first()
     amount = int(request.json.get('amount', 0))
     if amount < 100: return jsonify({"error": "Minimum payout is ₹100"}), 400
-    if user.earnings < amount: return jsonify({"error": "Insufficient balance"}), 400
+    if getattr(user, 'earnings', 0) < amount: return jsonify({"error": "Insufficient balance"}), 400
     user.earnings -= amount
     db.session.add(PayoutRequest(email=user.email, amount=amount, upi_id=request.json.get('upi')))
     db.session.add(Notification(email=user.email, title="Payout Requested 💸", message=f"Your request for ₹{amount} is pending admin approval."))
@@ -210,52 +213,58 @@ def request_payout():
 def public_profile(email):
     u = User.query.filter_by(email=email).first()
     if not u: return jsonify({"error": "User not found"}), 404
-    codes = PremiumCode.query.filter_by(creator_email=email, is_approved=True).all() + FreeCode.query.filter_by(creator_email=email, is_approved=True).all()
+    all_prem = PremiumCode.query.all(); all_free = FreeCode.query.all()
+    codes = [c for c in all_prem if getattr(c, 'creator_email', '') == email and getattr(c, 'is_approved', True)] + [c for c in all_free if getattr(c, 'creator_email', '') == email and getattr(c, 'is_approved', True)]
     code_list = [{"id": c.id, "title": c.title, "type": "Premium" if hasattr(c, 'price') else "Free"} for c in codes]
     return jsonify({"name": u.name, "photo": u.profile_photo or f"https://ui-avatars.com/api/?name={u.name}&background=00d2ff&color=fff", "badges": get_user_badges(u), "codes": code_list})
 
 @app.route('/api/leaderboard', methods=['GET'])
 def get_leaderboard():
     creators = {}
-    for c in FreeCode.query.filter_by(is_approved=True).all() + PremiumCode.query.filter_by(is_approved=True).all():
-        if c.creator_email != 'admin':
-            if c.creator_email not in creators:
-                u = User.query.filter_by(email=c.creator_email).first()
-                creators[c.creator_email] = {"name": u.name if u else "Unknown", "email": c.creator_email, "score": 0}
-            creators[c.creator_email]['score'] += c.likes + (c.views // 10)
+    for c in FreeCode.query.all() + PremiumCode.query.all():
+        if getattr(c, 'is_approved', True) and getattr(c, 'creator_email', 'admin') != 'admin':
+            email = c.creator_email
+            if email not in creators:
+                u = User.query.filter_by(email=email).first()
+                creators[email] = {"name": u.name if u else "Unknown", "email": email, "score": 0}
+            creators[email]['score'] += getattr(c, 'likes', 0) + (getattr(c, 'views', 0) // 10)
     top = sorted(creators.values(), key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(top)
 
-# --- ADMIN ROUTES ---
+# --- BULLETPROOF ADMIN ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':
-        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD: 
-            session['is_admin'] = True
-            return redirect('/admin')
-        else: 
-            return render_template('admin.html', logged_in=False, error="Invalid credentials")
-    
-    if not check_admin_access(): 
-        return render_template('admin.html', logged_in=False)
-        
+        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD: session['is_admin'] = True; return redirect('/admin')
+        else: return render_template('admin.html', logged_in=False, error="Invalid credentials")
+    if not check_admin_access(): return render_template('admin.html', logged_in=False)
     return render_template('admin.html', logged_in=True)
+
+@app.route('/admin-logout')
+def admin_logout(): session.pop('is_admin', None); return redirect('/admin')
 
 @app.route('/api/admin-data')
 def admin_data():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
-    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
-    banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
-    open_tickets = [{"id": t.id, "email": t.email, "subject": t.subject, "message": t.message} for t in SupportTicket.query.filter_by(status='Open').all()]
-    payouts = [{"id": p.id, "email": p.email, "amount": p.amount, "upi": p.upi_id} for p in PayoutRequest.query.filter_by(status='Pending').all()]
-    
-    # NEW: Unified pending codes
-    pend_prem = [{"id": c.id, "title": c.title, "creator": c.creator_email, "type": "premium"} for c in PremiumCode.query.filter_by(is_approved=False).all()]
-    pend_free = [{"id": c.id, "title": c.title, "creator": c.creator_email, "type": "free"} for c in FreeCode.query.filter_by(is_approved=False).all()]
-    pend_prompt = [{"id": p.id, "title": p.title, "creator": p.creator_email, "type": "prompt"} for p in AIPrompt.query.filter_by(is_approved=False).all()]
-    
-    return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": SiteAnalytics.query.first().page_views, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
+    try:
+        if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+        revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
+        pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
+        banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
+        open_tickets = [{"id": t.id, "email": t.email, "subject": t.subject, "message": t.message} for t in SupportTicket.query.filter_by(status='Open').all()]
+        
+        # BULLETPROOF FALLBACKS
+        payouts = [{"id": p.id, "email": p.email, "amount": p.amount, "upi": p.upi_id} for p in getattr(PayoutRequest, 'query').filter_by(status='Pending').all()] if hasattr(PayoutRequest, 'query') else []
+        pend_prem = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "premium"} for c in PremiumCode.query.all() if not getattr(c, 'is_approved', True)]
+        pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free"} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
+        pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt"} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
+        
+        pv = 0
+        if SiteAnalytics.query.first(): pv = SiteAnalytics.query.first().page_views
+
+        return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
+    except Exception as e:
+        print("API ADMIN DATA ERROR:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
 def approve_payment(tx_id):
@@ -274,9 +283,11 @@ def approve_payment(tx_id):
             elif tx.code_id: 
                 db.session.add(UserCodePurchase(email=user.email, code_id=tx.code_id))
                 code = PremiumCode.query.get(tx.code_id)
-                if code and code.creator_email != 'admin':
+                if code and getattr(code, 'creator_email', 'admin') != 'admin':
                     creator = User.query.filter_by(email=code.creator_email).first()
-                    if creator: creator.earnings += int(tx.amount * 0.8); db.session.add(Notification(email=creator.email, title="New Sale! 💰", message=f"Someone bought {code.title}! ₹{int(tx.amount * 0.8)} added to your wallet."))
+                    if creator: 
+                        creator.earnings = getattr(creator, 'earnings', 0) + int(tx.amount * 0.8)
+                        db.session.add(Notification(email=creator.email, title="New Sale! 💰", message=f"Someone bought {code.title}! ₹{int(tx.amount * 0.8)} added to your wallet."))
             db.session.add(Notification(email=user.email, title="Approved! 🎉", message=f"Access to {tx.plan} granted!"))
         db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
@@ -344,7 +355,7 @@ def approve_submission():
     
     if obj: 
         obj.is_approved = True
-        db.session.add(Notification(email=obj.creator_email, title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!"))
+        db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!"))
         db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
@@ -352,11 +363,12 @@ def approve_submission():
 def get_content():
     try:
         def get_c_name(e):
-            if e == 'admin': return 'Admin'
+            if e == 'admin': return 'Admin 👑'
             u = User.query.filter_by(email=e).first(); return u.name if u else 'Unknown'
-        c_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code, "views": c.views, "likes": c.likes, "creator": get_c_name(c.creator_email), "creator_email": c.creator_email} for c in FreeCode.query.filter_by(is_approved=True).all()]
-        p_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code, "views": p.views, "likes": p.likes, "creator": get_c_name(p.creator_email), "creator_email": p.creator_email} for p in PremiumCode.query.filter_by(is_approved=True).all()]
-        pr_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in AIPrompt.query.filter_by(is_approved=True).all()]
+        
+        c_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code, "views": getattr(c, 'views', 0), "likes": getattr(c, 'likes', 0), "creator": get_c_name(getattr(c, 'creator_email', 'admin')), "creator_email": getattr(c, 'creator_email', 'admin')} for c in FreeCode.query.all() if getattr(c, 'is_approved', True)]
+        p_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code, "views": getattr(p, 'views', 0), "likes": getattr(p, 'likes', 0), "creator": get_c_name(getattr(p, 'creator_email', 'admin')), "creator_email": getattr(p, 'creator_email', 'admin')} for p in PremiumCode.query.all() if getattr(p, 'is_approved', True)]
+        pr_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in AIPrompt.query.all() if getattr(p, 'is_approved', True)]
         return jsonify({"codes": c_list, "premium_codes": p_list, "prompts": pr_list})
     except Exception as e: return jsonify({"error": str(e)}), 500
 

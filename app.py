@@ -296,5 +296,25 @@ def admin_add_prompt():
     db.session.commit()
     return jsonify({"status": "success"})
 
+@app.route('/admin/delete-code/<int:code_id>', methods=['DELETE'])
+def delete_code(code_id):
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    code = FreeCode.query.get(code_id)
+    if code:
+        db.session.delete(code)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"error": "Code not found"}), 404
+
+@app.route('/admin/delete-prompt/<int:prompt_id>', methods=['DELETE'])
+def delete_prompt(prompt_id):
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    prompt = AIPrompt.query.get(prompt_id)
+    if prompt:
+        db.session.delete(prompt)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"error": "Prompt not found"}), 404
+
 if __name__ == '__main__':
     app.run(debug=True)

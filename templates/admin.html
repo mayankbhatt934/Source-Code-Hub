@@ -11,6 +11,9 @@
         .admin-card { background: rgba(20, 20, 20, 0.8); padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
         input, textarea { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #333; border-radius: 5px; box-sizing: border-box; }
         input:focus, textarea:focus { border-color: #00d2ff; outline: none; }
+        .delete-btn { background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
+        .delete-btn:hover { background: #ff5f56; color: #fff; }
+        .manage-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #333; }
     </style>
 </head>
 <body>
@@ -32,8 +35,7 @@
             <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px; transition: 0.3s;" onmouseover="this.style.background='#ff5f56'; this.style.color='#000';" onmouseout="this.style.background='transparent'; this.style.color='#ff5f56';">Logout</a>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-            
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
             <div>
                 <div class="admin-card">
                     <h3 style="margin-bottom: 15px; color: #f5af19;">Overview Stats</h3>
@@ -70,6 +72,23 @@
             </div>
         </div>
 
+        <div class="admin-card">
+            <h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Published Content</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                
+                <div>
+                    <h3 style="color: #00d2ff; margin-bottom: 15px;">Free Codes</h3>
+                    <div id="manage-codes-list"><p style="color: #888;">Loading...</p></div>
+                </div>
+
+                <div>
+                    <h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3>
+                    <div id="manage-prompts-list"><p style="color: #888;">Loading...</p></div>
+                </div>
+
+            </div>
+        </div>
+
         <script>
             // Load Admin Stats & Payments
             async function loadAdminData() {
@@ -98,7 +117,7 @@
             }
 
             async function approvePayment(id) {
-                if(!confirm("Are you sure you want to approve this payment? The user will get Premium access immediately.")) return;
+                if(!confirm("Are you sure you want to approve this payment?")) return;
                 const res = await fetch(`/admin/approve-payment/${id}`, { method: 'POST' });
                 if(res.ok) { alert("Payment Approved!"); loadAdminData(); }
             }
@@ -118,9 +137,9 @@
                         body: JSON.stringify({ title, code })
                     });
                     if (res.ok) {
-                        alert("Code published successfully! It is now saved in your database.");
-                        e.target.reset(); // Clear the form
-                    } else { alert("Error publishing code."); }
+                        e.target.reset();
+                        loadManageContent(); // Refresh the list!
+                    }
                 } catch(err) { alert("Server error."); }
                 btn.innerText = "Publish Free Code";
             }
@@ -140,15 +159,66 @@
                         body: JSON.stringify({ title, prompt_text })
                     });
                     if (res.ok) {
-                        alert("AI Prompt published successfully! It is now saved in your database.");
-                        e.target.reset(); // Clear the form
-                    } else { alert("Error publishing prompt."); }
+                        e.target.reset();
+                        loadManageContent(); // Refresh the list!
+                    }
                 } catch(err) { alert("Server error."); }
                 btn.innerText = "Publish AI Prompt";
             }
 
-            // Load data when page opens
-            window.onload = loadAdminData;
+            // NEW: Fetch and Display Content for Deletion
+            async function loadManageContent() {
+                try {
+                    const res = await fetch('/api/content');
+                    if(res.ok) {
+                        const data = await res.json();
+                        
+                        // Render Codes
+                        const codesDiv = document.getElementById('manage-codes-list');
+                        if(data.codes.length === 0) codesDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No codes published.</p>';
+                        else {
+                            codesDiv.innerHTML = data.codes.map(c => `
+                                <div class="manage-item" style="border-left-color: #00d2ff;">
+                                    <span style="font-size: 0.9rem;">${c.title}</span>
+                                    <button class="delete-btn" onclick="deleteCode(${c.id})">Delete</button>
+                                </div>
+                            `).join('');
+                        }
+
+                        // Render Prompts
+                        const promptsDiv = document.getElementById('manage-prompts-list');
+                        if(data.prompts.length === 0) promptsDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No prompts published.</p>';
+                        else {
+                            promptsDiv.innerHTML = data.prompts.map(p => `
+                                <div class="manage-item" style="border-left-color: #b06ab3;">
+                                    <span style="font-size: 0.9rem;">${p.title}</span>
+                                    <button class="delete-btn" onclick="deletePrompt(${p.id})">Delete</button>
+                                </div>
+                            `).join('');
+                        }
+                    }
+                } catch(err) { console.log("Failed to load manage content"); }
+            }
+
+            // NEW: Delete Code
+            async function deleteCode(id) {
+                if(!confirm("Are you sure you want to delete this code from the website forever?")) return;
+                const res = await fetch(`/admin/delete-code/${id}`, { method: 'DELETE' });
+                if(res.ok) { loadManageContent(); } // Refresh the list
+            }
+
+            // NEW: Delete Prompt
+            async function deletePrompt(id) {
+                if(!confirm("Are you sure you want to delete this AI Prompt?")) return;
+                const res = await fetch(`/admin/delete-prompt/${id}`, { method: 'DELETE' });
+                if(res.ok) { loadManageContent(); } // Refresh the list
+            }
+
+            // Load all data when page opens
+            window.onload = () => {
+                loadAdminData();
+                loadManageContent();
+            };
         </script>
         {% endif %}
     </div>

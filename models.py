@@ -32,3 +32,13 @@ class PasswordReset(db.Model):
     email = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(10), nullable=False)
     expiry = db.Column(db.DateTime, nullable=False)
+
+    class FreeCode(db.Model):
+     id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    code = db.Column(db.Text, nullable=False)
+
+class AIPrompt(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(150), nullable=False)
+    prompt_text = db.Column(db.Text, nullable=False)

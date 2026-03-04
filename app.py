@@ -4,7 +4,8 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 # Add PasswordReset to this import line!
-from models import db, User, Transaction, SiteAnalytics, PasswordReset
+# Change your import line to look like this:
+from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, AIPrompt
 
 # --- FOLDER PATH CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -275,6 +276,40 @@ def approve_payment(tx_id):
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"error": "Transaction not found"}), 404
+
+# ==========================================
+# DYNAMIC CONTENT ROUTES (FREE CODE & PROMPTS)
+# ==========================================
+
+# 1. API to send data to the frontend
+@app.route('/api/content', methods=['GET'])
+def get_content():
+    codes = FreeCode.query.all()
+    prompts = AIPrompt.query.all()
+    
+    code_list = [{"id": c.id, "title": c.title, "code": c.code} for c in codes]
+    prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in prompts]
+    
+    return jsonify({"codes": code_list, "prompts": prompt_list})
+
+# 2. Admin routes to add new content
+@app.route('/admin/add-code', methods=['POST'])
+def admin_add_code():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    new_code = FreeCode(title=data.get('title'), code=data.get('code'))
+    db.session.add(new_code)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/admin/add-prompt', methods=['POST'])
+def admin_add_prompt():
+    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    new_prompt = AIPrompt(title=data.get('title'), prompt_text=data.get('prompt_text'))
+    db.session.add(new_prompt)
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     app.run(debug=True)

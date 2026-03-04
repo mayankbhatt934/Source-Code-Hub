@@ -13,9 +13,7 @@ class User(db.Model):
     profile_photo = db.Column(db.Text, nullable=True)
     is_banned = db.Column(db.Boolean, default=False)
     ban_expiry = db.Column(db.DateTime, nullable=True)
-    
-    # NEW: HIERARCHY & BADGES
-    role = db.Column(db.String(20), default='member') # Roles: member, staff, admin, owner
+    role = db.Column(db.String(20), default='member') 
     is_friend = db.Column(db.Boolean, default=False)
 
 class Transaction(db.Model):
@@ -52,11 +50,15 @@ class PasswordReset(db.Model):
     code = db.Column(db.String(10), nullable=False)
     expiry = db.Column(db.DateTime, nullable=False)
 
+# NEW: SOCIAL PROOF & CREATOR TRACKING
 class FreeCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
     category = db.Column(db.String(50), nullable=False)
     code = db.Column(db.Text, nullable=False)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    creator_email = db.Column(db.String(100), default='admin')
 
 class PremiumCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -64,6 +66,26 @@ class PremiumCode(db.Model):
     category = db.Column(db.String(50), nullable=False)
     price = db.Column(db.Integer, nullable=False)
     code = db.Column(db.Text, nullable=False)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    creator_email = db.Column(db.String(100), default='admin')
+    is_approved = db.Column(db.Boolean, default=True) # Admin codes are True, User codes are False until approved
+
+class CodeLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    code_type = db.Column(db.String(20), nullable=False)
+    code_id = db.Column(db.Integer, nullable=False)
+
+# NEW: SUPPORT TICKETS
+class SupportTicket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    subject = db.Column(db.String(150), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    admin_reply = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='Open')
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AIPrompt(db.Model):
     id = db.Column(db.Integer, primary_key=True)

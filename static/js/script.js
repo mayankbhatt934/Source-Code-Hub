@@ -57,14 +57,14 @@ async function loadUserProfile() {
             if (user.is_premium) { badge.className = 'status-badge premium'; badge.innerText = 'Premium Member ⭐'; if (user.expiry) { expiryText.style.display = 'block'; expiryText.innerHTML = `Expires/Status: <span>${user.expiry}</span>`; } } 
             else { badge.className = 'status-badge basic'; badge.innerText = 'Basic Account'; expiryText.style.display = 'none'; }
             
-            // NEW: BANNED USER JAIL
+            // NEW: BANNED USER JAIL (CENTERED POPUP)
             if (user.is_banned) {
                 ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'none');
                 let banner = document.getElementById('ban-banner');
                 if(!banner) {
                     banner = document.createElement('div'); banner.id = 'ban-banner';
-                    banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: #ff5f56; color: #fff; text-align: center; padding: 10px; z-index: 999999; font-weight: bold; box-shadow: 0 5px 15px rgba(255,95,86,0.3);';
-                    banner.innerText = '🚫 Your account is restricted. You can only view your profile and notifications.';
+                    banner.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: rgba(20,20,20,0.95); border: 2px solid #ff5f56; color: #fff; text-align: center; padding: 25px; border-radius: 12px; z-index: 999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); backdrop-filter: blur(5px);';
+                    banner.innerHTML = ' <div style="font-size: 2.5rem; margin-bottom: 10px;">🚫</div><h3 style="color: #ff5f56; margin-bottom: 10px;">Account Restricted</h3><p style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px; line-height: 1.4;">Your access has been limited. You can only view your profile and notifications.</p><button onclick="this.parentElement.style.display=\'none\'" style="background: #ff5f56; color: #fff; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s;">I Understand</button>';
                     document.body.appendChild(banner);
                 }
                 const activePage = document.querySelector('.page-section.active');

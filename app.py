@@ -3,7 +3,8 @@ from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, AIPrompt
+# Imported all your new Hybrid Marketplace models!
+from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, PremiumCode, AIPrompt, UserCodePurchase
 
 # --- FOLDER PATH CONFIGURATION ---
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -39,6 +40,21 @@ with app.app_context():
         db.session.add(SiteAnalytics(page_views=0))
         db.session.commit()
 
+# ==========================================
+# SECRET DB RESET ROUTE (FIXES THE LOADING BUG)
+# ==========================================
+@app.route('/force-db-reset')
+def force_db_reset():
+    db.drop_all() # Wipes the old confused tables
+    db.create_all() # Rebuilds them perfectly with your new categories
+    if not SiteAnalytics.query.first():
+        db.session.add(SiteAnalytics(page_views=0))
+        db.session.commit()
+    return "DATABASE RESET SUCCESSFUL! Postgres is now perfectly synced. You can go back to your website!"
+
+# ==========================================
+# STANDARD ROUTES
+# ==========================================
 @app.route('/')
 def home():
     stats = SiteAnalytics.query.first()
@@ -46,20 +62,14 @@ def home():
     db.session.commit()
     return render_template('index.html')
 
-# --- AUTH & PROFILE ROUTES ---
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    name = data.get('name')
-    email = data.get('email')
-    password = data.get('password')
+    existing_user = User.query.filter_by(email=data.get('email')).first()
+    if existing_user: return jsonify({"status": "error", "message": "Email is already registered!"}), 400
 
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"status": "error", "message": "Email is already registered!"}), 400
-
-    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-    new_user = User(name=name, email=email, password=hashed_password)
+    hashed_password = generate_password_hash(data.get('password'), method='pbkdf2:sha256')
+    new_user = User(name=data.get('name'), email=data.get('email'), password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"status": "success", "message": "Account created successfully!"})
@@ -67,11 +77,8 @@ def register():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    email = data.get('email')
-    password = data.get('password')
-
-    user = User.query.filter_by(email=email).first()
-    if user and check_password_hash(user.password, password):
+    user = User.query.filter_by(email=data.get('email')).first()
+    if user and check_password_hash(user.password, data.get('password')):
         session['user_email'] = user.email 
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium})
     return jsonify({"status": "error", "message": "Invalid email or password!"}), 401
@@ -83,38 +90,23 @@ def logout():
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
-    if 'user_email' not in session:
-        return jsonify({"error": "Not logged in"}), 401
-    
+    if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
     user = User.query.filter_by(email=session['user_email']).first()
     
     if user.is_premium and user.premium_expiry and datetime.utcnow() > user.premium_expiry:
         user.is_premium = False
         db.session.commit()
 
-    expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else None
-    
-    return jsonify({
-        "name": user.name, 
-        "email": user.email, 
-        "is_premium": user.is_premium, 
-        "expiry": expiry_str, 
-        "photo": user.profile_photo
-    })
+    expiry_str = user.premium_expiry.strftime('%B %d, %Y') if user.premium_expiry else "Lifetime Access"
+    return jsonify({"name": user.name, "email": user.email, "is_premium": user.is_premium, "expiry": expiry_str, "photo": user.profile_photo})
 
 @app.route('/api/update-profile', methods=['POST'])
 def update_profile():
-    if 'user_email' not in session:
-        return jsonify({"error": "Not logged in"}), 401
-    
+    if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
     data = request.json
     user = User.query.filter_by(email=session['user_email']).first()
-    
-    if data.get('name'):
-        user.name = data['name']
-    if data.get('photo'):
-        user.profile_photo = data['photo']
-        
+    if data.get('name'): user.name = data['name']
+    if data.get('photo'): user.profile_photo = data['photo']
     db.session.commit()
     return jsonify({"status": "success", "message": "Profile updated!"})
 
@@ -123,112 +115,50 @@ def update_profile():
 def forgot_password():
     email = request.json.get('email')
     user = User.query.filter_by(email=email).first()
-    
-    if not user:
-        return jsonify({"status": "success", "message": "If this email exists, a code was sent."})
+    if not user: return jsonify({"status": "success", "message": "If this email exists, a code was sent."})
 
     code = str(random.randint(100000, 999999))
-    expiry = datetime.utcnow() + timedelta(minutes=15)
-
-    new_reset = PasswordReset(email=email, code=code, expiry=expiry)
+    new_reset = PasswordReset(email=email, code=code, expiry=datetime.utcnow() + timedelta(minutes=15))
     db.session.add(new_reset)
     db.session.commit()
 
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
-
     if sender_email and sender_password:
         try:
             msg = MIMEText(f"Your Source Code Hub password reset code is: {code}\n\nThis code expires in 15 minutes.")
             msg['Subject'] = 'Source Code Hub - Password Reset Code'
             msg['From'] = f"Source Code Hub Support <{sender_email}>"
             msg['To'] = email
-
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, email, msg.as_string())
-        except Exception as e:
-            print("Email failed to send:", e)
+        except Exception as e: print("Email failed to send:", e)
 
     return jsonify({"status": "success", "message": "Code sent to your email!"})
 
 @app.route('/reset-password', methods=['POST'])
 def reset_password():
     data = request.json
-    email = data.get('email')
-    code = data.get('code')
-    new_password = data.get('new_password')
-
-    reset_entry = PasswordReset.query.filter_by(email=email, code=code).first()
-
-    if not reset_entry or datetime.utcnow() > reset_entry.expiry:
-        return jsonify({"status": "error", "message": "Invalid or expired code!"}), 400
-
-    user = User.query.filter_by(email=email).first()
+    reset_entry = PasswordReset.query.filter_by(email=data.get('email'), code=data.get('code')).first()
+    if not reset_entry or datetime.utcnow() > reset_entry.expiry: return jsonify({"status": "error", "message": "Invalid or expired code!"}), 400
+    user = User.query.filter_by(email=data.get('email')).first()
     if user:
-        user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        user.password = generate_password_hash(data.get('new_password'), method='pbkdf2:sha256')
         db.session.delete(reset_entry)
         db.session.commit()
         return jsonify({"status": "success", "message": "Password updated successfully!"})
-
     return jsonify({"status": "error", "message": "User not found!"}), 404
 
-# --- PAYMENT ROUTES ---
-@app.route('/submit-upi-payment', methods=['POST'])
-def submit_upi_payment():
-    data = request.json
-    if 'user_email' not in session:
-        return jsonify({"status": "error", "message": "Please login to buy premium!"}), 401
-
-    new_tx = Transaction(
-        email=session['user_email'], 
-        utr_number=data.get('utr_number'), 
-        amount=data.get('amount'), 
-        plan=data.get('plan'),
-        status='Pending'
-    )
-    db.session.add(new_tx)
-    db.session.commit()
-    return jsonify({"status": "success", "message": "Payment submitted! Admin will verify and activate your account shortly."})
-
-@app.route('/api/get-premium-code', methods=['GET'])
-def get_premium_code():
-    if 'user_email' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    user = User.query.filter_by(email=session['user_email']).first()
-    if not user or not user.is_premium:
-        return jsonify({"error": "Upgrade to Premium required"}), 403
-
-    premium_script = """# ----------------------------------------
-# PREMIUM AI TRADING ALGORITHM [UNLOCKED]
-# ----------------------------------------
-import advanced_neural_net
-import market_data
-import time
-
-def execute_premium_trade():
-    print("Connecting to live market data...")
-    time.sleep(1)
-    print("Analyzing neural net predictions...")
-    return "Trade Executed: BUY 100 SHARES"
-
-execute_premium_trade()"""
-    
-    return jsonify({"status": "success", "code": premium_script})
-
-# --- ADMIN ROUTES ---
+# --- ADMIN DASHBOARD ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     error = None
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD:
             session['is_admin'] = True  
             return redirect(url_for('admin_dashboard'))
-        else:
-            error = "Invalid username or password"
+        else: error = "Invalid username or password"
     if not session.get('is_admin'): return render_template('admin.html', logged_in=False, error=error)
     return render_template('admin.html', logged_in=True)
 
@@ -240,49 +170,36 @@ def admin_logout():
 @app.route('/api/admin-data')
 def admin_data():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    users_count = User.query.count()
-    premium_count = User.query.filter_by(is_premium=True).count()
-    success_tx = Transaction.query.filter_by(status='Success').all()
-    revenue = sum([t.amount for t in success_tx])
-    views = SiteAnalytics.query.first().page_views
-    pending_tx = Transaction.query.filter_by(status='Pending').all()
-    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "utr": t.utr_number} for t in pending_tx]
-    return jsonify({"total_users": users_count, "premium_users": premium_count, "total_revenue": revenue, "page_views": views, "pending_payments": pending_list})
+    revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
+    pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "utr": t.utr_number} for t in Transaction.query.filter_by(status='Pending').all()]
+    return jsonify({
+        "total_users": User.query.count(), 
+        "premium_users": User.query.filter_by(is_premium=True).count(), 
+        "total_revenue": revenue, 
+        "page_views": SiteAnalytics.query.first().page_views, 
+        "pending_payments": pending_list
+    })
 
-@app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
-def approve_payment(tx_id):
-    if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    tx = Transaction.query.get(tx_id)
-    if tx:
-        tx.status = 'Success'
-        user = User.query.filter_by(email=tx.email).first()
-        if user:
-            user.is_premium = True
-            if tx.plan == 'Weekly': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
-            elif tx.plan == 'Monthly': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-            elif tx.plan == 'Yearly': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
-        db.session.commit()
-        return jsonify({"status": "success"})
-    return jsonify({"error": "Transaction not found"}), 404
-
-# ==========================================
-# DYNAMIC CONTENT ROUTES (FREE CODE & PROMPTS)
-# ==========================================
+# --- DYNAMIC CONTENT ROUTES ---
 @app.route('/api/content', methods=['GET'])
 def get_content():
-    codes = FreeCode.query.all()
-    prompts = AIPrompt.query.all()
-    
-    code_list = [{"id": c.id, "title": c.title, "code": c.code} for c in codes]
-    prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in prompts]
-    
-    return jsonify({"codes": code_list, "prompts": prompt_list})
+    try:
+        codes = FreeCode.query.all()
+        prompts = AIPrompt.query.all()
+        
+        # Safely fetches categories!
+        code_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page Code'), "code": c.code} for c in codes]
+        prompt_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in prompts]
+        
+        return jsonify({"codes": code_list, "prompts": prompt_list})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/add-code', methods=['POST'])
 def admin_add_code():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
     data = request.json
-    new_code = FreeCode(title=data.get('title'), code=data.get('code'))
+    new_code = FreeCode(title=data.get('title'), category=data.get('category', 'Single Page Code'), code=data.get('code'))
     db.session.add(new_code)
     db.session.commit()
     return jsonify({"status": "success"})
@@ -290,8 +207,7 @@ def admin_add_code():
 @app.route('/admin/add-prompt', methods=['POST'])
 def admin_add_prompt():
     if not session.get('is_admin'): return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    new_prompt = AIPrompt(title=data.get('title'), prompt_text=data.get('prompt_text'))
+    new_prompt = AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text'))
     db.session.add(new_prompt)
     db.session.commit()
     return jsonify({"status": "success"})

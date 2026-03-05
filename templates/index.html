@@ -14,7 +14,7 @@
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-4">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-5">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
@@ -70,10 +70,6 @@
             <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection completely free.</p></div>
             <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end code.</p></div>
             <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #b06ab3;">AI Prompts</h2><p>Browse engineered prompts.</p></div>
-        </div>
-        <div style="max-width: 800px; margin: 60px auto 20px auto; padding: 20px; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid #333;" data-aos="fade-up">
-            <h2 style="color: #00d2ff; text-align: center; margin-bottom: 20px;">🏆 Top Creators</h2>
-            <div id="leaderboard-list"><p style="text-align: center; color: #888;">Loading ranks...</p></div>
         </div>
     </section>
 
@@ -185,6 +181,7 @@
                     <button class="prof-tab-btn" onclick="switchProfTab('saved')" id="ptab-saved" style="color:#00ff88; border-color:#00ff88;">🔖 Saved Items</button>
                     <button class="prof-tab-btn" onclick="switchProfTab('support')" id="ptab-support">Support Tickets</button>
                     <button class="prof-tab-btn" onclick="switchProfTab('creator')" id="ptab-creator" style="border-color: #b06ab3; color: #b06ab3;">Creator Studio</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('leaderboard')" id="ptab-leaderboard" style="border-color: #f5af19; color: #f5af19;">🏆 Leaderboard</button>
                 </div>
                 
                 <div id="prof-sec-locker" class="prof-section" style="display: block;"><div id="my-purchases-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
@@ -221,6 +218,14 @@
                         </form>
                     </div>
                 </div>
+
+                <div id="prof-sec-leaderboard" class="prof-section" style="display: none; text-align: left;">
+                    <h3 style="color: #f5af19; margin-bottom: 15px; text-align: center;">🏆 Top Creators</h3>
+                    <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                        <div id="leaderboard-list"><p style="text-align: center; color: #888;">Loading ranks...</p></div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -271,7 +276,7 @@
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-4"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-5"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>

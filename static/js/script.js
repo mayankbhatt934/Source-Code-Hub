@@ -17,7 +17,18 @@ function switchPage(pageId) {
 }
 function toggleMobileMenu() { document.getElementById('nav-menu').classList.toggle('show'); }
 function switchCategoryTab(section, category) { document.querySelectorAll(`.${section}-tab-content`).forEach(el => el.style.display = 'none'); document.querySelectorAll(`.${section}-tab-btn`).forEach(el => el.classList.remove('active')); document.getElementById(`${section}-${category}-content`).style.display = 'block'; document.getElementById(`btn-${section}-${category}`).classList.add('active'); }
-function switchProfTab(tab) { document.querySelectorAll('.prof-section').forEach(el => el.style.display = 'none'); document.querySelectorAll('.prof-tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`prof-sec-${tab}`).style.display = 'block'; document.getElementById(`ptab-${tab}`).classList.add('active'); if(tab === 'support') loadMyTickets(); if(tab === 'saved') loadBookmarks(); if(tab === 'creator') loadCreatorStats(); }
+
+// UPDATED: Now loads the leaderboard when the tab is clicked!
+function switchProfTab(tab) { 
+    document.querySelectorAll('.prof-section').forEach(el => el.style.display = 'none'); 
+    document.querySelectorAll('.prof-tab-btn').forEach(el => el.classList.remove('active')); 
+    document.getElementById(`prof-sec-${tab}`).style.display = 'block'; 
+    document.getElementById(`ptab-${tab}`).classList.add('active'); 
+    if(tab === 'support') loadMyTickets(); 
+    if(tab === 'saved') loadBookmarks(); 
+    if(tab === 'creator') loadCreatorStats(); 
+    if(tab === 'leaderboard') loadLeaderboard();
+}
 
 function copyMainCode(elementId, btnElement, type, codeId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); interactCode(type, codeId, 'view', null); }
 function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
@@ -280,7 +291,17 @@ async function loadMyPurchases() {
 }
 
 async function loadLeaderboard() {
-    try { const res = await fetch('/api/leaderboard'); if(res.ok) { const data = await res.json(); const container = document.getElementById('leaderboard-list'); if(data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No creators ranked yet.</p>'; return; } container.innerHTML = data.map((c, i) => `<div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; align-items: center;"><div><span style="color: ${i===0?'#f5af19':i===1?'#ccc':i===2?'#cd7f32':'#888'}; font-weight: bold; font-size: 1.2rem; margin-right: 15px;">#${i+1}</span><a class="creator-link" onclick="viewProfile('${c.username}')">${c.name}</a></div><span style="color: #ff5f56; font-weight: bold;">❤️ ${c.score} Score</span></div>`).join(''); } } catch(e) {}
+    try { 
+        const res = await fetch('/api/leaderboard'); 
+        if(res.ok) { 
+            const data = await res.json(); 
+            const container = document.getElementById('leaderboard-list'); 
+            if(data.length === 0) { 
+                container.innerHTML = '<p style="text-align: center; color: #888;">No creators ranked yet.</p>'; return; 
+            } 
+            container.innerHTML = data.map((c, i) => `<div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; align-items: center;"><div><span style="color: ${i===0?'#f5af19':i===1?'#ccc':i===2?'#cd7f32':'#888'}; font-weight: bold; font-size: 1.2rem; margin-right: 15px;">#${i+1}</span><a class="creator-link" onclick="viewProfile('${c.username}')">${c.name}</a></div><span style="color: #ff5f56; font-weight: bold;">❤️ ${c.score} Score</span></div>`).join(''); 
+        } 
+    } catch(e) {}
 }
 
 let currentGlobalContent = { premium_codes: [] };
@@ -365,7 +386,7 @@ function closeResetModal() { document.getElementById('reset-modal-overlay').styl
 async function handleRequestCode(e) { e.preventDefault(); const email = document.getElementById('reset-email').value; const btn = e.target.querySelector('button'); btn.innerText = "Sending..."; try { const res = await fetch('/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); if (res.ok) { document.getElementById('request-code-form').style.display = 'none'; document.getElementById('verify-code-form').style.display = 'block'; } else { alert("Error."); } } catch (err) {} btn.innerText = "Send Code"; }
 async function handleResetPassword(e) { e.preventDefault(); try { const res = await fetch('/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('reset-email').value, code: document.getElementById('reset-code').value, new_password: document.getElementById('reset-new-password').value }) }); const data = await res.json(); if (res.ok) { alert("Password updated!"); closeResetModal(); } else { alert("Error: " + data.message); } } catch (err) {} }
 
-window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loadLeaderboard(); }); };
+window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); }); };
 
 setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 5000);
 setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 10000);

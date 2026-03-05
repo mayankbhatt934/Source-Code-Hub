@@ -174,10 +174,26 @@ async function loadUserProfile() {
 }
 
 function toggleCreatorFields() {
-    const type = document.getElementById('cr-type').value; const cat = document.getElementById('cr-cat'); const price = document.getElementById('cr-price'); const code = document.getElementById('cr-code');
-    if(type === 'prompt') { cat.style.display = 'none'; price.style.display = 'none'; code.placeholder = "Paste your AI Prompt here..."; }
-    else if(type === 'free') { cat.style.display = 'block'; price.style.display = 'none'; code.placeholder = "Paste your code or Drive link here..."; }
-    else { cat.style.display = 'block'; price.style.display = 'block'; code.placeholder = "Paste your code or Drive link here..."; }
+    const type = document.getElementById('cr-type').value; 
+    const cat = document.getElementById('cr-cat'); 
+    const price = document.getElementById('cr-price'); 
+    const code = document.getElementById('cr-code');
+    
+    if(type === 'prompt') { 
+        cat.style.display = 'none'; cat.required = false;
+        price.style.display = 'none'; price.required = false;
+        code.placeholder = "Paste your AI Prompt here..."; 
+    }
+    else if(type === 'free') { 
+        cat.style.display = 'block'; cat.required = true;
+        price.style.display = 'none'; price.required = false;
+        code.placeholder = "Paste your code or Drive link here..."; 
+    }
+    else { 
+        cat.style.display = 'block'; cat.required = true;
+        price.style.display = 'block'; price.required = true;
+        code.placeholder = "Paste your code or Drive link here..."; 
+    }
 }
 
 async function requestPayout() { const amount = prompt("Enter amount to withdraw (Min ₹100):"); if(!amount) return; const upi = prompt("Enter your UPI ID to receive payment:"); if(!upi) return; try { const res = await fetch('/api/creator/payout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: parseInt(amount), upi: upi}) }); const data = await res.json(); if(res.ok) { alert("Payout Requested! Admin will verify."); loadUserProfile(); } else alert(data.error); } catch(e) {} }

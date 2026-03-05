@@ -54,15 +54,12 @@ def force_db_reset(): db.drop_all(); db.create_all(); db.session.add(SiteAnalyti
 @app.route('/')
 def home(): stats = SiteAnalytics.query.first(); stats.page_views += 1; db.session.commit(); return render_template('index.html')
 
-# NORMALIZED PASSWORD & NO CAPTCHA
 @app.route('/api/send-registration-otp', methods=['POST'])
 def send_registration_otp():
     data = request.json
     email = data.get('email'); username = data.get('username').lower().replace(" ", "")
-    
     if User.query.filter_by(email=email).first(): return jsonify({"status": "error", "message": "Email is already registered!"}), 400
     if User.query.filter_by(username=username).first(): return jsonify({"status": "error", "message": "Username is already taken!"}), 400
-
     otp = str(random.randint(100000, 999999))
     EmailOTP.query.filter_by(email=email).delete() 
     db.session.add(EmailOTP(email=email, otp=otp, expiry=datetime.utcnow() + timedelta(minutes=10)))
@@ -74,11 +71,9 @@ def send_registration_otp():
 def register():
     data = request.json
     email = data.get('email'); username = data.get('username').lower().replace(" ", ""); otp = data.get('otp')
-    
     otp_record = EmailOTP.query.filter_by(email=email, otp=otp).first()
     if not otp_record or datetime.utcnow() > otp_record.expiry:
         return jsonify({"status": "error", "message": "Invalid or expired OTP!"}), 400
-
     new_user = User(name=data.get('name'), username=username, email=email, password=generate_password_hash(data.get('password'), method='pbkdf2:sha256'))
     ref_code = data.get('ref_code')
     if ref_code:
@@ -88,18 +83,15 @@ def register():
             new_user.is_premium = True; new_user.premium_expiry = datetime.utcnow() + timedelta(days=3)
             db.session.add(Notification(email=referrer.email, title="Referral Success! 🚀", message="Someone signed up using your link! You got 3 Days of Free Premium!"))
             db.session.add(Notification(email=new_user.email, title="Welcome Bonus! 🎁", message="You used an invite link and received 3 Days of Free Premium!"))
-    
     db.session.add(new_user); db.session.delete(otp_record)
     if not ref_code: db.session.add(Notification(email=email, title="Welcome! 👋", message="Thanks for creating an account!"))
     db.session.commit(); return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
-# LOGIN VIA USERNAME OR EMAIL
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
     login_id = data.get('login_id') 
     password = data.get('password')
-    
     user = User.query.filter((User.email == login_id) | (User.username == login_id)).first()
     if user and check_password_hash(user.password, password):
         session['user_email'] = user.email; return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
@@ -289,6 +281,7 @@ def request_payout():
 
 @app.route('/api/public-profile/<username>', methods=['GET'])
 def public_profile(username):
+    # MASTER BACKDOOR FALLBACK
     if username.lower() == 'admin':
         u_name = "Admin 👑"; u_photo = f"https://ui-avatars.com/api/?name=Admin&background=00d2ff&color=fff"; u_badges = [{"name": "Owner 👑", "class": "badge-owner"}]
         all_prem = PremiumCode.query.filter_by(creator_email='admin').all(); all_free = FreeCode.query.filter_by(creator_email='admin').all()
@@ -315,16 +308,26 @@ def get_leaderboard():
     top = sorted(creators.values(), key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(top)
 
+# ADMIN PANEL - STRICTLY EMAIL LOGIN
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':
-        email_or_user = request.form.get('username'); password = request.form.get('password')
-        if email_or_user == ADMIN_USERNAME and password == ADMIN_PASSWORD: session['is_admin'] = True; session.pop('user_email', None); return redirect('/admin')
-        user = User.query.filter_by(email=email_or_user).first()
+        # Even though HTML name="email", we capture it to check against email database
+        staff_email = request.form.get('email') 
+        password = request.form.get('password')
+        
+        # 1. Master Backdoor
+        if staff_email == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
+            session['is_admin'] = True; session.pop('user_email', None); return redirect('/admin')
+            
+        # 2. Strict Email Verification for actual staff
+        user = User.query.filter_by(email=staff_email).first()
         if user and check_password_hash(user.password, password):
-            if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']: session.pop('is_admin', None); session['user_email'] = user.email; return redirect('/admin')
+            if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']: 
+                session.pop('is_admin', None); session['user_email'] = user.email; return redirect('/admin')
             else: return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
         return render_template('admin.html', logged_in=False, error="Invalid email or password.")
+        
     if not check_admin_access(): return render_template('admin.html', logged_in=False)
     return render_template('admin.html', logged_in=True)
 
@@ -336,6 +339,13 @@ def admin_data():
     try:
         role = get_user_role()
         if role not in ['staff', 'admin', 'owner']: return jsonify({"error": "Unauthorized"}), 401
+        
+        # NEW: GET LOGGED IN USERNAME FOR DASHBOARD
+        current_username = "Master Admin"
+        if 'user_email' in session:
+            u = User.query.filter_by(email=session['user_email']).first()
+            if u: current_username = getattr(u, 'username', u.name)
+
         all_tx = Transaction.query.filter_by(status='Success').all(); revenue = sum([t.amount for t in all_tx])
         pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
@@ -345,7 +355,8 @@ def admin_data():
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free"} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt"} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
         pv = SiteAnalytics.query.first().page_views if SiteAnalytics.query.first() else 0
-        return jsonify({"current_role": role, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
+        
+        return jsonify({"current_role": role, "current_username": current_username, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
@@ -442,11 +453,12 @@ def approve_submission():
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
     if obj: obj.is_approved = True; db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!")); db.session.commit(); return jsonify({"status": "success"})
 
+# ATTACHES ICON TO USERNAME PROPERLY
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:
         def get_c_info(e):
-            if e == 'admin': return {'name': 'Admin 👑', 'username': 'admin'}
+            if not e or e == 'admin': return {'name': 'Admin 👑', 'username': 'admin'}
             u = User.query.filter_by(email=e).first()
             if u:
                 icon = ""
@@ -475,20 +487,27 @@ def get_content():
         return jsonify({"codes": c_list, "premium_codes": p_list, "prompts": pr_list})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
+# NEW: LINKS SPECIFIC STAFF TO UPLOADS FROM ADMIN PANEL
 @app.route('/admin/add-code', methods=['POST'])
 def admin_add_code():
     if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    db.session.add(FreeCode(title=request.json.get('title'), category=request.json.get('category'), code=request.json.get('code'), is_approved=True)); db.session.commit(); return jsonify({"status": "success"})
+    creator = session.get('user_email', 'admin') 
+    db.session.add(FreeCode(title=request.json.get('title'), category=request.json.get('category'), code=request.json.get('code'), creator_email=creator, is_approved=True))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/add-premium', methods=['POST'])
 def admin_add_premium():
     if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    db.session.add(PremiumCode(title=request.json.get('title'), category=request.json.get('category'), price=int(request.json.get('price')), code=request.json.get('code'), is_approved=True)); db.session.commit(); return jsonify({"status": "success"})
+    creator = session.get('user_email', 'admin')
+    db.session.add(PremiumCode(title=request.json.get('title'), category=request.json.get('category'), price=int(request.json.get('price')), code=request.json.get('code'), creator_email=creator, is_approved=True))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/add-prompt', methods=['POST'])
 def admin_add_prompt():
     if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    db.session.add(AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text'), is_approved=True)); db.session.commit(); return jsonify({"status": "success"})
+    creator = session.get('user_email', 'admin')
+    db.session.add(AIPrompt(title=request.json.get('title'), prompt_text=request.json.get('prompt_text'), creator_email=creator, is_approved=True))
+    db.session.commit(); return jsonify({"status": "success"})
 
 @app.route('/admin/delete-submission', methods=['POST'])
 def delete_submission():

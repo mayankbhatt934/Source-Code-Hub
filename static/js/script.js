@@ -1,13 +1,23 @@
 let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false; let isVerifiedUser = false;
 let userBookmarks = [];
 
-// --- GLOBAL AUTO-RESIZE FOR ALL TEXTAREAS ---
-document.addEventListener('input', function (e) {
-    if (e.target.tagName.toLowerCase() === 'textarea') {
-        e.target.style.height = 'auto';
-        e.target.style.height = (e.target.scrollHeight) + 'px';
+// --- NEW MODAL EDITOR LOGIC ---
+let currentEditorTarget = "";
+function openEditor(targetId) {
+    currentEditorTarget = targetId;
+    document.getElementById('global-editor-textarea').value = document.getElementById(targetId).value;
+    document.getElementById('editor-modal-overlay').style.display = 'flex';
+}
+function closeEditor() {
+    document.getElementById('editor-modal-overlay').style.display = 'none';
+    currentEditorTarget = "";
+}
+function saveEditor() {
+    if(currentEditorTarget) {
+        document.getElementById(currentEditorTarget).value = document.getElementById('global-editor-textarea').value;
     }
-});
+    closeEditor();
+}
 
 function switchPage(pageId) {
     if (isBannedUser && ['home', 'free', 'premium', 'prompts', 'pricing'].includes(pageId)) { let banner = document.getElementById('ban-banner'); if(banner) banner.style.display = 'block'; return; }

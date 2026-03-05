@@ -22,8 +22,8 @@
         .admin-form input, .admin-form select, .admin-form textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; transition: 0.3s; box-sizing: border-box;}
         .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: #00d2ff; background: rgba(0,0,0,0.5); outline: none; }
         
-        /* FIXED: Removed manual resize handle for ALL admin textareas */
-        .admin-form textarea, textarea { resize: none; overflow: hidden; }
+        /* STRICT ENFORCEMENT: No resizing, uses internal scroll instead */
+        textarea, .admin-form textarea { resize: none !important; overflow-y: auto !important; }
         
         .list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; flex-grow: 1;}
         .list-item { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #555; transition: 0.2s; }
@@ -93,15 +93,33 @@
         <div class="grid-3">
             <div class="glass-panel">
                 <div class="panel-header" style="color: #00d2ff;">+ Free Code</div>
-                <form class="admin-form" onsubmit="submitNewCode(event)"><input type="text" id="code-title" placeholder="Content Title" required><select id="code-category" required onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><textarea id="code-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea><button type="submit" class="submit-btn" style="margin-top: auto;">Publish to Free Section</button></form>
+                <form class="admin-form" onsubmit="submitNewCode(event)">
+                    <input type="text" id="code-title" placeholder="Content Title" required>
+                    <select id="code-category" required onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select>
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('code-content')" style="background: transparent; color: #00d2ff; border: 1px solid #00d2ff; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
+                    <textarea id="code-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <button type="submit" class="submit-btn" style="margin-top: auto;">Publish to Free Section</button>
+                </form>
             </div>
             <div class="glass-panel">
                 <div class="panel-header" style="color: #f5af19;">+ Premium Code</div>
-                <form class="admin-form" onsubmit="submitNewPremium(event)"><input type="text" id="prem-title" placeholder="Content Title" required><select id="prem-category" required onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><input type="number" id="prem-price" placeholder="Price (₹)" required><textarea id="prem-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea><button type="submit" class="submit-btn premium-btn" style="margin-top: auto;">Publish to Premium</button></form>
+                <form class="admin-form" onsubmit="submitNewPremium(event)">
+                    <input type="text" id="prem-title" placeholder="Content Title" required>
+                    <select id="prem-category" required onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select>
+                    <input type="number" id="prem-price" placeholder="Price (₹)" required>
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('prem-content')" style="background: transparent; color: #f5af19; border: 1px solid #f5af19; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
+                    <textarea id="prem-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <button type="submit" class="submit-btn premium-btn" style="margin-top: auto;">Publish to Premium</button>
+                </form>
             </div>
             <div class="glass-panel">
                 <div class="panel-header" style="color: #b06ab3;">+ AI Prompt</div>
-                <form class="admin-form" onsubmit="submitNewPrompt(event)"><input type="text" id="prompt-title" placeholder="Prompt Title" required><textarea id="prompt-content" placeholder="Paste exactly what the AI should read..." required style="height: 165px;"></textarea><button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Publish Prompt</button></form>
+                <form class="admin-form" onsubmit="submitNewPrompt(event)">
+                    <input type="text" id="prompt-title" placeholder="Prompt Title" required>
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('prompt-content')" style="background: transparent; color: #b06ab3; border: 1px solid #b06ab3; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
+                    <textarea id="prompt-content" placeholder="Paste exactly what the AI should read..." required style="height: 165px;"></textarea>
+                    <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Publish Prompt</button>
+                </form>
             </div>
         </div>
 
@@ -154,14 +172,35 @@
             </div>
         </div>
 
+        <div id="editor-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+            <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px;">⛶ Full Screen Editor</h3>
+                <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; resize: none; outline: none; margin-bottom: 15px;" placeholder="Paste your entire code here..."></textarea>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="submit-btn" style="width: auto; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px;" onclick="closeEditor()">Cancel</button>
+                    <button type="button" class="submit-btn" style="width: auto; background: #00d2ff; color: #000; padding: 10px 20px; font-weight: bold;" onclick="saveEditor()">Save & Close</button>
+                </div>
+            </div>
+        </div>
+
         <script>
-            // --- GLOBAL AUTO-RESIZE ENGINE FOR ALL ADMIN TEXTAREAS ---
-            document.addEventListener('input', function (e) {
-                if (e.target.tagName.toLowerCase() === 'textarea') {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = (e.target.scrollHeight) + 'px';
+            // NEW MODAL LOGIC FOR INPUTS
+            let currentEditorTarget = "";
+            function openEditor(targetId) {
+                currentEditorTarget = targetId;
+                document.getElementById('global-editor-textarea').value = document.getElementById(targetId).value;
+                document.getElementById('editor-modal-overlay').style.display = 'flex';
+            }
+            function closeEditor() {
+                document.getElementById('editor-modal-overlay').style.display = 'none';
+                currentEditorTarget = "";
+            }
+            function saveEditor() {
+                if(currentEditorTarget) {
+                    document.getElementById(currentEditorTarget).value = document.getElementById('global-editor-textarea').value;
                 }
-            });
+                closeEditor();
+            }
 
             let pendingCodesData = [];
 

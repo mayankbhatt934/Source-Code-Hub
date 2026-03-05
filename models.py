@@ -10,6 +10,7 @@ def generate_ref_code():
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
+    username = db.Column(db.String(50), unique=True, nullable=False) # NEW: Unique Username
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)
@@ -21,6 +22,13 @@ class User(db.Model):
     is_friend = db.Column(db.Boolean, default=False)
     referral_code = db.Column(db.String(10), unique=True, default=generate_ref_code)
     earnings = db.Column(db.Integer, default=0)
+
+# NEW: Store OTPs securely
+class EmailOTP(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    otp = db.Column(db.String(6), nullable=False)
+    expiry = db.Column(db.DateTime, nullable=False)
 
 class PayoutRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -116,14 +124,12 @@ class Review(db.Model):
     comment = db.Column(db.Text, nullable=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
-# NEW: Bookmarks
 class Bookmark(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
-    item_type = db.Column(db.String(20), nullable=False) # 'free', 'prem', 'prompt'
+    item_type = db.Column(db.String(20), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
 
-# NEW: Comments
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)

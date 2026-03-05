@@ -253,6 +253,24 @@ def update_profile():
     db.session.commit()
     return jsonify({"status": "success", "message": "Profile updated!"})
 
+# NEW: Dashboard Change Password Route
+@app.route('/api/change-password', methods=['POST'])
+def change_password():
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Not logged in"}), 401
+        
+    data = request.json
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    
+    if not check_password_hash(user.password, old_password):
+        return jsonify({"status": "error", "message": "Incorrect current password!"}), 400
+        
+    user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Password updated successfully!"})
+
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.json.get('email')
@@ -843,7 +861,9 @@ def approve_submission():
         obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': 
         obj = AIPrompt.query.get(item_id)
-        
+    else:
+        obj = None
+    
     if obj: 
         obj.is_approved = True
         db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!"))

@@ -14,7 +14,7 @@
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-4">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
@@ -151,21 +151,32 @@
                 </div>
             </div>
 
-            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 20px; margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto;">
-                <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 20px; margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto; text-align: left;">
+                <div class="form-group" style="margin-bottom: 15px;">
                     <label style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px; display: block;">Email Address</label>
                     <input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888; width: 100%; padding: 12px; border: 1px solid #333; border-radius: 5px;">
                 </div>
-                <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                <div class="form-group" style="margin-bottom: 15px;">
                     <label style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Full Name</label>
                     <input type="text" id="prof-name" placeholder="Full Name" required style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
-                <div class="form-group" style="text-align: left; margin-bottom: 5px;">
+                <div class="form-group" style="margin-bottom: 5px;">
                     <label style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Username</label>
                     <input type="text" id="prof-username" placeholder="Username" required pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores allowed" style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
                 <p style="font-size: 0.75rem; color: #888; text-align: left; margin-bottom: 15px;">* Username can be changed once every 14 days.</p>
                 <button type="submit" class="submit-btn" style="padding: 10px;">Save Changes</button>
+            </form>
+
+            <form id="password-change-form" onsubmit="changePassword(event)" style="margin-top: 20px; margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #333;">
+                <h4 style="color: #fff; margin-top: 0; margin-bottom: 15px; text-align: left; font-size: 1rem;">🔒 Change Password</h4>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <input type="password" id="cp-old" placeholder="Current Password" required style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <input type="password" id="cp-new" placeholder="New Password" required minlength="6" style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                </div>
+                <button type="submit" class="submit-btn" style="padding: 8px; background: transparent; border: 1px solid #00d2ff; color: #00d2ff; transition: 0.3s;" onmouseover="this.style.background='#00d2ff'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#00d2ff'">Update Password</button>
             </form>
 
             <div style="border-top: 1px solid #333; padding-top: 20px; margin-bottom: 20px;">
@@ -260,7 +271,7 @@
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-3"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>

@@ -180,6 +180,33 @@ async function loadUserProfile() {
     } catch (err) {}
 }
 
+async function changePassword(e) {
+    e.preventDefault();
+    const oldPass = document.getElementById('cp-old').value;
+    const newPass = document.getElementById('cp-new').value;
+    const btn = e.target.querySelector('button');
+    const origText = btn.innerText;
+    btn.innerText = "Updating...";
+    
+    try {
+        const res = await fetch('/api/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ old_password: oldPass, new_password: newPass })
+        });
+        const data = await res.json();
+        if(res.ok) {
+            alert(data.message);
+            e.target.reset();
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch(err) {
+        alert("Network Error");
+    }
+    btn.innerText = origText;
+}
+
 function toggleCreatorFields() {
     const type = document.getElementById('cr-type').value; const cat = document.getElementById('cr-cat'); const price = document.getElementById('cr-price'); const code = document.getElementById('cr-code');
     if(type === 'prompt') { cat.style.display = 'none'; cat.required = false; price.style.display = 'none'; price.required = false; code.placeholder = "Paste your AI Prompt here..."; }
@@ -262,9 +289,11 @@ let lastContentHash = "";
 async function loadDynamicContent() {
     try {
         const res = await fetch('/api/content'); if (!res.ok) return; 
+        
         const rawText = await res.text();
         if (rawText === lastContentHash) return; 
         lastContentHash = rawText;
+        
         const data = JSON.parse(rawText); currentGlobalContent = data; 
         
         const generateCodeHTML = (codes, isPremiumSection = false, typeName) => {

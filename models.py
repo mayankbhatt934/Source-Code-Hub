@@ -11,7 +11,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     username = db.Column(db.String(50), unique=True, nullable=False)
-    username_last_changed = db.Column(db.DateTime, nullable=True) # NEW: Tracks 14-day cooldown
+    username_last_changed = db.Column(db.DateTime, nullable=True) 
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_verified = db.Column(db.Boolean, default=False) 
@@ -67,6 +67,7 @@ class Notification(db.Model):
 class SiteAnalytics(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     page_views = db.Column(db.Integer, default=0)
+    last_broadcast_time = db.Column(db.DateTime, nullable=True) # NEW: Universal Server Cooldown
 
 class PasswordReset(db.Model):
     id = db.Column(db.Integer, primary_key=True)

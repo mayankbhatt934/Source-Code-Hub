@@ -42,7 +42,7 @@
             <h2 style="color: #00d2ff; margin-bottom: 25px; font-size: 1.8rem;">Command Center</h2>
             {% if error %}<p style="color: #ff5f56; background: rgba(255,95,86,0.1); padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; border: 1px solid rgba(255,95,86,0.3);">{{ error }}</p>{% endif %}
             <form method="POST" class="admin-form">
-                <input type="text" name="email" placeholder="Staff Email Address" required>
+                <input type="email" name="email" placeholder="Staff Email Address" required>
                 <input type="password" name="password" placeholder="Secure Password" required>
                 <button type="submit" class="submit-btn" style="margin-top: 10px; font-size: 1.1rem; letter-spacing: 1px;">Authenticate</button>
             </form>
@@ -123,7 +123,7 @@
                     <input type="email" id="notif-email" placeholder="User Email Address" style="display: none;">
                     <input type="text" id="notif-title" placeholder="Notification Title" required>
                     <textarea id="notif-message" placeholder="Type your message..." required style="height: 80px;"></textarea>
-                    <button type="submit" class="submit-btn" style="margin-top: auto;">Send Alert</button>
+                    <button type="submit" id="btn-broadcast" class="submit-btn" style="margin-top: auto; transition: 0.3s;">Send Alert</button>
                 </form>
             </div>
 
@@ -152,6 +152,35 @@
                 document.getElementById('notif-email').required = this.value === 'specific';
             });
 
+            // TRUE SERVER-SIDE COOLDOWN UI
+            function startBroadcastTimer(seconds) {
+                const btn = document.getElementById('btn-broadcast');
+                if(!btn) return;
+                btn.disabled = true;
+                btn.style.background = "#555";
+                btn.style.color = "#ccc";
+                btn.style.cursor = "not-allowed";
+
+                let timeLeft = seconds;
+                btn.innerText = `Cooldown: ${timeLeft}s`;
+                
+                if (window.broadcastInterval) clearInterval(window.broadcastInterval);
+
+                window.broadcastInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(window.broadcastInterval);
+                        btn.disabled = false;
+                        btn.innerText = "Send Alert";
+                        btn.style.background = ""; 
+                        btn.style.color = "";
+                        btn.style.cursor = "pointer";
+                    } else {
+                        btn.innerText = `Cooldown: ${timeLeft}s`;
+                    }
+                }, 1000);
+            }
+
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
                 if (res.status === 401) { document.body.innerHTML = '<div style="text-align:center; margin-top:15vh;"><h2 style="color:#ff5f56; font-size: 2.5rem;">Session Invalid</h2><p style="color:#aaa; font-size: 1.1rem; margin-bottom:30px;">Your secure access token has expired.</p><button onclick="window.location.href=\'/\'" class="submit-btn" style="width: auto; padding: 15px 40px; font-size: 1.2rem;">Return to Homepage</button></div>'; return; }
@@ -160,6 +189,11 @@
                     const d = await res.json();
                     document.getElementById('header-role').innerText = d.current_role;
                     document.getElementById('header-username').innerText = d.current_username;
+                    
+                    // Sync cooldown on load!
+                    if (d.broadcast_cooldown && d.broadcast_cooldown > 0) {
+                        startBroadcastTimer(d.broadcast_cooldown);
+                    }
                     
                     if (d.current_role === 'staff') {
                         ['panel-finance', 'panel-system', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
@@ -205,20 +239,42 @@
                 const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change";
             }
             
-            // FIXED: PROPER ERROR CATCHING FOR BROADCASTS
             async function submitAdminNotification(e) {
                 e.preventDefault();
                 const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value;
-                const btn = e.target.querySelector('button'); btn.innerText = "Sending...";
+                const btn = document.getElementById('btn-broadcast');
+                
+                btn.disabled = true;
+                btn.innerText = "Sending...";
+
                 try {
-                    const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) });
+                    const res = await fetch('/admin/send-notification', { 
+                        method: 'POST', 
+                        headers: {'Content-Type': 'application/json'}, 
+                        body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) 
+                    });
+                    
+                    const data = await res.json();
+                    
                     if(res.ok) { 
-                        alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; 
+                        alert("Broadcast Sent!"); 
+                        e.target.reset(); 
+                        document.getElementById('notif-email').style.display='none';
+                        startBroadcastTimer(data.cooldown);
                     } else {
-                        const data = await res.json(); alert("Error: " + (data.error || "Failed to send"));
+                        alert("Error: " + (data.error || "Failed to send"));
+                        if (data.cooldown) {
+                            startBroadcastTimer(data.cooldown); 
+                        } else {
+                            btn.disabled = false;
+                            btn.innerText = "Send Alert";
+                        }
                     }
-                } catch(err) { alert("Network Error!"); }
-                btn.innerText = "Send Alert";
+                } catch(err) { 
+                    alert("Network Error!"); 
+                    btn.disabled = false;
+                    btn.innerText = "Send Alert";
+                }
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }

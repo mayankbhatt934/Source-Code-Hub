@@ -12,7 +12,7 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = 'super_secret_key_change_this_later' 
 
-ADMIN_USERNAME = 'mayank@123'; ADMIN_PASSWORD = '123'
+ADMIN_USERNAME = 'mayank@'; ADMIN_PASSWORD = '123'
 
 DB_URL = os.environ.get('DATABASE_URL')
 if DB_URL:
@@ -37,10 +37,8 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: server.login(sender_email, sender_password); server.sendmail(sender_email, to_email, msg.as_string())
         except Exception as e: pass
 
-# FIXED: Master Admin overrides normal user limits without logging them out
 def get_user_role():
-    if session.get('is_admin'):
-        return 'owner'
+    if session.get('is_admin'): return 'owner'
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
         if u: return getattr(u, 'role', 'member')
@@ -88,9 +86,7 @@ def login():
     return jsonify({"status": "error", "message": "Invalid username/email or password!"}), 401
 
 @app.route('/logout', methods=['POST'])
-def logout(): 
-    session.pop('user_email', None) # FIXED: Doesn't kill admin backdoor
-    return jsonify({"status": "success"})
+def logout(): session.pop('user_email', None); return jsonify({"status": "success"})
 
 @app.route('/api/send-verification-otp', methods=['POST'])
 def send_verification_otp():
@@ -349,13 +345,9 @@ def get_leaderboard():
 def admin_dashboard():
     if request.method == 'POST':
         staff_email = request.form.get('email'); password = request.form.get('password')
-        
-        # 1. Master Backdoor (Doesn't log out main website!)
         if staff_email == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
-            session['is_admin'] = True
-            return redirect('/admin')
+            session['is_admin'] = True; return redirect('/admin')
             
-        # 2. Regular Staff Login
         user = User.query.filter_by(email=staff_email).first()
         if user and check_password_hash(user.password, password):
             if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']: 
@@ -367,8 +359,7 @@ def admin_dashboard():
 
 @app.route('/admin-logout')
 def admin_logout(): 
-    session.clear() # FIXED: Kills all sessions to be completely safe
-    return redirect('/')
+    session.clear(); return redirect('/')
 
 @app.route('/api/admin-data')
 def admin_data():
@@ -380,6 +371,15 @@ def admin_data():
             u = User.query.filter_by(email=session['user_email']).first()
             if u: current_username = getattr(u, 'username', u.name)
 
+        # UNIVERSAL SERVER COOLDOWN CALCULATION
+        analytics = SiteAnalytics.query.first()
+        pv = analytics.page_views if analytics else 0
+        broadcast_cooldown = 0
+        if analytics and analytics.last_broadcast_time:
+            time_since = datetime.utcnow() - analytics.last_broadcast_time
+            if time_since < timedelta(minutes=2):
+                broadcast_cooldown = 120 - int(time_since.total_seconds())
+
         all_tx = Transaction.query.filter_by(status='Success').all(); revenue = sum([t.amount for t in all_tx])
         pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
@@ -388,8 +388,8 @@ def admin_data():
         pend_prem = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "premium"} for c in PremiumCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free"} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt"} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
-        pv = SiteAnalytics.query.first().page_views if SiteAnalytics.query.first() else 0
-        return jsonify({"current_role": role, "current_username": current_username, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
+        
+        return jsonify({"current_role": role, "current_username": current_username, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts, "broadcast_cooldown": broadcast_cooldown})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
@@ -489,9 +489,17 @@ def approve_submission():
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
     if obj: obj.is_approved = True; db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!")); db.session.commit(); return jsonify({"status": "success"})
 
+# ENFORCES UNIVERSAL SERVER COOLDOWN FOR BROADCASTS
 @app.route('/admin/send-notification', methods=['POST'])
 def admin_send_notification():
     if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
+    
+    analytics = SiteAnalytics.query.first()
+    if analytics and analytics.last_broadcast_time:
+        time_since = datetime.utcnow() - analytics.last_broadcast_time
+        if time_since < timedelta(minutes=2):
+            return jsonify({"error": "Universal Cooldown active.", "cooldown": 120 - int(time_since.total_seconds())}), 429
+
     data = request.json
     target = data.get('target', 'all')
     title = data.get('title')
@@ -504,8 +512,11 @@ def admin_send_notification():
     else:
         db.session.add(Notification(email=target, title=title, message=message))
         
+    if analytics:
+        analytics.last_broadcast_time = datetime.utcnow()
+        
     db.session.commit()
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "cooldown": 120})
 
 @app.route('/api/content', methods=['GET'])
 def get_content():

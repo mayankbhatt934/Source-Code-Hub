@@ -28,6 +28,7 @@ with app.app_context():
     db.create_all()
     if not SiteAnalytics.query.first(): db.session.add(SiteAnalytics(page_views=0)); db.session.commit()
 
+# --- HTML EMAIL ENGINE ---
 def send_system_email(to_email, subject, body):
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
@@ -55,6 +56,7 @@ def send_system_email(to_email, subject, body):
                 server.sendmail(sender_email, to_email, msg.as_string())
         except Exception as e: print("Email failed:", e)
 
+# --- SECURITY: GHOST COOKIE & ROLE VERIFICATION ---
 def get_user_role():
     if session.get('is_admin'): return 'owner'
     if 'user_email' in session:
@@ -265,6 +267,7 @@ def get_leaderboard():
     top = sorted(creators.values(), key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(top)
 
+# --- BULLETPROOF ADMIN ROUTES ---
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':
@@ -356,6 +359,7 @@ def admin_update_role():
     try:
         curr_role = get_user_role()
         if curr_role not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
+        
         data = request.json
         email = data.get('email'); target_role = data.get('role', 'member')
         is_friend = data.get('is_friend', False); send_email = data.get('send_email', False)
@@ -363,32 +367,36 @@ def admin_update_role():
         if curr_role == 'admin' and target_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "Admins cannot grant Admin or Owner roles!"}), 403
             
         user = User.query.filter_by(email=email).first()
+        
+        # REQUIRED: Reject if they haven't registered on the main site!
+        if not user:
+            return jsonify({"status": "error", "message": "User not found! They must register on the main website first."}), 404
+            
+        old_role = getattr(user, 'role', 'member'); old_friend = getattr(user, 'is_friend', False)
+        
+        if curr_role == 'admin' and old_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "You cannot modify an Admin or Owner!"}), 403
+        
+        user.role = target_role; user.is_friend = is_friend
         new_password = None
         
-        if not user:
+        if send_email:
             new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-            hashed = generate_password_hash(new_password, method='pbkdf2:sha256')
-            user = User(name=email.split('@')[0] if email else 'User', email=email, password=hashed, role=target_role, is_friend=is_friend)
-            db.session.add(user); db.session.commit()
-            db.session.add(Notification(email=user.email, title="Welcome to the Team! 💼", message=f"You have been hired as {target_role.upper()}!"))
-            if is_friend: db.session.add(Notification(email=user.email, title="New Badge 🤝", message="You received the Friend badge!"))
-        else:
-            old_role = getattr(user, 'role', 'member'); old_friend = getattr(user, 'is_friend', False)
-            if curr_role == 'admin' and old_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "You cannot modify an Admin or Owner!"}), 403
-            user.role = target_role; user.is_friend = is_friend
-            if send_email:
-                new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-                user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
-            if old_role != target_role: db.session.add(Notification(email=user.email, title="Role Updated 👑", message=f"Your role is now: {target_role.upper()}!"))
-            if is_friend and not old_friend: db.session.add(Notification(email=user.email, title="New Badge 🤝", message="You have been granted the Friend badge!"))
-                
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+            
+        if old_role != target_role: db.session.add(Notification(email=user.email, title="Role Updated 👑", message=f"Your role is now: {target_role.upper()}!"))
+        if is_friend and not old_friend: db.session.add(Notification(email=user.email, title="New Badge 🤝", message="You have been granted the Friend badge!"))
+            
         db.session.commit()
+        
         if send_email and new_password:
-            msg = f"Hello,\n\nYou have been assigned the {target_role.upper()} role.\n\nLogin Portal: https://mayanksourcecodehub.vercel.app/admin\nEmail: {email}\nPassword: {new_password}\n\nPlease keep these secure."
+            msg = f"Hello,\n\nYou have been assigned the {target_role.upper()} role.\n\nLogin Portal: https://mayanksourcecodehub.vercel.app/admin\nEmail: {email}\nNew Password: {new_password}\n\nPlease keep these secure."
             send_system_email(email, f"Source Code Hub - {target_role.upper()} Access", msg)
-            return jsonify({"status": "success", "message": f"Role updated! Password emailed to {email}."})
+            return jsonify({"status": "success", "message": f"Role updated! New password emailed to {email}."})
+            
         return jsonify({"status": "success", "message": "Roles updated successfully."})
-    except Exception as e: return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
+        
+    except Exception as e: 
+        return jsonify({"status": "error", "message": f"Server Error: {str(e)}"}), 500
 
 @app.route('/admin/ban-user', methods=['POST'])
 def admin_ban_user():

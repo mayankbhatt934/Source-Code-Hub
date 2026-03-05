@@ -36,21 +36,20 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: server.login(sender_email, sender_password); server.sendmail(sender_email, to_email, msg.as_string())
         except: pass
 
-# --- THE FIX: GHOST COOKIE DESTROYER & MASTER OVERRIDE ---
+# --- FIXED ROLE ENGINE: No more accidental Owners! ---
 def get_user_role():
-    # 1. Master Backdoor always wins if activated
-    if session.get('is_admin'): return 'owner'
-    
-    # 2. Check standard login session
+    # 1. If a real user is logged in, ALWAYS use their exact database role
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
         if u: 
             return getattr(u, 'role', 'member')
         else:
-            # GHOST COOKIE DETECTED: User was deleted via DB reset! 
-            # Kill the session instantly so it doesn't lock the system.
             session.pop('user_email', None)
             
+    # 2. ONLY use the Master Backdoor if no real user is logged in
+    elif session.get('is_admin'):
+        return 'owner'
+        
     return 'member'
 
 def check_admin_access():
@@ -251,18 +250,23 @@ def admin_dashboard():
         email_or_user = request.form.get('username')
         password = request.form.get('password')
         
-        # MASTER OVERRIDE - Disables ghost session conflicts
+        # 1. MASTER BACKDOOR OVERRIDE
         if email_or_user == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
             session['is_admin'] = True
             session.pop('user_email', None) 
             return redirect('/admin')
             
+        # 2. REGULAR STAFF LOGIN
         user = User.query.filter_by(email=email_or_user).first()
         if user and check_password_hash(user.password, password):
             if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']:
-                session['is_admin'] = True; session['user_email'] = user.email
+                # CRITICAL FIX: Only set their user_email, DO NOT set is_admin!
+                session.pop('is_admin', None) 
+                session['user_email'] = user.email
                 return redirect('/admin')
-            else: return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
+            else: 
+                return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
+        
         return render_template('admin.html', logged_in=False, error="Invalid email or password.")
 
     if not check_admin_access(): return render_template('admin.html', logged_in=False)
@@ -272,7 +276,7 @@ def admin_dashboard():
 def admin_logout(): 
     session.pop('is_admin', None)
     session.pop('user_email', None)
-    return redirect('/') # SAFELY SENDS BACK TO HOME PAGE
+    return redirect('/')
 
 @app.route('/api/admin-data')
 def admin_data():

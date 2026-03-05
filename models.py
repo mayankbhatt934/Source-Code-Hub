@@ -40,7 +40,7 @@ class Transaction(db.Model):
     status = db.Column(db.String(50), default='Pending')
     is_gift = db.Column(db.Boolean, default=False)
     gift_recipient_email = db.Column(db.String(100), nullable=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow) # NEW: Needed for charts
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
 class UserCodePurchase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,11 +108,26 @@ class AIPrompt(db.Model):
     creator_email = db.Column(db.String(100), default='admin')
     is_approved = db.Column(db.Boolean, default=True)
 
-# NEW: Premium Code Reviews
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)
     code_id = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+
+# NEW: Bookmarks
+class Bookmark(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False) # 'free', 'prem', 'prompt'
+    item_id = db.Column(db.Integer, nullable=False)
+
+# NEW: Comments
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False)
+    item_id = db.Column(db.Integer, nullable=False)
+    text = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)

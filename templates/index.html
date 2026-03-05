@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <title>Source Code Hub | Premium Scripts & AI Prompts</title>
-    <meta name="description" content="Join Source Code Hub to download premium scripts, full website templates, and engineered AI prompts. Buy, sell, and learn today.">
+    <title>Source Code Hub | Premium Scripts & Prompts</title>
+    <meta name="description" content="Download high-performance scripts, full website templates, and engineered AI prompts. Buy, sell, and learn on Source Code Hub.">
     <meta property="og:title" content="Source Code Hub 🚀">
-    <meta property="og:description" content="Your central dashboard for high-performance scripts and premium algorithms.">
-    <meta property="og:image" content="https://mayanksourcecodehub.vercel.app/static/logo.png">
+    <meta property="og:description" content="Your central dashboard for premium algorithms and AI Prompts.">
+    <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
     <meta property="og:url" content="https://mayanksourcecodehub.vercel.app">
     <meta name="theme-color" content="#00d2ff">
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+
     <style>
         .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
         .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
@@ -27,12 +30,20 @@
         .search-bar:focus { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
         .premium-search:focus { border-color: #f5af19; box-shadow: 0 0 15px rgba(245, 175, 25, 0.2); }
         .social-proof { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(0,0,0,0.6); border-top: 1px solid #333; border-radius: 0 0 12px 12px; font-size: 0.85rem; color: #888; }
-        .like-btn { background: transparent; border: none; color: #888; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 5px; }
+        .like-btn, .bookmark-btn, .comment-btn { background: transparent; border: none; color: #888; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;}
         .like-btn:hover, .like-btn.liked { color: #ff5f56; }
+        .bookmark-btn:hover, .bookmark-btn.bookmarked { color: #00d2ff; }
+        .comment-btn:hover { color: #00ff88; }
         .prof-tab-btn { background: #111; color: #aaa; border: 1px solid #333; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
         .prof-tab-btn.active { background: #00d2ff; color: #000; font-weight: bold; border-color: #00d2ff; }
         .creator-link { color: #00d2ff; text-decoration: none; cursor: pointer; transition: 0.3s; }
         .creator-link:hover { text-decoration: underline; color: #fff; }
+        
+        /* Creator Stats Table */
+        .stats-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; text-align: left; }
+        .stats-table th { padding: 10px; border-bottom: 1px solid #333; color: #00d2ff; }
+        .stats-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ccc; }
+        .stats-table tr:hover td { background: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
@@ -140,19 +151,36 @@
             <div style="border-top: 1px solid #333; padding-top: 20px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                     <button class="prof-tab-btn active" onclick="switchProfTab('locker')" id="ptab-locker">My Locker</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('saved')" id="ptab-saved" style="color:#00ff88; border-color:#00ff88;">🔖 Saved Items</button>
                     <button class="prof-tab-btn" onclick="switchProfTab('support')" id="ptab-support">Support Tickets</button>
                     <button class="prof-tab-btn" onclick="switchProfTab('creator')" id="ptab-creator" style="border-color: #b06ab3; color: #b06ab3;">Creator Studio</button>
                 </div>
+                
                 <div id="prof-sec-locker" class="prof-section" style="display: block;"><div id="my-purchases-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
+                
+                <div id="prof-sec-saved" class="prof-section" style="display: none; text-align: left;">
+                    <h3 style="color: #00ff88; margin-bottom: 15px;">My Bookmarks</h3>
+                    <div id="my-saved-list"><p style="color:#888; font-size:0.9rem;">No items saved yet.</p></div>
+                </div>
+
                 <div id="prof-sec-support" class="prof-section" style="display: none; text-align: left;">
                     <h3 style="color: #fff; margin-bottom: 15px;">Open a Ticket</h3>
                     <form onsubmit="submitSupportTicket(event)" style="margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;"><input type="text" id="tick-subject" placeholder="What do you need help with?" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><textarea id="tick-msg" placeholder="Describe the issue..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px;"></textarea><button type="submit" class="submit-btn" style="width: auto; padding: 8px 20px;">Send to Support</button></form>
                     <h3 style="color: #fff; margin-bottom: 15px;">My Tickets</h3><div id="my-tickets-list"></div>
                 </div>
+                
                 <div id="prof-sec-creator" class="prof-section" style="display: none; text-align: left;">
                     <div id="creator-lock" style="display: block; text-align: center; padding: 40px; background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; border-radius: 8px;"><h3 style="color: #f5af19; margin-bottom: 10px;">⭐ Premium Access</h3><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">You must have an active Premium Membership to become a Creator.</p><button class="submit-btn premium-btn" style="width: auto;" onclick="switchPage('pricing')">Upgrade to Premium</button></div>
                     <div id="creator-unlocked" style="display: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px;"><div><p style="color: #888; font-size: 0.85rem; margin-bottom: 5px;">Available Balance (80% Cut)</p><h2 style="color: #00ff88; margin: 0;">₹<span id="cr-earnings">0</span></h2></div><button onclick="requestPayout()" style="background: transparent; border: 1px solid #00ff88; color: #00ff88; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">Request Payout</button></div>
+                        
+                        <h3 style="color: #00d2ff; margin-bottom: 10px; margin-top: 30px;">📊 My Analytics</h3>
+                        <div style="overflow-x: auto; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                            <table class="stats-table" id="creator-stats-table">
+                                <p style="color:#888; font-size:0.9rem;">Loading stats...</p>
+                            </table>
+                        </div>
+
                         <h3 style="color: #b06ab3; margin-bottom: 10px;">Upload Content</h3>
                         <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit Free Codes, Premium Codes, or AI Prompts. Staff will review it before it goes live!</p>
                         <form onsubmit="submitCreatorCode(event)" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;">
@@ -199,15 +227,23 @@
             <h4 style="color: #fff; margin-bottom: 10px;">Leave a Review</h4>
             <form id="review-form" onsubmit="submitReview(event)">
                 <input type="hidden" id="rev-code-id">
-                <select id="rev-rating" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                    <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
-                    <option value="4">⭐⭐⭐⭐ (4/5)</option>
-                    <option value="3">⭐⭐⭐ (3/5)</option>
-                    <option value="2">⭐⭐ (2/5)</option>
-                    <option value="1">⭐ (1/5)</option>
-                </select>
+                <select id="rev-rating" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><option value="5">⭐⭐⭐⭐⭐ (5/5)</option><option value="4">⭐⭐⭐⭐ (4/5)</option><option value="3">⭐⭐⭐ (3/5)</option><option value="2">⭐⭐ (2/5)</option><option value="1">⭐ (1/5)</option></select>
                 <textarea id="rev-comment" placeholder="What did you think about this code?" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px;"></textarea>
                 <button type="submit" class="submit-btn premium-btn" style="width: 100%;">Submit Review</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="comment-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) document.getElementById('comment-modal-overlay').style.display='none'">
+        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #00ff88; text-align: left;">
+            <div onclick="document.getElementById('comment-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+            <h2 style="color: #00ff88; margin-bottom: 20px;">💬 Community Discussion</h2>
+            <div id="comment-list-container" style="margin-bottom: 20px; max-height: 300px; overflow-y: auto; border-bottom: 1px solid #333; padding-bottom: 15px;"></div>
+            <form onsubmit="submitComment(event)" style="display: flex; gap: 10px;">
+                <input type="hidden" id="com-item-id">
+                <input type="hidden" id="com-item-type">
+                <input type="text" id="com-text" placeholder="Add a comment..." required style="flex: 1; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                <button type="submit" class="submit-btn" style="width: auto; background: #00ff88; color: #000; padding: 10px 20px;">Post</button>
             </form>
         </div>
     </div>
@@ -219,6 +255,13 @@
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    
     <script>AOS.init({ duration: 800, once: true });</script>
 </body>
 </html>

@@ -3,334 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Dashboard - Source Code Hub</title>
+    <title>Enterprise Dashboard - Source Code Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; margin: 0; }
-        .admin-container { max-width: 1400px; margin: 0 auto; }
+        /* DASHBOARD SPECIFIC STYLES */
+        body { margin: 0; padding: 0; min-height: 100vh; }
+        .dash-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; z-index: 10; position: relative; }
+        
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 20px 30px; border-radius: 15px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        
+        /* BEAUTIFUL GLASS PANELS */
+        .glass-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 25px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: 0.3s; display: flex; flex-direction: column; }
+        .glass-panel:hover { border-color: rgba(255,255,255,0.15); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+        
+        .panel-header { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px; }
         
         /* THE ULTIMATE GRID FIX */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 30px;
-            align-items: start; /* Prevents columns from stretching vertically */
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; text-align: center; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid rgba(255,255,255,0.03); }
+        .stat-box span { font-size: 0.9rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .stat-box strong { font-size: 2.5rem; font-weight: 600; }
         
-        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
-
-        .dash-col {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        /* BEAUTIFUL ENTERPRISE CARDS */
-        .admin-card {
-            background: #111111;
-            border: 1px solid #222;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* TOP HIGHLIGHT BORDERS */
-        .admin-card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
-        .border-gold::before { background: #f5af19; }
-        .border-cyan::before { background: #00d2ff; }
-        .border-pink::before { background: #ff007f; }
-        .border-purple::before { background: #b06ab3; }
-        .border-red::before { background: #ff5f56; }
-        .border-green::before { background: #00ff88; }
-
-        .admin-card h3 { margin-top: 0; margin-bottom: 20px; font-size: 1.2rem; letter-spacing: 0.5px; }
-
-        /* FORM ELEMENTS RESTYLED */
-        input, textarea, select {
-            width: 100%;
-            background: #1a1a1a;
-            color: #fff;
-            border: 1px solid #333;
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-        input:focus, textarea:focus, select:focus { border-color: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.2); outline: none; }
-        textarea { resize: vertical; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; align-items: start; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-bottom: 30px; align-items: start; }
         
-        /* BUTTONS */
-        .admin-card button[type="submit"] {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            border: none;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        @media (max-width: 1024px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
-        /* LIST ITEMS */
-        .manage-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: #1a1a1a; padding: 12px 15px; margin-bottom: 10px; 
-            border-radius: 8px; border-left: 4px solid #333; 
-        }
-        .delete-btn, .unban-btn { background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; transition: 0.3s; font-weight: bold; }
+        /* FORMS & INPUTS RESTYLED */
+        .admin-form input, .admin-form select, .admin-form textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; transition: 0.3s; box-sizing: border-box;}
+        .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: #00d2ff; background: rgba(0,0,0,0.5); outline: none; }
+        .admin-form textarea { resize: vertical; }
+        
+        /* BEAUTIFUL LIST CONTAINERS */
+        .list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; flex-grow: 1;}
+        .list-item { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #555; transition: 0.2s; }
+        .list-item:hover { background: rgba(0,0,0,0.5); }
+        
+        /* CUSTOM SCROLLBAR FOR PANELS */
+        .list-container::-webkit-scrollbar { width: 6px; }
+        .list-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .list-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; background: rgba(255,255,255,0.1); }
+        .delete-btn { background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; }
         .delete-btn:hover { background: #ff5f56; color: #fff; }
-        .unban-btn { border-color: #00ff88; color: #00ff88; }
-        .unban-btn:hover { background: #00ff88; color: #000; }
     </style>
 </head>
 <body>
-    <div class="admin-container">
+    <div class="glass-bg"></div> <div class="dash-container">
         {% if not logged_in %}
-        <div class="admin-card border-cyan" style="max-width: 400px; margin: 100px auto; text-align: center;">
-            <h2 style="color: #00d2ff; margin-top: 10px; margin-bottom: 25px;">Staff Portal Login</h2>
-            {% if error %}<p style="color: #ff5f56; font-size: 0.9rem; margin-bottom: 15px; background: rgba(255,95,86,0.1); padding: 10px; border-radius: 5px;">{{ error }}</p>{% endif %}
-            <form method="POST">
+        <div class="center-box" style="max-width: 420px; margin-top: 15vh;">
+            <h2 style="color: #00d2ff; margin-bottom: 25px; font-size: 1.8rem;">Command Center</h2>
+            {% if error %}<p style="color: #ff5f56; background: rgba(255,95,86,0.1); padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 20px; border: 1px solid rgba(255,95,86,0.3);">{{ error }}</p>{% endif %}
+            <form method="POST" class="admin-form">
                 <input type="text" name="username" placeholder="Staff Email Address" required>
-                <input type="password" name="password" placeholder="Password" required>
-                <button type="submit" style="background: #00d2ff; color: #000;">Secure Login</button>
+                <input type="password" name="password" placeholder="Secure Password" required>
+                <button type="submit" class="submit-btn" style="margin-top: 10px; font-size: 1.1rem; letter-spacing: 1px;">Authenticate</button>
             </form>
+            <p style="margin-top: 20px; font-size: 0.8rem; color: #666;">Restricted Access. Authorized personnel only.</p>
         </div>
         
         {% else %}
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #222;">
-            <h1 style="color: #00d2ff; margin: 0;">Command Center</h1>
-            <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: 0.3s;">Exit System</a>
+        <div class="dash-header">
+            <div>
+                <h1 style="margin: 0; font-size: 1.8rem; background: linear-gradient(90deg, #00d2ff, #3a7bd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Staff Dashboard</h1>
+                <p style="margin: 5px 0 0 0; color: #888; font-size: 0.9rem;">Secure Session Active | Role: <span id="header-role" style="color: #fff; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Loading...</span></p>
+            </div>
+            <button onclick="window.location.href='/admin-logout'" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='#ff5f56'; this.style.color='#fff'" onmouseout="this.style.background='transparent'; this.style.color='#ff5f56'">Secure Logout</button>
         </div>
-        
-        <div class="dashboard-grid">
-            
-            <div class="dash-col">
-                <div class="admin-card border-gold">
-                    <h3 style="color: #f5af19;">📊 Platform Overview</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;"><span style="color: #ccc; font-size: 0.8rem; display: block; text-transform: uppercase;">Users</span><strong id="stat-users" style="font-size: 1.5rem; color: #fff;">0</strong></div>
-                        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;"><span style="color: #ccc; font-size: 0.8rem; display: block; text-transform: uppercase;">Premium</span><strong id="stat-premium" style="font-size: 1.5rem; color: #f5af19;">0</strong></div>
-                        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;"><span style="color: #ccc; font-size: 0.8rem; display: block; text-transform: uppercase;">Views</span><strong id="stat-views" style="font-size: 1.5rem; color: #00d2ff;">0</strong></div>
-                        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; text-align: center;"><span style="color: #ccc; font-size: 0.8rem; display: block; text-transform: uppercase;">Revenue</span><strong style="font-size: 1.5rem; color: #00ff88;">₹<span id="stat-revenue">0</span></strong></div>
-                    </div>
-                </div>
-                
-                <div class="admin-card border-green" id="panel-incoming-payments">
-                    <h3 style="color: #00ff88;">💵 Incoming Payments</h3>
-                    <div id="pending-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"><p style="color: #666; font-size: 0.9rem;">No pending payments.</p></div>
-                </div>
-                
-                <div class="admin-card border-pink" id="panel-payout-requests">
-                    <h3 style="color: #ff007f;">💸 Payout Requests</h3>
-                    <div id="payout-list"><p style="color: #666; font-size: 0.9rem;">No pending payouts.</p></div>
-                </div>
-            </div>
-            
-            <div class="dash-col">
-                <div class="admin-card border-gold">
-                    <h3 style="color: #f5af19;">🌟 Creator Submissions</h3>
-                    <p style="color: #888; font-size: 0.85rem; margin-top: -10px; margin-bottom: 15px;">Awaiting staff approval.</p>
-                    <div id="creator-codes-list" style="max-height: 500px; overflow-y: auto; padding-right: 5px;"><p style="color: #666; font-size: 0.9rem;">No pending content.</p></div>
-                </div>
-                
-                <div class="admin-card border-cyan">
-                    <h3 style="color: #00d2ff;">🛠️ Support Tickets</h3>
-                    <div id="support-tickets-list" style="max-height: 500px; overflow-y: auto; padding-right: 5px;"><p style="color: #666; font-size: 0.9rem;">All caught up!</p></div>
-                </div>
-                
-                <div class="admin-card border-purple">
-                    <h3 style="color: #b06ab3;">+ Add AI Prompt</h3>
-                    <form onsubmit="submitNewPrompt(event)">
-                        <input type="text" id="prompt-title" placeholder="Prompt Title" required>
-                        <textarea id="prompt-content" placeholder="Paste exact prompt text..." required style="height: 100px;"></textarea>
-                        <button type="submit" style="background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Publish Prompt to Site</button>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="dash-col">
-                <div class="admin-card border-cyan">
-                    <h3 style="color: #00d2ff;">+ Upload Free Code</h3>
-                    <form onsubmit="submitNewCode(event)">
-                        <input type="text" id="code-title" placeholder="Title" required>
-                        <select id="code-category" required onchange="toggleInputType('code-category', 'code-content')">
-                            <option value="Single Page">Single Page Code (HTML/CSS/JS)</option>
-                            <option value="Full Website">Full Website (Requires Cloud Link)</option>
-                        </select>
-                        <textarea id="code-content" placeholder="Paste code here..." required style="height: 80px;"></textarea>
-                        <button type="submit" style="background: #00d2ff; color: #000;">Publish Free Code</button>
-                    </form>
-                </div>
-                
-                <div class="admin-card border-gold">
-                    <h3 style="color: #f5af19;">+ Upload Premium Code</h3>
-                    <form onsubmit="submitNewPremium(event)">
-                        <input type="text" id="prem-title" placeholder="Title" required>
-                        <select id="prem-category" required onchange="toggleInputType('prem-category', 'prem-content')">
-                            <option value="Single Page">Single Page Code (HTML/CSS/JS)</option>
-                            <option value="Full Website">Full Website (Requires Cloud Link)</option>
-                        </select>
-                        <input type="number" id="prem-price" placeholder="Price (₹)" required>
-                        <textarea id="prem-content" placeholder="Paste code here..." required style="height: 80px;"></textarea>
-                        <button type="submit" style="background: #f5af19; color: #000;">Publish Premium Code</button>
-                    </form>
-                </div>
-                
-                <div class="admin-card border-purple" id="panel-hiring">
-                    <h3 style="color: #b06ab3;">👑 Personnel Manager</h3>
-                    <form onsubmit="submitRoleUpdate(event)">
-                        <input type="email" id="role-email" placeholder="Target Email Address" required>
-                        <select id="role-select" required>
-                            <option value="member">Standard Member (Demote)</option>
-                            <option value="staff">Staff 🛠️</option>
-                            <option value="admin">Admin 🛡️</option>
-                            <option value="owner">Owner 👑</option>
-                        </select>
-                        <div style="margin-bottom: 10px; background: #1a1a1a; padding: 10px; border-radius: 8px;">
-                            <label style="color: #ccc; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="role-friend" style="width: auto; margin: 0;"> Grant 'Friend 🤝' Badge
-                            </label>
-                        </div>
-                        <div style="margin-bottom: 15px; background: rgba(0,255,136,0.1); border: 1px dashed #00ff88; padding: 10px; border-radius: 8px;">
-                            <label style="color: #00ff88; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="role-email-cred" style="width: auto; margin: 0;" checked> 
-                                <span>Auto-Generate Password & Email<br><small style="color:#aaa;">(Sends login details to user instantly)</small></span>
-                            </label>
-                        </div>
-                        <button type="submit" style="background: #b06ab3; color: #fff;">Execute Personnel Change</button>
-                    </form>
-                </div>
-                
-                <div class="admin-card border-pink" id="panel-gifts">
-                    <h3 style="color: #ff007f;">🎁 Gift Engine</h3>
-                    <form onsubmit="submitAdminGift(event)">
-                        <input type="email" id="gift-email" placeholder="Recipient's Email" required>
-                        <select id="gift-type" required onchange="toggleGiftType()">
-                            <option value="membership">Membership Pass</option>
-                            <option value="code">Premium Code Bypass</option>
-                        </select>
-                        <select id="gift-membership-val">
-                            <option value="Weekly Pass">Weekly Pass</option>
-                            <option value="Monthly Pass">Monthly Pass</option>
-                            <option value="Yearly Pass">Yearly Pass</option>
-                            <option value="Lifetime Pass">Lifetime Pass</option>
-                        </select>
-                        <select id="gift-code-val" style="display: none;"></select>
-                        <button type="submit" style="background: #ff007f; color: white;">Dispatch Gift</button>
-                    </form>
-                </div>
 
-                <div class="admin-card border-red" id="panel-bans">
-                    <h3 style="color: #ff5f56;">🚫 Security & Bans</h3>
-                    <form onsubmit="submitBanUser(event)">
-                        <input type="email" id="ban-email" placeholder="Target Email" required>
-                        <input type="number" id="ban-duration" placeholder="Ban Duration in Days (0 = Permanent)" required>
-                        <button type="submit" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Execute Ban</button>
-                    </form>
-                    <div id="banned-users-list" style="margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;"></div>
-                </div>
+        <div class="stats-grid">
+            <div class="stat-box" style="border-bottom: 3px solid #00d2ff;">
+                <span>Total Users</span>
+                <strong id="stat-users" style="color: #fff;">0</strong>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid #f5af19;">
+                <span>Premium Members</span>
+                <strong id="stat-premium" style="color: #f5af19;">0</strong>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid #00ff88;">
+                <span>Total Revenue</span>
+                <strong style="color: #00ff88;">₹<span id="stat-revenue">0</span></strong>
+            </div>
+            <div class="stat-box" style="border-bottom: 3px solid #b06ab3;">
+                <span>Page Views</span>
+                <strong id="stat-views" style="color: #b06ab3;">0</strong>
             </div>
         </div>
-        
-        <div class="admin-card" id="panel-manage-content" style="margin-top: 10px; border-top: 4px solid #444;">
-            <h2 style="margin-top: 0; margin-bottom: 25px; color: #fff; display: flex; align-items: center; gap: 10px;">
-                ⚙️ Content Management Database
-            </h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; align-items: start;">
-                <div style="background: #151515; padding: 20px; border-radius: 8px; border: 1px solid #222;">
-                    <h3 style="color: #00d2ff; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px;">Free Codes</h3>
-                    <div id="manage-codes-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+
+        <div class="grid-2" id="panel-finance">
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #00ff88;">💵 Incoming Payments</div>
+                <div class="list-container" id="pending-list"><p style="color: #888;">No pending payments.</p></div>
+            </div>
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #ff007f;">💸 Payout Requests</div>
+                <div class="list-container" id="payout-list"><p style="color: #888;">No pending payouts.</p></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #f5af19;">🌟 Creator Submissions</div>
+                <div class="list-container" id="creator-codes-list"><p style="color: #888;">No pending content.</p></div>
+            </div>
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #00d2ff;">🛠️ Support Tickets</div>
+                <div class="list-container" id="support-tickets-list"><p style="color: #888;">All caught up!</p></div>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #00d2ff;">+ Free Code</div>
+                <form class="admin-form" onsubmit="submitNewCode(event)">
+                    <input type="text" id="code-title" placeholder="Content Title" required>
+                    <select id="code-category" required onchange="toggleInputType('code-category', 'code-content')">
+                        <option value="Single Page">Single Page Code</option>
+                        <option value="Full Website">Full Website Link</option>
+                    </select>
+                    <textarea id="code-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <button type="submit" class="submit-btn" style="margin-top: auto;">Publish to Free Section</button>
+                </form>
+            </div>
+            
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #f5af19;">+ Premium Code</div>
+                <form class="admin-form" onsubmit="submitNewPremium(event)">
+                    <input type="text" id="prem-title" placeholder="Content Title" required>
+                    <select id="prem-category" required onchange="toggleInputType('prem-category', 'prem-content')">
+                        <option value="Single Page">Single Page Code</option>
+                        <option value="Full Website">Full Website Link</option>
+                    </select>
+                    <input type="number" id="prem-price" placeholder="Price (₹)" required>
+                    <textarea id="prem-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <button type="submit" class="submit-btn premium-btn" style="margin-top: auto;">Publish to Premium</button>
+                </form>
+            </div>
+
+            <div class="glass-panel">
+                <div class="panel-header" style="color: #b06ab3;">+ AI Prompt</div>
+                <form class="admin-form" onsubmit="submitNewPrompt(event)">
+                    <input type="text" id="prompt-title" placeholder="Prompt Title" required>
+                    <textarea id="prompt-content" placeholder="Paste exactly what the AI should read..." required style="height: 165px;"></textarea>
+                    <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Publish Prompt</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="grid-3" id="panel-system">
+            <div class="glass-panel" id="panel-hiring">
+                <div class="panel-header" style="color: #b06ab3;">👑 Personnel Manager</div>
+                <form class="admin-form" onsubmit="submitRoleUpdate(event)">
+                    <input type="email" id="role-email" placeholder="Target User Email" required>
+                    <select id="role-select" required>
+                        <option value="member">Standard Member (Demote)</option>
+                        <option value="staff">Staff 🛠️</option>
+                        <option value="admin">Admin 🛡️</option>
+                        <option value="owner">Owner 👑</option>
+                    </select>
+                    <div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <label style="color: #ccc; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;">
+                            <input type="checkbox" id="role-friend" style="width: auto; margin: 0;"> Grant 'Friend 🤝' Badge
+                        </label>
+                        <label style="color: #00ff88; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; background: rgba(0,255,136,0.05); padding: 10px; border-radius: 8px; border: 1px dashed #00ff88; cursor: pointer;">
+                            <input type="checkbox" id="role-email-cred" style="width: auto; margin: 0;" checked> Email Password to Staff
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Execute Change</button>
+                </form>
+            </div>
+
+            <div class="glass-panel" id="panel-gifts">
+                <div class="panel-header" style="color: #ff007f;">🎁 Gift Engine</div>
+                <form class="admin-form" onsubmit="submitAdminGift(event)">
+                    <input type="email" id="gift-email" placeholder="Recipient's Email" required>
+                    <select id="gift-type" required onchange="toggleGiftType()">
+                        <option value="membership">Membership Pass</option>
+                        <option value="code">Premium Code Bypass</option>
+                    </select>
+                    <select id="gift-membership-val">
+                        <option value="Weekly Pass">Weekly Pass</option>
+                        <option value="Monthly Pass">Monthly Pass</option>
+                        <option value="Yearly Pass">Yearly Pass</option>
+                        <option value="Lifetime Pass">Lifetime Pass</option>
+                    </select>
+                    <select id="gift-code-val" style="display: none;"></select>
+                    <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #ff007f, #ff0055); margin-top: 75px;">Dispatch Gift</button>
+                </form>
+            </div>
+
+            <div class="glass-panel" id="panel-bans">
+                <div class="panel-header" style="color: #ff5f56;">🚫 Security & Bans</div>
+                <form class="admin-form" onsubmit="submitBanUser(event)" style="margin-bottom: 20px;">
+                    <input type="email" id="ban-email" placeholder="Violator Email" required>
+                    <input type="number" id="ban-duration" placeholder="Days (0 = Permanent)" required>
+                    <button type="submit" class="submit-btn" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Execute Ban</button>
+                </form>
+                <div class="list-container" id="banned-users-list" style="max-height: 120px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel" id="panel-manage-content" style="margin-bottom: 50px;">
+            <div class="panel-header" style="color: #fff; font-size: 1.5rem;">⚙️ Content Management Database</div>
+            <div class="grid-3" style="margin-bottom: 0;">
+                <div>
+                    <h4 style="color: #00d2ff; margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">Free Codes</h4>
+                    <div class="list-container" id="manage-codes-list" style="max-height: 250px;"></div>
                 </div>
-                <div style="background: #151515; padding: 20px; border-radius: 8px; border: 1px solid #222;">
-                    <h3 style="color: #f5af19; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px;">Premium Codes</h3>
-                    <div id="manage-premium-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+                <div>
+                    <h4 style="color: #f5af19; margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">Premium Codes</h4>
+                    <div class="list-container" id="manage-premium-list" style="max-height: 250px;"></div>
                 </div>
-                <div style="background: #151515; padding: 20px; border-radius: 8px; border: 1px solid #222;">
-                    <h3 style="color: #b06ab3; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px;">AI Prompts</h3>
-                    <div id="manage-prompts-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+                <div>
+                    <h4 style="color: #b06ab3; margin-top: 0; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">AI Prompts</h4>
+                    <div class="list-container" id="manage-prompts-list" style="max-height: 250px;"></div>
                 </div>
             </div>
         </div>
 
         <script>
+            // Form toggles
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
 
+            // Primary Data Loader
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
+                
+                // Infinite Loop Fix
                 if (res.status === 401) {
-                    document.body.innerHTML = '<div style="text-align:center; margin-top:10vh;"><h2 style="color:#ff5f56; font-size: 2rem;">Authentication Required</h2><p style="color:#aaa; margin-bottom:30px;">Your secure session has ended or is invalid.</p><button onclick="window.location.href=\'/admin-logout\'" style="background:#00d2ff; color:#000; padding:15px 30px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:1.1rem; box-shadow: 0 5px 15px rgba(0,210,255,0.3);">Return to Login Portal</button></div>';
+                    document.body.innerHTML = '<div style="text-align:center; margin-top:15vh;"><h2 style="color:#ff5f56; font-size: 2.5rem;">Session Invalid</h2><p style="color:#aaa; font-size: 1.1rem; margin-bottom:30px;">Your secure access token has expired.</p><button onclick="window.location.href=\'/\'" class="submit-btn" style="width: auto; padding: 15px 40px; font-size: 1.2rem;">Return to Homepage</button></div>';
                     return;
                 }
 
                 if (res.ok) {
                     const d = await res.json();
                     
-                    // ROLE BASED UI RENDERING
+                    // Set Header
+                    document.getElementById('header-role').innerText = d.current_role;
+                    
+                    // PERMISSIONS ENGINE
                     if (d.current_role === 'staff') {
-                        ['panel-incoming-payments', 'panel-payout-requests', 'panel-hiring', 'panel-bans', 'panel-gifts', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+                        ['panel-finance', 'panel-system', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
                     } else if (d.current_role === 'admin') {
                         const roleSelect = document.getElementById('role-select');
                         if(roleSelect) { Array.from(roleSelect.options).forEach(opt => { if(opt.value === 'owner' || opt.value === 'admin') opt.remove(); }); }
                     }
 
+                    // Stats
                     document.getElementById('stat-users').innerText = d.total_users; document.getElementById('stat-premium').innerText = d.premium_users; document.getElementById('stat-revenue').innerText = d.total_revenue; document.getElementById('stat-views').innerText = d.page_views;
                     
+                    // Payments
                     const pDiv = document.getElementById('pending-list');
-                    if (d.pending_payments.length === 0) pDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payments.</p>';
-                    else pDiv.innerHTML = d.pending_payments.map(tx => `<div style="background: rgba(0,255,136,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid #00ff88; border-bottom: 1px solid #222;"><p style="font-size: 0.9rem; margin-bottom: 5px; color:#fff;">${tx.email}</p><p style="font-size: 0.9rem; margin-bottom: 5px; color:#ccc;">${tx.plan} <strong style="color:#00ff88;">(₹${tx.amount})</strong></p><p style="font-size: 0.85rem; margin-bottom: 10px; color:#888;">UPI: <span style="color: #fff;">${tx.sender_upi}</span></p><button onclick="approvePayment(${tx.id})" style="background: #00ff88; color: #000; font-weight: bold; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; width: 100%;">Verify & Approve</button></div>`).join('');
+                    if (d.pending_payments.length === 0) pDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending payments.</p>';
+                    else pDiv.innerHTML = d.pending_payments.map(tx => `<div class="list-item" style="border-left-color: #00ff88;"><div style="margin-bottom: 8px;"><strong style="color:#fff; display:block;">${tx.email}</strong><span style="color:#ccc; font-size:0.85rem;">${tx.plan} <b style="color:#00ff88;">(₹${tx.amount})</b></span><br><span style="color:#888; font-size:0.75rem;">UPI: ${tx.sender_upi}</span></div><button onclick="approvePayment(${tx.id})" class="submit-btn" style="background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 8px; font-size: 0.8rem;">Verify & Approve</button></div>`).join('');
 
+                    // Payouts
                     const payDiv = document.getElementById('payout-list');
-                    if (d.payouts.length === 0) payDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending payouts.</p>';
-                    else payDiv.innerHTML = d.payouts.map(p => `<div style="background: rgba(255,0,127,0.05); padding: 15px; border-radius: 8px; border-left: 3px solid #ff007f; margin-bottom: 15px; border-bottom: 1px solid #222;"><p style="color: #fff; margin-bottom: 5px;">${p.email}</p><h3 style="color: #ff007f; margin: 5px 0;">₹${p.amount}</h3><p style="color: #aaa; font-size: 0.85rem; margin-bottom: 10px;">Pay to UPI: <span style="color:#fff;">${p.upi}</span></p><button onclick="approvePayout(${p.id})" style="background: #ff007f; color: #fff; font-weight: bold; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; width: 100%;">Mark as Paid</button></div>`).join('');
+                    if (d.payouts.length === 0) payDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending payouts.</p>';
+                    else payDiv.innerHTML = d.payouts.map(p => `<div class="list-item" style="border-left-color: #ff007f;"><div style="margin-bottom: 8px;"><strong style="color:#fff; display:block;">${p.email}</strong><span style="color:#ff007f; font-size:1.1rem; font-weight:bold;">₹${p.amount}</span><br><span style="color:#888; font-size:0.75rem;">Pay to: ${p.upi}</span></div><button onclick="approvePayout(${p.id})" class="submit-btn" style="background: rgba(255,0,127,0.1); border: 1px solid #ff007f; color: #ff007f; padding: 8px; font-size: 0.8rem;">Mark as Paid</button></div>`).join('');
 
+                    // Bans
                     const bDiv = document.getElementById('banned-users-list');
-                    if (d.banned_users.length === 0) bDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No banned users.</p>';
-                    else bDiv.innerHTML = d.banned_users.map(u => `<div class="manage-item" style="border-left-color: #ff5f56; flex-direction: column; align-items: flex-start;"><div style="width: 100%; display: flex; justify-content: space-between;"><span style="font-size: 0.85rem; color: #fff;">${u.email}</span><button class="unban-btn" onclick="unbanUser('${u.email}')">Unban</button></div><span style="font-size: 0.75rem; color: #ff5f56; margin-top:5px;">Exp: ${u.expiry}</span></div>`).join('');
+                    if (d.banned_users.length === 0) bDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 10px;">No banned users.</p>';
+                    else bDiv.innerHTML = d.banned_users.map(u => `<div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; margin-bottom: 5px;"><div style="line-height:1.2;"><span style="color:#fff; font-size:0.85rem; display:block;">${u.email}</span><span style="color:#ff5f56; font-size:0.7rem;">Exp: ${u.expiry}</span></div><button onclick="unbanUser('${u.email}')" style="background:transparent; border:1px solid #00ff88; color:#00ff88; border-radius:4px; padding: 4px 8px; font-size:0.7rem; cursor:pointer;">Unban</button></div>`).join('');
 
+                    // Tickets
                     const tDiv = document.getElementById('support-tickets-list');
-                    if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">All tickets resolved.</p>';
-                    else tDiv.innerHTML = d.tickets.map(t => `<div style="background: rgba(0,210,255,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid #00d2ff; border-bottom: 1px solid #222;"><strong style="color:#00d2ff; font-size:0.85rem;">User: ${t.email}</strong><h4 style="color:#fff; margin: 10px 0 5px 0;">${t.subject}</h4><p style="font-size:0.9rem; color:#ccc; margin-top:0; line-height: 1.4;">${t.message}</p><textarea id="reply-${t.id}" placeholder="Type your official reply here..." style="width:100%; height:60px; margin-top:10px; border-color:#00d2ff;"></textarea><button onclick="replyTicket(${t.id})" style="background: #00d2ff; color: #000; font-weight: bold; border: none; padding: 8px 10px; cursor: pointer; border-radius: 4px; margin-top: 5px; width: 100%;">Dispatch Reply & Close</button></div>`).join('');
+                    if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All caught up!</p>';
+                    else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
+                    // Submissions
                     const cDiv = document.getElementById('creator-codes-list');
-                    if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No pending content.</p>';
-                    else cDiv.innerHTML = d.pending_codes.map(c => `<div style="background: rgba(245,175,25,0.05); padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 3px solid #f5af19; border-bottom: 1px solid #222;"><span style="color:#f5af19; font-size: 0.8rem; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">NEW ${c.type}</span><h4 style="color:#fff; margin: 8px 0;">${c.title}</h4><p style="color:#888; font-size:0.85rem; margin-top:0;">By: ${c.creator}</p><div style="display:flex; gap:10px; margin-top: 15px;"><button onclick="approveSubmission(${c.id}, '${c.type}')" style="flex:1; background: #f5af19; color: #000; font-weight: bold; border: none; padding: 8px; cursor: pointer; border-radius: 4px;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="flex:1; background: transparent; color: #ff5f56; border: 1px solid #ff5f56; font-weight: bold; padding: 8px; cursor: pointer; border-radius: 4px;">Reject</button></div></div>`).join('');
+                    if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending content.</p>';
+                    else cDiv.innerHTML = d.pending_codes.map(c => `<div class="list-item" style="border-left-color: #f5af19;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#f5af19; border:1px solid #f5af19; float:right; text-transform:uppercase;">${c.type}</span><strong style="color:#fff; font-size:1rem; display:block;">${c.title}</strong><span style="color:#aaa; font-size:0.8rem;">By: ${c.creator}</span></div><div style="display:flex; gap:10px;"><button onclick="approveSubmission(${c.id}, '${c.type}')" class="submit-btn premium-btn" style="padding: 8px; font-size: 0.8rem;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">Reject</button></div></div>`).join('');
                 }
             }
 
-            async function approvePayment(id) { if(!confirm("Are you sure you verified this payment?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }
-            async function approvePayout(id) { if(!confirm("Did you officially send the money via UPI?")) return; await fetch(`/admin/approve-payout/${id}`, { method: 'POST' }); loadAdminData(); }
-            async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); alert("Gift Dispatched!"); }
-            async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); alert("User Banned."); }
+            // API Calls
+            async function approvePayment(id) { if(!confirm("Verify this payment?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }
+            async function approvePayout(id) { if(!confirm("Did you send the money via UPI?")) return; await fetch(`/admin/approve-payout/${id}`, { method: 'POST' }); loadAdminData(); }
+            async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); alert("Gift Sent!"); }
+            async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
             async function unbanUser(email) { if(!confirm(`Unban ${email}?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
             
             async function submitRoleUpdate(e) { 
                 e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing...";
                 const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked };
                 const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
-                const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Personnel Change";
+                const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change";
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
-            async function deleteSubmission(id, type) { if(confirm("Permanently reject and delete this submission?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
+            async function deleteSubmission(id, type) { if(confirm("Permanently reject?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
             
-            async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); alert("Free Code Published!"); }
-            async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); alert("Premium Code Published!"); }
-            async function submitNewPrompt(e) { e.preventDefault(); await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); e.target.reset(); loadManageContent(); alert("AI Prompt Published!"); }
+            async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
+            async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
+            async function submitNewPrompt(e) { e.preventDefault(); await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
             
             async function loadManageContent() {
                 const res = await fetch('/api/content'); if(res.ok) { const d = await res.json();
-                    document.getElementById('manage-codes-list').innerHTML = d.codes.length === 0 ? '<p style="color:#666;">No items.</p>' : d.codes.map(c => `<div class="manage-item" style="border-left-color: #00d2ff;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.9rem; display:block; margin-bottom:3px;">${c.title}</strong><span style="font-size:0.75rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'free')">Del</button></div>`).join('');
-                    document.getElementById('manage-premium-list').innerHTML = d.premium_codes.length === 0 ? '<p style="color:#666;">No items.</p>' : d.premium_codes.map(c => `<div class="manage-item" style="border-left-color: #f5af19;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.9rem; display:block; margin-bottom:3px;">${c.title} <span style="color:#f5af19;">(₹${c.price})</span></strong><span style="font-size:0.75rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'premium')">Del</button></div>`).join('');
-                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.length === 0 ? '<p style="color:#666;">No items.</p>' : d.prompts.map(p => `<div class="manage-item" style="border-left-color: #b06ab3;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.9rem; display:block; margin-bottom:3px;">${p.title}</strong></div><button class="delete-btn" onclick="deleteSubmission(${p.id}, 'prompt')">Del</button></div>`).join('');
+                    document.getElementById('manage-codes-list').innerHTML = d.codes.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.codes.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${c.title}</strong><span style="font-size:0.7rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'free')">Del</button></div>`).join('');
+                    document.getElementById('manage-premium-list').innerHTML = d.premium_codes.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.premium_codes.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${c.title} <span style="color:#f5af19;">(₹${c.price})</span></strong><span style="font-size:0.7rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'premium')">Del</button></div>`).join('');
+                    document.getElementById('manage-prompts-list').innerHTML = d.prompts.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.prompts.map(p => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${p.title}</strong></div><button class="delete-btn" onclick="deleteSubmission(${p.id}, 'prompt')">Del</button></div>`).join('');
                     document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                 }
             }

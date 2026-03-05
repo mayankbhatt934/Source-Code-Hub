@@ -36,12 +36,17 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: server.login(sender_email, sender_password); server.sendmail(sender_email, to_email, msg.as_string())
         except: pass
 
-def check_admin_access():
-    if session.get('is_admin'): return True
+# --- ADVANCED ROLE VERIFICATION ---
+def get_user_role():
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
-        if u and getattr(u, 'role', 'member') in ['staff', 'admin', 'owner']: return True
-    return False
+        return getattr(u, 'role', 'member') if u else 'member'
+    elif session.get('is_admin'):
+        return 'owner' # Master backdoor account acts as Owner
+    return 'member'
+
+def check_admin_access():
+    return get_user_role() in ['staff', 'admin', 'owner']
 
 @app.route('/force-db-reset')
 def force_db_reset(): db.drop_all(); db.create_all(); db.session.add(SiteAnalytics(page_views=0)); db.session.commit(); return "DATABASE RESET SUCCESSFUL!"
@@ -238,36 +243,29 @@ def admin_dashboard():
         email_or_user = request.form.get('username')
         password = request.form.get('password')
         
-        # MASTER BACKDOOR (Failsafe)
         if email_or_user == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
-            session['is_admin'] = True
-            return redirect('/admin')
+            session['is_admin'] = True; return redirect('/admin')
             
-        # PROPER STAFF LOGIN SYSTEM
         user = User.query.filter_by(email=email_or_user).first()
         if user and check_password_hash(user.password, password):
             if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']:
-                session['is_admin'] = True
-                session['user_email'] = user.email
+                session['is_admin'] = True; session['user_email'] = user.email
                 return redirect('/admin')
-            else:
-                return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
-                
+            else: return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
         return render_template('admin.html', logged_in=False, error="Invalid email or password.")
 
-    if not check_admin_access(): 
-        return render_template('admin.html', logged_in=False)
+    if not check_admin_access(): return render_template('admin.html', logged_in=False)
     return render_template('admin.html', logged_in=True)
 
 @app.route('/admin-logout')
-def admin_logout(): 
-    session.pop('is_admin', None)
-    return redirect('/admin')
+def admin_logout(): session.pop('is_admin', None); return redirect('/admin')
 
 @app.route('/api/admin-data')
 def admin_data():
     try:
-        if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+        role = get_user_role()
+        if role not in ['staff', 'admin', 'owner']: return jsonify({"error": "Unauthorized"}), 401
+        
         revenue = sum([t.amount for t in Transaction.query.filter_by(status='Success').all()])
         pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
@@ -278,17 +276,13 @@ def admin_data():
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free"} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt"} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
         
-        pv = 0
-        if SiteAnalytics.query.first(): pv = SiteAnalytics.query.first().page_views
-
-        return jsonify({"total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
-    except Exception as e:
-        print("API ADMIN DATA ERROR:", str(e))
-        return jsonify({"error": str(e)}), 500
+        pv = SiteAnalytics.query.first().page_views if SiteAnalytics.query.first() else 0
+        return jsonify({"current_role": role, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
+    except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
 def approve_payment(tx_id):
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     tx = Transaction.query.get(tx_id)
     if tx:
         tx.status = 'Success'; target_email = tx.gift_recipient_email if tx.is_gift else tx.email
@@ -305,23 +299,21 @@ def approve_payment(tx_id):
                 code = PremiumCode.query.get(tx.code_id)
                 if code and getattr(code, 'creator_email', 'admin') != 'admin':
                     creator = User.query.filter_by(email=code.creator_email).first()
-                    if creator: 
-                        creator.earnings = getattr(creator, 'earnings', 0) + int(tx.amount * 0.8)
-                        db.session.add(Notification(email=creator.email, title="New Sale! 💰", message=f"Someone bought {code.title}! ₹{int(tx.amount * 0.8)} added to your wallet."))
+                    if creator: creator.earnings = getattr(creator, 'earnings', 0) + int(tx.amount * 0.8); db.session.add(Notification(email=creator.email, title="New Sale! 💰", message=f"Someone bought {code.title}! ₹{int(tx.amount * 0.8)} added to your wallet."))
             db.session.add(Notification(email=user.email, title="Approved! 🎉", message=f"Access to {tx.plan} granted!"))
         db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
 @app.route('/admin/approve-payout/<int:pid>', methods=['POST'])
 def approve_payout(pid):
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     p = PayoutRequest.query.get(pid)
     if p: p.status = 'Paid'; db.session.add(Notification(email=p.email, title="Payout Sent! 💸", message=f"Your payout of ₹{p.amount} has been processed to {p.upi_id}.")); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
 @app.route('/admin/gift', methods=['POST'])
 def admin_gift():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     data = request.json; user = User.query.filter_by(email=data.get('email')).first()
     if not user: return jsonify({"status": "error", "message": "User not found"}), 404
     if data.get('type') == 'membership':
@@ -335,40 +327,52 @@ def admin_gift():
 
 @app.route('/admin/update-role', methods=['POST'])
 def admin_update_role():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    email = data.get('email')
-    role = data.get('role', 'member')
-    is_friend = data.get('is_friend', False)
-    send_email = data.get('send_email', False)
+    curr_role = get_user_role()
+    if curr_role not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     
+    data = request.json
+    email = data.get('email'); target_role = data.get('role', 'member')
+    is_friend = data.get('is_friend', False); send_email = data.get('send_email', False)
+    
+    if curr_role == 'admin' and target_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "Admins cannot grant Admin or Owner roles!"}), 403
+        
     user = User.query.filter_by(email=email).first()
     new_password = None
     
     if not user:
         new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
         hashed = generate_password_hash(new_password, method='pbkdf2:sha256')
-        user = User(name=email.split('@')[0], email=email, password=hashed, role=role, is_friend=is_friend)
+        user = User(name=email.split('@')[0], email=email, password=hashed, role=target_role, is_friend=is_friend)
         db.session.add(user)
+        db.session.commit()
+        db.session.add(Notification(email=user.email, title="Welcome to the Team! 💼", message=f"You have been hired as {target_role.upper()}!"))
+        if is_friend: db.session.add(Notification(email=user.email, title="New Badge 🤝", message="You received the Friend badge!"))
     else:
-        user.role = role
+        old_role = getattr(user, 'role', 'member')
+        old_friend = getattr(user, 'is_friend', False)
+        
+        if curr_role == 'admin' and old_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "You cannot modify an Admin or Owner!"}), 403
+
+        user.role = target_role
         user.is_friend = is_friend
         if send_email:
             new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
             user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
             
+        if old_role != target_role: db.session.add(Notification(email=user.email, title="Role Updated 👑", message=f"Your role is now: {target_role.upper()}!"))
+        if is_friend and not old_friend: db.session.add(Notification(email=user.email, title="New Badge 🤝", message="You have been granted the Friend badge!"))
+            
     db.session.commit()
     
     if send_email and new_password:
-        msg = f"Hello,\n\nYou have been given the {role.upper()} role for Source Code Hub.\n\nLogin URL: https://mayanksourcecodehub.vercel.app/admin\nEmail: {email}\nPassword: {new_password}\n\nPlease keep these credentials safe."
-        send_system_email(email, f"Welcome to the Team! ({role.upper()})", msg)
-        return jsonify({"status": "success", "message": f"Staff role updated! Password emailed to {email}."})
-        
+        msg = f"Hello,\n\nYou have been assigned the {target_role.upper()} role.\nLogin: https://mayanksourcecodehub.vercel.app/admin\nEmail: {email}\nPassword: {new_password}"
+        send_system_email(email, f"Source Code Hub - {target_role.upper()} Access", msg)
+        return jsonify({"status": "success", "message": f"Role updated! Password emailed to {email}."})
     return jsonify({"status": "success", "message": "Roles updated successfully."})
 
 @app.route('/admin/ban-user', methods=['POST'])
 def admin_ban_user():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     data = request.json; user = User.query.filter_by(email=data.get('email')).first()
     if not user: return jsonify({"status": "error"}), 404
     days = int(data.get('duration_days', 0)); user.is_banned = True
@@ -377,7 +381,7 @@ def admin_ban_user():
 
 @app.route('/admin/unban-user', methods=['POST'])
 def admin_unban_user():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     user = User.query.filter_by(email=request.json.get('email')).first()
     if user: user.is_banned = False; user.ban_expiry = None; db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
@@ -393,7 +397,6 @@ def admin_reply_ticket():
 def approve_submission():
     if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
     data = request.json; item_id = data.get('id'); item_type = data.get('type')
-    
     if item_type == 'premium': obj = PremiumCode.query.get(item_id)
     elif item_type == 'free': obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
@@ -411,7 +414,6 @@ def get_content():
         def get_c_name(e):
             if e == 'admin': return 'Admin 👑'
             u = User.query.filter_by(email=e).first(); return u.name if u else 'Unknown'
-        
         c_list = [{"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code, "views": getattr(c, 'views', 0), "likes": getattr(c, 'likes', 0), "creator": get_c_name(getattr(c, 'creator_email', 'admin')), "creator_email": getattr(c, 'creator_email', 'admin')} for c in FreeCode.query.all() if getattr(c, 'is_approved', True)]
         p_list = [{"id": p.id, "title": p.title, "category": p.category, "price": p.price, "code": p.code, "views": getattr(p, 'views', 0), "likes": getattr(p, 'likes', 0), "creator": get_c_name(getattr(p, 'creator_email', 'admin')), "creator_email": getattr(p, 'creator_email', 'admin')} for p in PremiumCode.query.all() if getattr(p, 'is_approved', True)]
         pr_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in AIPrompt.query.all() if getattr(p, 'is_approved', True)]
@@ -438,7 +440,7 @@ def admin_add_prompt():
 
 @app.route('/admin/delete-submission', methods=['POST'])
 def delete_submission():
-    if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
+    if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     data = request.json; item_id = data.get('id'); item_type = data.get('type')
     if item_type == 'premium': obj = PremiumCode.query.get(item_id)
     elif item_type == 'free': obj = FreeCode.query.get(item_id)

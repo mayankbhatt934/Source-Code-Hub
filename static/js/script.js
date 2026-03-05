@@ -1,6 +1,14 @@
 let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false; let isVerifiedUser = false;
 let userBookmarks = [];
 
+// --- GLOBAL AUTO-RESIZE FOR ALL TEXTAREAS ---
+document.addEventListener('input', function (e) {
+    if (e.target.tagName.toLowerCase() === 'textarea') {
+        e.target.style.height = 'auto';
+        e.target.style.height = (e.target.scrollHeight) + 'px';
+    }
+});
+
 function switchPage(pageId) {
     if (isBannedUser && ['home', 'free', 'premium', 'prompts', 'pricing'].includes(pageId)) { let banner = document.getElementById('ban-banner'); if(banner) banner.style.display = 'block'; return; }
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
@@ -18,7 +26,6 @@ function switchPage(pageId) {
 function toggleMobileMenu() { document.getElementById('nav-menu').classList.toggle('show'); }
 function switchCategoryTab(section, category) { document.querySelectorAll(`.${section}-tab-content`).forEach(el => el.style.display = 'none'); document.querySelectorAll(`.${section}-tab-btn`).forEach(el => el.classList.remove('active')); document.getElementById(`${section}-${category}-content`).style.display = 'block'; document.getElementById(`btn-${section}-${category}`).classList.add('active'); }
 
-// UPDATED: Now loads the leaderboard when the tab is clicked!
 function switchProfTab(tab) { 
     document.querySelectorAll('.prof-section').forEach(el => el.style.display = 'none'); 
     document.querySelectorAll('.prof-tab-btn').forEach(el => el.classList.remove('active')); 
@@ -46,7 +53,7 @@ async function viewProfile(username) {
         if(res.ok) {
             const data = await res.json();
             document.getElementById('pub-prof-img').src = data.photo; document.getElementById('pub-prof-name').innerText = data.name;
-            document.getElementById('pub-prof-badges').innerHTML = data.badges.map(b => `<span style="padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid ${b.class==='badge-premium'?'#f5af19':b.class==='badge-owner'?'#ff00ff':b.class==='badge-admin'?'#00d2ff':b.class==='badge-staff'?'#00ff88':b.class==='badge-friend'?'#ff5f56':'#888'}; color: ${b.class==='badge-premium'?'#f5af19':b.class==='badge-owner'?'#ff00ff':b.class==='badge-admin'?'#00d2ff':b.class==='badge-staff'?'#00ff88':b.class==='badge-friend'?'#ff5f56':'#888'}; background: rgba(255,255,255,0.05);">${b.name}</span>`).join('');
+            document.getElementById('pub-prof-badges').innerHTML = data.badges.map(b => `<span style="padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid ${b.class==='badge-premium'?'#f5af19':b.class==='badge-owner'?'#ff00ff':b.class==='badge-admin'?'#00d2ff':b.class==='badge-staff'?'#00ff88':b.class==='badge-friend'?'#ff5f56':'#333'}; color: ${b.class==='badge-premium'?'#f5af19':b.class==='badge-owner'?'#ff00ff':b.class==='badge-admin'?'#00d2ff':b.class==='badge-staff'?'#00ff88':b.class==='badge-friend'?'#ff5f56':'#888'}; background: rgba(255,255,255,0.05);">${b.name}</span>`).join('');
             document.getElementById('pub-prof-codes').innerHTML = data.codes.length > 0 ? data.codes.map(c => `<div style="background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; margin-bottom: 5px; border-left: 3px solid ${c.type==='Premium'?'#f5af19':'#00d2ff'};"><span style="color:#fff; font-size:0.9rem;">${c.title}</span> <span style="font-size:0.7rem; color:#888;">(${c.type})</span></div>`).join('') : '<p style="color:#666; font-size:0.8rem;">No codes published yet.</p>';
             document.getElementById('public-prof-modal').style.display = 'flex';
         }
@@ -223,11 +230,6 @@ function toggleCreatorFields() {
     if(type === 'prompt') { cat.style.display = 'none'; cat.required = false; price.style.display = 'none'; price.required = false; code.placeholder = "Paste your AI Prompt here..."; }
     else if(type === 'free') { cat.style.display = 'block'; cat.required = true; price.style.display = 'none'; price.required = false; code.placeholder = "Paste your code or Drive link here..."; }
     else { cat.style.display = 'block'; cat.required = true; price.style.display = 'block'; price.required = true; code.placeholder = "Paste your code or Drive link here..."; }
-}
-
-function autoResize(element) {
-    element.style.height = 'auto';
-    element.style.height = (element.scrollHeight) + 'px';
 }
 
 async function requestPayout() { const amount = prompt("Enter amount to withdraw (Min ₹100):"); if(!amount) return; const upi = prompt("Enter your UPI ID to receive payment:"); if(!upi) return; try { const res = await fetch('/api/creator/payout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({amount: parseInt(amount), upi: upi}) }); const data = await res.json(); if(res.ok) { alert("Payout Requested! Admin will verify."); loadUserProfile(); } else { alert("Error: " + data.error); if(data.error && data.error.includes("log in")) { handleLogout(); switchAuthPage(); } } } catch(e) {} }

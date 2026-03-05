@@ -21,7 +21,10 @@
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
         .admin-form input, .admin-form select, .admin-form textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; transition: 0.3s; box-sizing: border-box;}
         .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: #00d2ff; background: rgba(0,0,0,0.5); outline: none; }
-        .admin-form textarea { resize: vertical; }
+        
+        /* FIXED: Removed manual resize handle for ALL admin textareas */
+        .admin-form textarea, textarea { resize: none; overflow: hidden; }
+        
         .list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; flex-grow: 1;}
         .list-item { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #555; transition: 0.2s; }
         .list-item:hover { background: rgba(0,0,0,0.5); }
@@ -152,7 +155,16 @@
         </div>
 
         <script>
+            // --- GLOBAL AUTO-RESIZE ENGINE FOR ALL ADMIN TEXTAREAS ---
+            document.addEventListener('input', function (e) {
+                if (e.target.tagName.toLowerCase() === 'textarea') {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = (e.target.scrollHeight) + 'px';
+                }
+            });
+
             let pendingCodesData = [];
+
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
             
@@ -161,7 +173,18 @@
                 document.getElementById('notif-email').required = this.value === 'specific';
             });
 
-            // TRUE SERVER-SIDE COOLDOWN UI
+            function checkBroadcastCooldown() {
+                const cooldownEnd = localStorage.getItem('broadcastCooldown');
+                if (cooldownEnd) {
+                    const now = new Date().getTime();
+                    if (now < cooldownEnd) {
+                        startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000));
+                    } else {
+                        localStorage.removeItem('broadcastCooldown');
+                    }
+                }
+            }
+
             function startBroadcastTimer(seconds) {
                 const btn = document.getElementById('btn-broadcast');
                 if(!btn) return;
@@ -199,7 +222,6 @@
                     document.getElementById('header-role').innerText = d.current_role;
                     document.getElementById('header-username').innerText = d.current_username;
                     
-                    // Sync cooldown on load!
                     if (d.broadcast_cooldown && d.broadcast_cooldown > 0) {
                         startBroadcastTimer(d.broadcast_cooldown);
                     }
@@ -229,8 +251,7 @@
                     if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All caught up!</p>';
                     else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
-                    // (Inside loadAdminData...)
-                    pendingCodesData = d.pending_codes; // Save data globally for the preview modal
+                    pendingCodesData = d.pending_codes;
 
                     const cDiv = document.getElementById('creator-codes-list');
                     if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending content.</p>';
@@ -238,11 +259,9 @@
                 }
             }
 
-            // NEW: Function to open the code preview modal safely
             function previewSubmission(index) {
                 const item = pendingCodesData[index];
                 if (!item) return;
-                // Safely escape brackets so HTML code doesn't execute in the admin panel
                 const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 document.getElementById('preview-code-content').innerHTML = safeCode;
                 document.getElementById('preview-modal-overlay').style.display = 'flex';
@@ -265,56 +284,24 @@
                 e.preventDefault();
                 const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value;
                 const btn = document.getElementById('btn-broadcast');
-                
-                btn.disabled = true;
-                btn.innerText = "Sending...";
-
+                btn.disabled = true; btn.innerText = "Sending...";
                 try {
-                    const res = await fetch('/admin/send-notification', { 
-                        method: 'POST', 
-                        headers: {'Content-Type': 'application/json'}, 
-                        body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) 
-                    });
-                    
+                    const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) });
                     const data = await res.json();
-                    
-                    if(res.ok) { 
-                        alert("Broadcast Sent!"); 
-                        e.target.reset(); 
-                        document.getElementById('notif-email').style.display='none';
-                        startBroadcastTimer(data.cooldown);
-                    } else {
-                        alert("Error: " + (data.error || "Failed to send"));
-                        if (data.cooldown) {
-                            startBroadcastTimer(data.cooldown); 
-                        } else {
-                            btn.disabled = false;
-                            btn.innerText = "Send Alert";
-                        }
-                    }
-                } catch(err) { 
-                    alert("Network Error!"); 
-                    btn.disabled = false;
-                    btn.innerText = "Send Alert";
-                }
+                    if(res.ok) { alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; startBroadcastTimer(data.cooldown); } 
+                    else { alert("Error: " + (data.error || "Failed to send")); if (data.cooldown) { startBroadcastTimer(data.cooldown); } else { btn.disabled = false; btn.innerText = "Send Alert"; } }
+                } catch(err) { alert("Network Error!"); btn.disabled = false; btn.innerText = "Send Alert"; }
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
+            
             async function deleteSubmission(id, type) { 
                 const reason = prompt("Enter reason for rejection (this will be sent to the creator):");
-                // If they click 'Cancel' on the prompt, it aborts the deletion
                 if(reason !== null) { 
-                    // If they leave it blank, assign a default reason
                     const finalReason = reason.trim() === "" ? "Does not meet quality guidelines." : reason;
-                    
-                    await fetch(`/admin/delete-submission`, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ id: id, type: type, reason: finalReason }) 
-                    }); 
-                    loadAdminData(); 
-                    loadManageContent(); 
+                    await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type, reason: finalReason }) }); 
+                    loadAdminData(); loadManageContent(); 
                 } 
             }
             
@@ -331,7 +318,7 @@
                 }
             }
             
-            window.onload = () => { loadAdminData(); loadManageContent(); };
+            window.onload = () => { loadAdminData(); loadManageContent(); checkBroadcastCooldown(); };
         </script>
         {% endif %}
     </div>

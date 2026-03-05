@@ -14,10 +14,13 @@
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-6">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-7">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
+        /* FIXED: Global auto-resize standard for all textareas */
+        textarea { resize: none; overflow: hidden; }
+        
         .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
         .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
         .cat-tab:hover { border-color: #555; color: #fff; }
@@ -213,7 +216,7 @@
                             <input type="text" id="cr-title" placeholder="Title" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
                             <select id="cr-cat" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website (Link)</option></select>
                             <input type="number" id="cr-price" placeholder="Price to sell at (₹)" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                            <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px; resize: none;" oninput="autoResize(this)"></textarea>
+                            <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px;"></textarea>
                             <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button>
                         </form>
                     </div>
@@ -276,7 +279,7 @@
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-6"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-7"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>

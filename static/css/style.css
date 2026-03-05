@@ -155,32 +155,11 @@ footer { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.3); marg
     .flip-container { height: 350px; }
 }
 
-
 /* =======================================================================
    🪄 PANDORA'S BOX: ENTERPRISE POLISH & ANIMATIONS
    ======================================================================= */
 
-/* 1. HACKER TYPING EFFECT FOR HERO TEXT */
-.hero h1 span {
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    border-right: 4px solid #00d2ff; /* The cursor */
-    animation: typingEffect 3s steps(20, end) forwards, blinkCaret 0.8s step-end infinite;
-    vertical-align: bottom;
-    /* We make text transparent initially, but rely on background-clip */
-}
-
-@keyframes typingEffect { 
-    from { max-width: 0; } 
-    to { max-width: 100%; } 
-}
-@keyframes blinkCaret { 
-    from, to { border-color: transparent; } 
-    50% { border-color: #00d2ff; } 
-}
-
-/* 2. RGB GAMER GLOW FOR PREMIUM CARDS */
+/* RGB GAMER GLOW FOR PREMIUM CARDS */
 @keyframes rgbGlowBorder {
     0% { border-color: #ff007f; box-shadow: 0 15px 40px rgba(255, 0, 127, 0.4); }
     33% { border-color: #00d2ff; box-shadow: 0 15px 40px rgba(0, 210, 255, 0.4); }
@@ -193,7 +172,7 @@ footer { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.3); marg
     transform: translateY(-12px) scale(1.05) !important;
 }
 
-/* 3. ZERO-GRAVITY HOVER PHYSICS FOR ALL CARDS */
+/* ZERO-GRAVITY HOVER PHYSICS FOR ALL CARDS */
 .home-card, .pricing-card, .code-container {
     transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.5s ease, border-color 0.5s ease !important;
 }

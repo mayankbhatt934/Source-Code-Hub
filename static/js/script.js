@@ -30,7 +30,43 @@ function switchAuthPage() { isLoggedIn ? switchPage('profile') : switchPage('log
 function toggleFlipCard() { isFlipped = !isFlipped; document.getElementById('flip-inner-box').style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; }
 function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); } }
 
-function runSandbox(elementId) { const code = document.getElementById(elementId).innerText; const modal = document.getElementById('sandbox-modal'); modal.style.display = 'flex'; const iframe = document.getElementById('sandbox-frame'); const doc = iframe.contentWindow.document; doc.open(); doc.write(code); doc.close(); }
+function runSandbox(elementId) { 
+    // Use .textContent to grab the exact formatting and line breaks
+    const codeElement = document.getElementById(elementId);
+    const code = codeElement.textContent || codeElement.innerText; 
+    
+    const modal = document.getElementById('sandbox-modal'); 
+    modal.style.display = 'flex'; 
+    
+    const iframe = document.getElementById('sandbox-frame'); 
+    const doc = iframe.contentWindow.document; 
+    doc.open(); 
+    
+    // Check if the code contains common Web Development tags
+    const isWebCode = /<html|<body|<div|<style|<script|<canvas|<button/i.test(code);
+
+    if (isWebCode) {
+        // If it's a website, render it normally
+        doc.write(code);
+    } else {
+        // If it's Python/Backend code, format it nicely in dark mode instead of clumping it
+        // We replace < and > to prevent accidental HTML rendering inside the text
+        const safeCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        
+        doc.write(`
+            <html>
+            <body style="background: #1e1e1e; color: #dcdcaa; font-family: Consolas, 'Courier New', monospace; padding: 20px; margin: 0;">
+                <div style="background: rgba(255, 95, 86, 0.1); border-left: 4px solid #ff5f56; padding: 10px 15px; margin-bottom: 20px; font-family: sans-serif; border-radius: 4px;">
+                    <strong style="color: #ff5f56;">⚠️ Note:</strong> Live execution is only available for HTML/CSS/JS. Displaying formatted source code below.
+                </div>
+                <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 14px; line-height: 1.5; margin: 0;">${safeCode}</pre>
+            </body>
+            </html>
+        `);
+    }
+    
+    doc.close(); 
+}
 
 async function viewProfile(email) {
     try {

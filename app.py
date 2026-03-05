@@ -590,10 +590,26 @@ def admin_add_prompt():
 def delete_submission():
     if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
     data = request.json; item_id = data.get('id'); item_type = data.get('type')
+    reason = data.get('reason', 'Does not meet platform guidelines.') # Get the reason from admin
+    
     if item_type == 'premium': obj = PremiumCode.query.get(item_id)
     elif item_type == 'free': obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
-    if obj: db.session.delete(obj); db.session.commit(); return jsonify({"status": "success"})
+    
+    if obj: 
+        # Create a notification for the creator BEFORE deleting the object
+        creator_email = getattr(obj, 'creator_email', 'admin')
+        if creator_email != 'admin':
+            db.session.add(Notification(
+                email=creator_email, 
+                title="Submission Rejected ❌", 
+                message=f"Your {item_type} '{obj.title}' was rejected. Reason: {reason}"
+            ))
+            
+        db.session.delete(obj)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"error": "Item not found"}), 404
 
 @app.after_request
 def add_cache_control(response):

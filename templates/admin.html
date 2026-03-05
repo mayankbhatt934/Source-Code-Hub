@@ -301,7 +301,22 @@
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
-            async function deleteSubmission(id, type) { if(confirm("Permanently reject?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
+            async function deleteSubmission(id, type) { 
+                const reason = prompt("Enter reason for rejection (this will be sent to the creator):");
+                // If they click 'Cancel' on the prompt, it aborts the deletion
+                if(reason !== null) { 
+                    // If they leave it blank, assign a default reason
+                    const finalReason = reason.trim() === "" ? "Does not meet quality guidelines." : reason;
+                    
+                    await fetch(`/admin/delete-submission`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ id: id, type: type, reason: finalReason }) 
+                    }); 
+                    loadAdminData(); 
+                    loadManageContent(); 
+                } 
+            }
             
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }

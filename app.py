@@ -75,7 +75,7 @@ def login():
     return jsonify({"status": "error", "message": "Invalid email or password!"}), 401
 
 @app.route('/logout', methods=['POST'])
-def logout(): session.pop('user_email', None); return jsonify({"status": "success"})
+def logout(): session.pop('user_email', None); session.pop('is_admin', None); return jsonify({"status": "success"})
 
 def get_user_badges(user):
     badges = []
@@ -115,7 +115,7 @@ def forgot_password():
     if not user: return jsonify({"status": "success"})
     code = str(random.randint(100000, 999999))
     db.session.add(PasswordReset(email=email, code=code, expiry=datetime.utcnow() + timedelta(minutes=15))); db.session.commit()
-    send_system_email(email, "Password Reset Code", f"Your code is: {code}")
+    send_system_email(email, "Source Code Hub - Password Reset", f"Your reset code is: {code}\n\nExpires in 15 minutes.")
     return jsonify({"status": "success"})
 
 @app.route('/reset-password', methods=['POST'])
@@ -235,13 +235,34 @@ def get_leaderboard():
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':
-        if request.form.get('username') == ADMIN_USERNAME and request.form.get('password') == ADMIN_PASSWORD: session['is_admin'] = True; return redirect('/admin')
-        else: return render_template('admin.html', logged_in=False, error="Invalid credentials")
-    if not check_admin_access(): return render_template('admin.html', logged_in=False)
+        email_or_user = request.form.get('username')
+        password = request.form.get('password')
+        
+        # MASTER BACKDOOR (Failsafe)
+        if email_or_user == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
+            session['is_admin'] = True
+            return redirect('/admin')
+            
+        # PROPER STAFF LOGIN SYSTEM
+        user = User.query.filter_by(email=email_or_user).first()
+        if user and check_password_hash(user.password, password):
+            if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']:
+                session['is_admin'] = True
+                session['user_email'] = user.email
+                return redirect('/admin')
+            else:
+                return render_template('admin.html', logged_in=False, error="Access Denied: You do not have Staff permissions.")
+                
+        return render_template('admin.html', logged_in=False, error="Invalid email or password.")
+
+    if not check_admin_access(): 
+        return render_template('admin.html', logged_in=False)
     return render_template('admin.html', logged_in=True)
 
 @app.route('/admin-logout')
-def admin_logout(): session.pop('is_admin', None); return redirect('/admin')
+def admin_logout(): 
+    session.pop('is_admin', None)
+    return redirect('/admin')
 
 @app.route('/api/admin-data')
 def admin_data():
@@ -252,7 +273,6 @@ def admin_data():
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
         open_tickets = [{"id": t.id, "email": t.email, "subject": t.subject, "message": t.message} for t in SupportTicket.query.filter_by(status='Open').all()]
         
-        # BULLETPROOF FALLBACKS
         payouts = [{"id": p.id, "email": p.email, "amount": p.amount, "upi": p.upi_id} for p in getattr(PayoutRequest, 'query').filter_by(status='Pending').all()] if hasattr(PayoutRequest, 'query') else []
         pend_prem = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "premium"} for c in PremiumCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free"} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
@@ -316,9 +336,35 @@ def admin_gift():
 @app.route('/admin/update-role', methods=['POST'])
 def admin_update_role():
     if not check_admin_access(): return jsonify({"error": "Unauthorized"}), 401
-    data = request.json; user = User.query.filter_by(email=data.get('email')).first()
-    if not user: return jsonify({"status": "error", "message": "User not found!"}), 404
-    user.role = data.get('role', 'member'); user.is_friend = data.get('is_friend', False); db.session.commit(); return jsonify({"status": "success"})
+    data = request.json
+    email = data.get('email')
+    role = data.get('role', 'member')
+    is_friend = data.get('is_friend', False)
+    send_email = data.get('send_email', False)
+    
+    user = User.query.filter_by(email=email).first()
+    new_password = None
+    
+    if not user:
+        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        hashed = generate_password_hash(new_password, method='pbkdf2:sha256')
+        user = User(name=email.split('@')[0], email=email, password=hashed, role=role, is_friend=is_friend)
+        db.session.add(user)
+    else:
+        user.role = role
+        user.is_friend = is_friend
+        if send_email:
+            new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+            user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
+            
+    db.session.commit()
+    
+    if send_email and new_password:
+        msg = f"Hello,\n\nYou have been given the {role.upper()} role for Source Code Hub.\n\nLogin URL: https://mayanksourcecodehub.vercel.app/admin\nEmail: {email}\nPassword: {new_password}\n\nPlease keep these credentials safe."
+        send_system_email(email, f"Welcome to the Team! ({role.upper()})", msg)
+        return jsonify({"status": "success", "message": f"Staff role updated! Password emailed to {email}."})
+        
+    return jsonify({"status": "success", "message": "Roles updated successfully."})
 
 @app.route('/admin/ban-user', methods=['POST'])
 def admin_ban_user():
@@ -410,5 +456,3 @@ def add_cache_control(response):
 
 if __name__ == '__main__': 
     app.run(debug=True)
-    
-if __name__ == '__main__': app.run(debug=True)

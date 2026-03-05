@@ -11,7 +11,10 @@ function switchPage(pageId) {
     const targetPage = document.getElementById(`page-${pageId}`);
     if(targetPage) {
         targetPage.classList.add('active'); if(document.getElementById(`nav-${pageId}`)) document.getElementById(`nav-${pageId}`).classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' });
-        if(pageId === 'notifications') fetch('/api/notifications/read', {method: 'POST'}).then(() => document.getElementById('notif-badge').style.display = 'none');
+        if(pageId === 'notifications') fetch('/api/notifications/read', {method: 'POST'}).then(() => {
+            document.getElementById('notif-badge').style.display = 'none';
+            lastNotifHash = ""; // Reset hash so it dynamically updates read status on next poll
+        });
     }
     if(window.innerWidth <= 768) document.getElementById('nav-menu').classList.remove('show');
 }
@@ -91,7 +94,7 @@ async function confirmVerifyOTP() {
     try {
         const res = await fetch('/api/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({otp: document.getElementById('prof-verify-otp').value}) });
         const data = await res.json();
-        if(res.ok) { alert("Email Verified!"); document.getElementById('verify-email-box').style.display = 'none'; loadUserProfile(); }
+        if(res.ok) { alert("Email Verified!"); document.getElementById('verify-email-box').style.display = 'none'; isVerifiedUser = true; loadUserProfile(); }
         else { alert("Error: " + data.message); }
     } catch(e) {}
 }
@@ -181,7 +184,37 @@ async function requestPayout() { const amount = prompt("Enter amount to withdraw
 async function submitSupportTicket(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Sending..."; try { const res = await fetch('/api/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject: document.getElementById('tick-subject').value, message: document.getElementById('tick-msg').value }) }); if(res.ok) { alert("Ticket opened!"); e.target.reset(); loadMyTickets(); } else { alert("Error."); } } catch(e) {} btn.innerText = "Send to Support"; }
 async function loadMyTickets() { try { const res = await fetch('/api/tickets'); if(res.ok) { const data = await res.json(); const container = document.getElementById('my-tickets-list'); if(data.length === 0) { container.innerHTML = '<p style="color: #888; font-size: 0.9rem;">No tickets found.</p>'; return; } container.innerHTML = data.map(t => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${t.status==='Closed'?'#00ff88':'#ff5f56'}; margin-bottom: 10px;"><div style="display:flex; justify-content:space-between;"><strong style="color:#fff;">${t.subject}</strong><span style="color:${t.status==='Closed'?'#00ff88':'#ff5f56'}; font-size:0.8rem;">${t.status}</span></div><p style="color:#ccc; font-size:0.9rem; margin:5px 0;">${t.message}</p>${t.admin_reply ? `<div style="background: rgba(0, 210, 255, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 2px solid #00d2ff;"><strong style="color: #00d2ff; font-size: 0.8rem;">Staff Reply:</strong><p style="color: #fff; font-size: 0.9rem; margin: 5px 0 0 0;">${t.admin_reply}</p></div>` : ''}</div>`).join(''); } } catch(e) {} }
 async function submitCreatorCode(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/creator/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sub_type: document.getElementById('cr-type').value, title: document.getElementById('cr-title').value, category: document.getElementById('cr-cat').value, price: document.getElementById('cr-price').value, code: document.getElementById('cr-code').value }) }); if(res.ok) { alert("Code submitted for review!"); e.target.reset(); switchProfTab('locker'); } else { alert("Failed."); } } catch(e) {} btn.innerText = "Submit for Review"; }
-async function loadNotifications() { try { const res = await fetch('/api/notifications'); if (res.ok) { const data = await res.json(); const unread = data.filter(n => !n.is_read).length; if (unread > 0) { const badge = document.getElementById('notif-badge'); badge.innerText = unread; badge.style.display = 'inline-block'; } const container = document.getElementById('notifications-list'); if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; } container.innerHTML = data.map(n => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span></div><p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p></div>`).join(''); } } catch(e) {} }
+
+// --- SMART DIFFING: NOTIFICATIONS ---
+let lastNotifHash = "";
+async function loadNotifications() { 
+    try { 
+        const res = await fetch('/api/notifications'); 
+        if (res.ok) { 
+            const rawText = await res.text();
+            if (rawText === lastNotifHash) return; // 🛑 Magic Shield: Prevents UI redrawing if no new alerts!
+            lastNotifHash = rawText;
+            
+            const data = JSON.parse(rawText);
+            const unread = data.filter(n => !n.is_read).length; 
+            const badge = document.getElementById('notif-badge');
+            
+            if (unread > 0) { 
+                badge.innerText = unread; 
+                badge.style.display = 'inline-block'; 
+            } else {
+                badge.style.display = 'none';
+            }
+            
+            const container = document.getElementById('notifications-list'); 
+            if (data.length === 0) { 
+                container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; 
+                return; 
+            } 
+            container.innerHTML = data.map(n => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span></div><p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p></div>`).join(''); 
+        } 
+    } catch(e) {} 
+}
 
 async function updateProfileName(e) { 
     e.preventDefault(); 
@@ -215,15 +248,19 @@ async function loadLeaderboard() {
     try { const res = await fetch('/api/leaderboard'); if(res.ok) { const data = await res.json(); const container = document.getElementById('leaderboard-list'); if(data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No creators ranked yet.</p>'; return; } container.innerHTML = data.map((c, i) => `<div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; align-items: center;"><div><span style="color: ${i===0?'#f5af19':i===1?'#ccc':i===2?'#cd7f32':'#888'}; font-weight: bold; font-size: 1.2rem; margin-right: 15px;">#${i+1}</span><a class="creator-link" onclick="viewProfile('${c.username}')">${c.name}</a></div><span style="color: #ff5f56; font-weight: bold;">❤️ ${c.score} Score</span></div>`).join(''); } } catch(e) {}
 }
 
+
+// --- SMART DIFFING: GLOBAL CONTENT ---
 let currentGlobalContent = { premium_codes: [] };
 let lastContentHash = "";
 
 async function loadDynamicContent() {
     try {
         const res = await fetch('/api/content'); if (!res.ok) return; 
+        
         const rawText = await res.text();
-        if (rawText === lastContentHash) return; // Smart Diffing
+        if (rawText === lastContentHash) return; // 🛑 Magic Shield: Prevents UI flickering!
         lastContentHash = rawText;
+        
         const data = JSON.parse(rawText); currentGlobalContent = data; 
         
         const generateCodeHTML = (codes, isPremiumSection = false, typeName) => {
@@ -296,3 +333,7 @@ async function handleRequestCode(e) { e.preventDefault(); const email = document
 async function handleResetPassword(e) { e.preventDefault(); try { const res = await fetch('/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('reset-email').value, code: document.getElementById('reset-code').value, new_password: document.getElementById('reset-new-password').value }) }); const data = await res.json(); if (res.ok) { alert("Password updated!"); closeResetModal(); } else { alert("Error: " + data.message); } } catch (err) {} }
 
 window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loadLeaderboard(); }); };
+
+// --- HIGH-SPEED REAL-TIME ENGINE ---
+setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 5000); // 5 Second Alerts
+setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 10000); // 10 Second Content Feed

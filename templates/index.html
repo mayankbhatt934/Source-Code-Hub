@@ -119,24 +119,30 @@
             <h2 id="auth-main-title">Access <span id="login-title-span" style="color:#00d2ff;">Account</span></h2>
             <div class="auth-toggle" id="auth-toggle"><div class="toggle-bg"></div><button class="active" id="btn-normal" onclick="setAuthMode('normal')">Login</button><button id="btn-premium" onclick="setAuthMode('premium')">Register</button></div>
             <div class="auth-form-wrapper"><div class="flip-container" id="flip-container"><div class="flip-inner" id="flip-inner-box">
-                <div class="flip-front"><form id="login-form" onsubmit="handleLogin(event)"><div class="form-group"><input type="email" id="log-email" placeholder="Email Address" required></div><div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Login</button><p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p></form></div>
+                <div class="flip-front">
+                    <form id="login-form" onsubmit="handleLogin(event)">
+                        <div class="form-group"><input type="text" id="log-id" placeholder="Username or Email Address" required></div>
+                        <div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div>
+                        <button type="submit" class="submit-btn auth-action-btn">Login</button>
+                        <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p>
+                    </form>
+                </div>
+                
                 <div class="flip-back">
                     <form id="register-form" onsubmit="handleRegistration(event)">
                         <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div>
                         <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-username" placeholder="Unique Username" required pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores allowed"></div>
                         <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="password" id="reg-password" placeholder="Password (Min 8, 1 Upper, 1 Num)" required></div>
-                        <div class="form-group" style="display:flex; align-items:center; gap:10px; background: rgba(0,0,0,0.3); padding:10px; border-radius:8px; border:1px solid #333;">
-                            <span id="captcha-question" style="color:#00d2ff; font-weight:bold; white-space:nowrap; font-size:0.9rem;"></span>
-                            <input type="number" id="reg-captcha" placeholder="Answer?" required style="margin-bottom:0; padding:8px; flex:1;">
-                        </div>
-                        <button type="submit" id="btn-send-otp" class="submit-btn auth-action-btn">Verify & Send OTP</button>
+                        <div class="form-group" style="margin-bottom: 10px;"><input type="password" id="reg-password" placeholder="Password" required></div>
+                        <button type="submit" id="btn-send-otp" class="submit-btn auth-action-btn">Send OTP to Email</button>
                     </form>
+                    
                     <form id="otp-form" onsubmit="verifyAndRegister(event)" style="display:none; text-align: center;">
                         <p style="color:#00ff88; font-size:0.9rem; margin-bottom:20px;">We sent a 6-digit OTP to your email.</p>
                         <div class="form-group"><input type="text" id="reg-otp" placeholder="Enter 6-Digit OTP" required style="text-align: center; letter-spacing: 2px; font-size: 1.2rem;"></div>
                         <button type="submit" id="btn-verify-otp" class="submit-btn premium-btn">Create Account</button>
-                        <a href="#" onclick="document.getElementById('otp-form').style.display='none'; document.getElementById('register-form').style.display='block';" style="display:inline-block; color:#ff5f56; font-size:0.8rem; margin-top:15px; text-decoration:none;">Cancel</a>
+                        <br>
+                        <a href="#" onclick="document.getElementById('otp-form').style.display='none'; document.getElementById('register-form').style.display='block';" style="display:inline-block; color:#ff5f56; font-size:0.8rem; margin-top:15px; text-decoration:none;">Cancel & Go Back</a>
                     </form>
                 </div>
             </div></div></div>

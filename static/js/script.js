@@ -1,18 +1,6 @@
 let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false;
 let userBookmarks = [];
 
-// NEW: Math Captcha Generator
-let expectedCaptcha = 0;
-function generateCaptcha() {
-    const a = Math.floor(Math.random() * 10) + 1;
-    const b = Math.floor(Math.random() * 10) + 1;
-    expectedCaptcha = a + b;
-    const qEl = document.getElementById('captcha-question');
-    if(qEl) qEl.innerText = `Bot Check: ${a} + ${b} =`;
-    const cEl = document.getElementById('reg-captcha');
-    if(cEl) cEl.value = '';
-}
-
 function getURLParam(name) { const urlParams = new URLSearchParams(window.location.search); return urlParams.get(name); }
 const refCode = getURLParam('ref'); if(refCode) localStorage.setItem('refCode', refCode);
 
@@ -40,9 +28,8 @@ function filterPrompts() { const query = document.getElementById(`search-prompts
 
 function switchAuthPage() { isLoggedIn ? switchPage('profile') : switchPage('login'); }
 function toggleFlipCard() { isFlipped = !isFlipped; document.getElementById('flip-inner-box').style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; }
-function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); generateCaptcha(); } }
+function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); } }
 
-// UPDATED: Now uses username
 async function viewProfile(username) {
     try {
         const res = await fetch(`/api/public-profile/${username}`);
@@ -58,12 +45,10 @@ async function viewProfile(username) {
 
 async function interactCode(type, id, action, btnElement) { if(action === 'like' && !isLoggedIn) { alert("Please login to like codes!"); switchAuthPage(); return; } try { const res = await fetch('/api/interact-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, id, action }) }); const data = await res.json(); if(res.ok && action === 'like') { btnElement.classList.add('liked'); btnElement.innerHTML = `❤️ ${data.likes}`; } } catch(e) {} }
 
-// NEW: REGISTRATION LOGIC WITH CAPTCHA AND OTP
+// NO CAPTCHA - JUST SENDS OTP
 async function handleRegistration(e) { 
     e.preventDefault(); 
-    if(parseInt(document.getElementById('reg-captcha').value) !== expectedCaptcha) { alert("Incorrect Math Answer! Are you a bot?"); generateCaptcha(); return; }
-    
-    const btn = document.getElementById('btn-send-otp'); btn.innerText = "Processing...";
+    const btn = document.getElementById('btn-send-otp'); btn.innerText = "Sending...";
     try { 
         const res = await fetch('/api/send-registration-otp', { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
@@ -73,11 +58,9 @@ async function handleRegistration(e) {
         if (res.ok) { 
             document.getElementById('register-form').style.display = 'none';
             document.getElementById('otp-form').style.display = 'block';
-        } else { 
-            alert("Error: " + data.message); generateCaptcha();
-        } 
-    } catch (err) {} 
-    btn.innerText = "Verify & Send OTP";
+        } else { alert("Error: " + data.message); } 
+    } catch (err) { alert("Network error!"); } 
+    btn.innerText = "Send OTP to Email";
 }
 
 async function verifyAndRegister(e) {
@@ -99,7 +82,22 @@ async function verifyAndRegister(e) {
     btn.innerText = "Create Account";
 }
 
-async function handleLogin(e) { e.preventDefault(); try { const res = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('log-email').value, password: document.getElementById('log-password').value }) }); const data = await res.json(); if (res.ok) { isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; await loadUserProfile(); loadDynamicContent(); switchPage('profile'); } else { alert("Error: " + data.message); } } catch (err) {} }
+// LOGS IN WITH log-id (WHICH ACCEPTS EMAIL OR USERNAME)
+async function handleLogin(e) { 
+    e.preventDefault(); 
+    try { 
+        const res = await fetch('/login', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ login_id: document.getElementById('log-id').value, password: document.getElementById('log-password').value }) 
+        }); 
+        const data = await res.json(); 
+        if (res.ok) { 
+            isLoggedIn = true; isPremiumUser = data.is_premium; document.getElementById('nav-login').innerText = "Dashboard"; 
+            await loadUserProfile(); loadDynamicContent(); switchPage('profile'); 
+        } else { alert("Error: " + data.message); } 
+    } catch (err) {} 
+}
+
 async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; isBannedUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; document.getElementById('btn-staff-panel').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
 
 async function fetchMyBookmarks() { if(!isLoggedIn) return; try { const res = await fetch('/api/bookmarks'); if(res.ok) { const data = await res.json(); userBookmarks = data; } } catch(e) {} }
@@ -196,9 +194,12 @@ async function loadMyPurchases() {
     try { const res = await fetch('/api/my-purchases'); if (res.ok) { const data = await res.json(); const container = document.getElementById('my-purchases-list'); if (isBannedUser) { container.innerHTML = '<div style="background: rgba(255, 95, 86, 0.1); border: 1px solid #ff5f56; padding: 15px; border-radius: 8px; text-align: center;"><p style="color: #ff5f56; font-size: 0.95rem; margin: 0; font-weight: bold;">🚫 Locked while restricted.</p></div>'; return; } if (data.is_premium) { container.innerHTML = `<div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;"><h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p><button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button></div>`; return; } if (data.codes.length === 0) { container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No unlocked files.</p>'; return; } container.innerHTML = data.codes.map(item => { if (item.category.includes("Full Website")) { return `<div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;"><div><h4 style="color: #fff; margin-bottom: 5px;">${item.title}</h4></div><a href="${item.code}" target="_blank" class="submit-btn" style="width: auto; padding: 8px 15px; text-decoration: none;">Download</a></div>`; } else { const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); return `<div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: #fff; margin-bottom: 10px;">${item.title}</h4><div style="background: #111; padding: 10px; border-radius: 5px; position: relative;"><button onclick="copyPrompt(this, \`${item.code.replace(/`/g, '\\`')}\`)" style="position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; z-index: 10;">Copy</button><pre class="language-javascript" style="margin: 0; max-height: 200px; overflow: hidden;"><code class="language-javascript">${safeCode}</code></pre></div></div>`; } }).join(''); if(window.Prism) Prism.highlightAll(); } } catch (err) {}
 }
 
+async function loadLeaderboard() {
+    try { const res = await fetch('/api/leaderboard'); if(res.ok) { const data = await res.json(); const container = document.getElementById('leaderboard-list'); if(data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No creators ranked yet.</p>'; return; } container.innerHTML = data.map((c, i) => `<div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; align-items: center;"><div><span style="color: ${i===0?'#f5af19':i===1?'#ccc':i===2?'#cd7f32':'#888'}; font-weight: bold; font-size: 1.2rem; margin-right: 15px;">#${i+1}</span><a class="creator-link" onclick="viewProfile('${c.username}')">${c.name}</a></div><span style="color: #ff5f56; font-weight: bold;">❤️ ${c.score} Score</span></div>`).join(''); } } catch(e) {}
+}
+
 let currentGlobalContent = { premium_codes: [] };
 
-// UPDATED: Now uses creator_username for the public profile link!
 async function loadDynamicContent() {
     try {
         const res = await fetch('/api/content'); if (!res.ok) return; 
@@ -212,6 +213,7 @@ async function loadDynamicContent() {
                 let reviewBtnHTML = ''; if (isPremiumSection) { const stars = item.avg_rating > 0 ? `⭐ ${item.avg_rating}` : '⭐ New'; reviewBtnHTML = `<button onclick="openReviewModal(${item.id})" style="background: transparent; border: 1px solid #f5af19; color: #f5af19; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; margin-right: 10px;">${stars} (${item.reviews.length})</button>`; }
                 let commentBtnHTML = ''; if (!isPremiumSection) { commentBtnHTML = `<button class="comment-btn" onclick="openCommentModal('${typeName}', ${item.id})">💬 Discuss</button>`; }
                 const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                
                 let html = `<div class="code-wrapper" style="margin-bottom: 40px; position: relative;"><div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
                 if (isFullWebsite) { html += `<div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);"><div style="font-size: 3rem; margin-bottom: 15px;">📁</div><h3 style="color: #fff; margin-bottom: 20px;">Full Website Files</h3><a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;" onclick="interactCode('${typeName}', ${item.id}, 'view', null)">Download</a></div>`; } 
                 else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div>${reviewBtnHTML}<button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this, '${typeName}', ${item.id})">Copy Script</button></div></div><pre class="language-javascript"><code class="language-javascript" id="code-${item.id}">${safeCode}</code></pre></div>`; }

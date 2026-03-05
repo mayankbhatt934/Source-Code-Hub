@@ -38,11 +38,12 @@ def send_system_email(to_email, subject, body):
         except Exception as e: pass
 
 def get_user_role():
-    if session.get('is_admin'): return 'owner'
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
         if u: return getattr(u, 'role', 'member')
         else: session.pop('user_email', None)
+    elif session.get('is_admin'):
+        return 'owner'
     return 'member'
 
 def check_admin_access(): return get_user_role() in ['staff', 'admin', 'owner']
@@ -53,26 +54,22 @@ def force_db_reset(): db.drop_all(); db.create_all(); db.session.add(SiteAnalyti
 @app.route('/')
 def home(): stats = SiteAnalytics.query.first(); stats.page_views += 1; db.session.commit(); return render_template('index.html')
 
-# NEW: Step 1 of Registration (Send OTP & Validate Password)
+# NORMALIZED PASSWORD & NO CAPTCHA
 @app.route('/api/send-registration-otp', methods=['POST'])
 def send_registration_otp():
     data = request.json
-    email = data.get('email'); username = data.get('username').lower().replace(" ", ""); password = data.get('password')
-    
-    if len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password):
-        return jsonify({"status": "error", "message": "Password must be at least 8 chars long, contain an uppercase, a lowercase, and a number."}), 400
+    email = data.get('email'); username = data.get('username').lower().replace(" ", "")
     
     if User.query.filter_by(email=email).first(): return jsonify({"status": "error", "message": "Email is already registered!"}), 400
     if User.query.filter_by(username=username).first(): return jsonify({"status": "error", "message": "Username is already taken!"}), 400
 
     otp = str(random.randint(100000, 999999))
-    EmailOTP.query.filter_by(email=email).delete() # Remove old OTPs
+    EmailOTP.query.filter_by(email=email).delete() 
     db.session.add(EmailOTP(email=email, otp=otp, expiry=datetime.utcnow() + timedelta(minutes=10)))
     db.session.commit()
     send_system_email(email, "Verify your Source Code Hub Account", f"Your secret OTP for registration is:\n\n<h2>{otp}</h2>\n\nThis expires in 10 minutes.")
     return jsonify({"status": "success", "message": "OTP sent to email!"})
 
-# NEW: Step 2 of Registration (Verify OTP & Create User)
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -96,12 +93,17 @@ def register():
     if not ref_code: db.session.add(Notification(email=email, title="Welcome! 👋", message="Thanks for creating an account!"))
     db.session.commit(); return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
+# LOGIN VIA USERNAME OR EMAIL
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json; user = User.query.filter_by(email=data.get('email')).first()
-    if user and check_password_hash(user.password, data.get('password')):
+    data = request.json
+    login_id = data.get('login_id') 
+    password = data.get('password')
+    
+    user = User.query.filter((User.email == login_id) | (User.username == login_id)).first()
+    if user and check_password_hash(user.password, password):
         session['user_email'] = user.email; return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
-    return jsonify({"status": "error", "message": "Invalid email or password!"}), 401
+    return jsonify({"status": "error", "message": "Invalid username/email or password!"}), 401
 
 @app.route('/logout', methods=['POST'])
 def logout(): session.pop('user_email', None); session.pop('is_admin', None); return jsonify({"status": "success"})
@@ -242,7 +244,6 @@ def get_bookmarks():
 @app.route('/api/comments/<item_type>/<int:item_id>', methods=['GET'])
 def get_comments(item_type, item_id):
     comments = Comment.query.filter_by(item_type=item_type, item_id=item_id).order_by(Comment.date_created.desc()).all()
-    # Get username instead of raw email
     res = []
     for c in comments:
         u = User.query.filter_by(email=c.email).first()
@@ -286,23 +287,16 @@ def request_payout():
     user.earnings -= amount; db.session.add(PayoutRequest(email=user.email, amount=amount, upi_id=request.json.get('upi')))
     db.session.add(Notification(email=user.email, title="Payout Requested 💸", message=f"Your request for ₹{amount} is pending admin approval.")); db.session.commit(); return jsonify({"status": "success"})
 
-# NEW: Fetch profile by USERNAME instead of email
 @app.route('/api/public-profile/<username>', methods=['GET'])
 def public_profile(username):
     if username.lower() == 'admin':
-        u_name = "Admin 👑"
-        u_photo = f"https://ui-avatars.com/api/?name=Admin&background=00d2ff&color=fff"
-        u_badges = [{"name": "Owner 👑", "class": "badge-owner"}]
-        all_prem = PremiumCode.query.filter_by(creator_email='admin').all()
-        all_free = FreeCode.query.filter_by(creator_email='admin').all()
+        u_name = "Admin 👑"; u_photo = f"https://ui-avatars.com/api/?name=Admin&background=00d2ff&color=fff"; u_badges = [{"name": "Owner 👑", "class": "badge-owner"}]
+        all_prem = PremiumCode.query.filter_by(creator_email='admin').all(); all_free = FreeCode.query.filter_by(creator_email='admin').all()
     else:
         u = User.query.filter_by(username=username).first()
         if not u: return jsonify({"error": "User not found"}), 404
-        u_name = u.username
-        u_photo = u.profile_photo or f"https://ui-avatars.com/api/?name={u.name}&background=00d2ff&color=fff"
-        u_badges = get_user_badges(u)
-        all_prem = PremiumCode.query.filter_by(creator_email=u.email).all()
-        all_free = FreeCode.query.filter_by(creator_email=u.email).all()
+        u_name = u.username; u_photo = u.profile_photo or f"https://ui-avatars.com/api/?name={u.name}&background=00d2ff&color=fff"; u_badges = get_user_badges(u)
+        all_prem = PremiumCode.query.filter_by(creator_email=u.email).all(); all_free = FreeCode.query.filter_by(creator_email=u.email).all()
         
     codes = [c for c in all_prem if getattr(c, 'is_approved', True)] + [c for c in all_free if getattr(c, 'is_approved', True)]
     code_list = [{"id": c.id, "title": c.title, "type": "Premium" if hasattr(c, 'price') else "Free"} for c in codes]
@@ -448,7 +442,6 @@ def approve_submission():
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
     if obj: obj.is_approved = True; db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!")); db.session.commit(); return jsonify({"status": "success"})
 
-# NEW: PROPER USERNAME FETCHING FOR CONTENT
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:

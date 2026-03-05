@@ -107,10 +107,21 @@
                 <div class="panel-header" style="color: #b06ab3;">👑 Personnel Manager</div>
                 <form class="admin-form" onsubmit="submitRoleUpdate(event)"><input type="email" id="role-email" placeholder="Target User Email" required><select id="role-select" required><option value="member">Standard Member (Demote)</option><option value="staff">Staff 🛠️</option><option value="admin">Admin 🛡️</option><option value="owner">Owner 👑</option></select><div style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px;"><label style="color: #ccc; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer;"><input type="checkbox" id="role-friend" style="width: auto; margin: 0;"> Grant 'Friend 🤝' Badge</label><label style="color: #00ff88; font-size: 0.85rem; display: flex; align-items: center; gap: 10px; background: rgba(0,255,136,0.05); padding: 10px; border-radius: 8px; border: 1px dashed #00ff88; cursor: pointer;"><input type="checkbox" id="role-email-cred" style="width: auto; margin: 0;" checked> Email Password to Staff</label></div><button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Execute Change</button></form>
             </div>
-            <div class="glass-panel" id="panel-gifts">
-                <div class="panel-header" style="color: #ff007f;">🎁 Gift Engine</div>
-                <form class="admin-form" onsubmit="submitAdminGift(event)"><input type="email" id="gift-email" placeholder="Recipient's Email" required><select id="gift-type" required onchange="toggleGiftType()"><option value="membership">Membership Pass</option><option value="code">Premium Code Bypass</option></select><select id="gift-membership-val"><option value="Weekly Pass">Weekly Pass</option><option value="Monthly Pass">Monthly Pass</option><option value="Yearly Pass">Yearly Pass</option><option value="Lifetime Pass">Lifetime Pass</option></select><select id="gift-code-val" style="display: none;"></select><button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #ff007f, #ff0055); margin-top: 75px;">Dispatch Gift</button></form>
+            
+            <div class="glass-panel" id="panel-notify">
+                <div class="panel-header" style="color: #00d2ff;">📣 System Broadcasts</div>
+                <form class="admin-form" onsubmit="submitAdminNotification(event)">
+                    <select id="notif-target" required>
+                        <option value="all">Broadcast to ALL Users</option>
+                        <option value="specific">Specific User (Enter Email)</option>
+                    </select>
+                    <input type="email" id="notif-email" placeholder="User Email Address" style="display: none;">
+                    <input type="text" id="notif-title" placeholder="Notification Title" required>
+                    <textarea id="notif-message" placeholder="Type your message..." required style="height: 80px;"></textarea>
+                    <button type="submit" class="submit-btn" style="margin-top: auto;">Send Alert</button>
+                </form>
             </div>
+
             <div class="glass-panel" id="panel-bans">
                 <div class="panel-header" style="color: #ff5f56;">🚫 Security & Bans</div>
                 <form class="admin-form" onsubmit="submitBanUser(event)" style="margin-bottom: 20px;"><input type="email" id="ban-email" placeholder="Violator Email" required><input type="number" id="ban-duration" placeholder="Days (0 = Permanent)" required><button type="submit" class="submit-btn" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Execute Ban</button></form>
@@ -129,7 +140,11 @@
 
         <script>
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
-            function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
+            
+            document.getElementById('notif-target').addEventListener('change', function() {
+                document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none';
+                document.getElementById('notif-email').required = this.value === 'specific';
+            });
 
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
@@ -173,7 +188,6 @@
 
             async function approvePayment(id) { if(!confirm("Verify this payment?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }
             async function approvePayout(id) { if(!confirm("Did you send the money via UPI?")) return; await fetch(`/admin/approve-payout/${id}`, { method: 'POST' }); loadAdminData(); }
-            async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); alert("Gift Sent!"); }
             async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
             async function unbanUser(email) { if(!confirm(`Unban ${email}?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
             
@@ -182,6 +196,13 @@
                 const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked };
                 const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
                 const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change";
+            }
+            
+            async function submitAdminNotification(e) {
+                e.preventDefault();
+                const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value;
+                const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) });
+                if(res.ok) { alert("Notification Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; }
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
@@ -197,7 +218,6 @@
                     document.getElementById('manage-codes-list').innerHTML = d.codes.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.codes.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${c.title}</strong><span style="font-size:0.7rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'free')">Del</button></div>`).join('');
                     document.getElementById('manage-premium-list').innerHTML = d.premium_codes.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.premium_codes.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${c.title} <span style="color:#f5af19;">(₹${c.price})</span></strong><span style="font-size:0.7rem; color:#888;">By ${c.creator}</span></div><button class="delete-btn" onclick="deleteSubmission(${c.id}, 'premium')">Del</button></div>`).join('');
                     document.getElementById('manage-prompts-list').innerHTML = d.prompts.length === 0 ? '<p style="color:#666;">Empty.</p>' : d.prompts.map(p => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 0;"><div style="flex:1; padding-right:10px;"><strong style="color:#fff; font-size:0.85rem; display:block;">${p.title}</strong></div><button class="delete-btn" onclick="deleteSubmission(${p.id}, 'prompt')">Del</button></div>`).join('');
-                    document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                 }
             }
             

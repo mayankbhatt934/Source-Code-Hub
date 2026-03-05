@@ -45,44 +45,25 @@ async function viewProfile(username) {
 
 async function interactCode(type, id, action, btnElement) { if(action === 'like' && !isLoggedIn) { alert("Please login to like codes!"); switchAuthPage(); return; } try { const res = await fetch('/api/interact-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, id, action }) }); const data = await res.json(); if(res.ok && action === 'like') { btnElement.classList.add('liked'); btnElement.innerHTML = `❤️ ${data.likes}`; } } catch(e) {} }
 
-// NO CAPTCHA - JUST SENDS OTP
 async function handleRegistration(e) { 
     e.preventDefault(); 
-    const btn = document.getElementById('btn-send-otp'); btn.innerText = "Sending...";
-    try { 
-        const res = await fetch('/api/send-registration-otp', { 
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ email: document.getElementById('reg-email').value, username: document.getElementById('reg-username').value, password: document.getElementById('reg-password').value }) 
-        }); 
-        const data = await res.json(); 
-        if (res.ok) { 
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('otp-form').style.display = 'block';
-        } else { alert("Error: " + data.message); } 
-    } catch (err) { alert("Network error!"); } 
-    btn.innerText = "Send OTP to Email";
-}
-
-async function verifyAndRegister(e) {
-    e.preventDefault();
-    const btn = document.getElementById('btn-verify-otp'); btn.innerText = "Verifying...";
+    const btn = document.getElementById('btn-send-otp'); btn.innerText = "Creating...";
     const savedRef = localStorage.getItem('refCode');
     try { 
         const res = await fetch('/register', { 
             method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ name: document.getElementById('reg-name').value, username: document.getElementById('reg-username').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value, otp: document.getElementById('reg-otp').value, ref_code: savedRef }) 
+            body: JSON.stringify({ name: document.getElementById('reg-name').value, username: document.getElementById('reg-username').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value, ref_code: savedRef }) 
         }); 
         const data = await res.json(); 
         if (res.ok) { 
             localStorage.removeItem('refCode'); alert(data.message); 
-            document.getElementById('otp-form').style.display = 'none'; document.getElementById('register-form').style.display = 'block'; document.getElementById('register-form').reset();
+            document.getElementById('register-form').reset();
             setAuthMode('normal'); 
         } else { alert("Error: " + data.message); } 
-    } catch (err) {} 
+    } catch (err) { alert("Network error!"); } 
     btn.innerText = "Create Account";
 }
 
-// LOGS IN WITH log-id (WHICH ACCEPTS EMAIL OR USERNAME)
 async function handleLogin(e) { 
     e.preventDefault(); 
     try { 
@@ -99,6 +80,24 @@ async function handleLogin(e) {
 }
 
 async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; isBannedUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; document.getElementById('btn-staff-panel').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
+
+async function sendVerifyOTP() {
+    const btn = document.getElementById('btn-send-verify'); btn.innerText = "Sending...";
+    try {
+        const res = await fetch('/api/send-verification-otp', { method: 'POST' }); const data = await res.json();
+        if(res.ok) { document.getElementById('btn-send-verify').style.display = 'none'; document.getElementById('verify-otp-input-box').style.display = 'block'; alert("OTP sent to your email!"); }
+        else { alert("Error: " + data.message); btn.innerText = "Send Verification OTP"; }
+    } catch(e) {}
+}
+
+async function confirmVerifyOTP() {
+    try {
+        const res = await fetch('/api/verify-otp', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({otp: document.getElementById('prof-verify-otp').value}) });
+        const data = await res.json();
+        if(res.ok) { alert("Email Verified!"); document.getElementById('verify-email-box').style.display = 'none'; loadUserProfile(); }
+        else { alert("Error: " + data.message); }
+    } catch(e) {}
+}
 
 async function fetchMyBookmarks() { if(!isLoggedIn) return; try { const res = await fetch('/api/bookmarks'); if(res.ok) { const data = await res.json(); userBookmarks = data; } } catch(e) {} }
 function isBookmarked(type, id) { return userBookmarks.some(b => b.type === type && b.id === id); }
@@ -145,6 +144,8 @@ async function loadUserProfile() {
             const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; 
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             
+            if(!user.is_verified) { document.getElementById('verify-email-box').style.display = 'block'; } else { document.getElementById('verify-email-box').style.display = 'none'; }
+
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             let finalAvatar = defaultAvatar;
             if (user.photo && String(user.photo).trim() !== '' && String(user.photo) !== 'null') { finalAvatar = user.photo; }
@@ -188,7 +189,7 @@ async function uploadPhoto(e) { const file = e.target.files[0]; if (!file) retur
 let selectedPlan = ""; let selectedAmount = 0; let selectedCodeId = null; let isGifting = false;
 function openUPIModal(planName, price, codeId = null, giftMode = false) { if (!isLoggedIn) { alert("Please login first!"); switchAuthPage(); return; } selectedPlan = planName; selectedAmount = price; selectedCodeId = codeId; isGifting = giftMode; const desc = giftMode ? `GIFT - ${planName}` : `Source Code Hub - ${planName}`; const upiURL = `upi://pay?pa=mayank.code.ai@okaxis&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`; document.getElementById('upi-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`; document.getElementById('upi-mobile-link').href = upiURL; document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`; document.getElementById('modal-sender-upi').value = ''; const giftContainer = document.getElementById('gift-email-container'); const giftInput = document.getElementById('modal-gift-email'); if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } else { giftContainer.style.display = 'none'; giftInput.required = false; } document.getElementById('upi-modal-overlay').style.display = 'flex'; }
 function closeUPIModal() { document.getElementById('upi-modal-overlay').style.display = 'none'; }
-async function submitUPIPayment(e) { e.preventDefault(); let giftEmail = null; if(isGifting) { giftEmail = document.getElementById('modal-gift-email').value; if(!giftEmail) { alert("Enter recipient email!"); return; } } const upiID = document.getElementById('modal-sender-upi').value; if (!upiID || !upiID.includes('@')) { alert("Enter a valid UPI ID"); return; } const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Verifying..."; try { const res = await fetch('/submit-upi-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail }) }); const data = await res.json(); if (res.ok) { alert(data.message); closeUPIModal(); e.target.reset(); loadNotifications(); } else { alert("Error: " + data.message); } } catch(err) {} btn.innerText = originalText; }
+async function submitUPIPayment(e) { e.preventDefault(); let giftEmail = null; if(isGifting) { giftEmail = document.getElementById('modal-gift-email').value; if(!giftEmail) { alert("Enter recipient email!"); return; } } const upiID = document.getElementById('modal-sender-upi').value; if (!upiID || !upiID.includes('@')) { alert("Enter a valid UPI ID"); return; } const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Verifying..."; try { const res = await fetch('/submit-upi-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail }) }); const data = await res.json(); if (res.ok) { alert(data.message); closeUPIModal(); e.target.reset(); loadNotifications(); } else { alert("Error: " + data.message); if(data.message.includes("verify")) { closeUPIModal(); switchPage('profile'); } } } catch(err) {} btn.innerText = originalText; }
 
 async function loadMyPurchases() {
     try { const res = await fetch('/api/my-purchases'); if (res.ok) { const data = await res.json(); const container = document.getElementById('my-purchases-list'); if (isBannedUser) { container.innerHTML = '<div style="background: rgba(255, 95, 86, 0.1); border: 1px solid #ff5f56; padding: 15px; border-radius: 8px; text-align: center;"><p style="color: #ff5f56; font-size: 0.95rem; margin: 0; font-weight: bold;">🚫 Locked while restricted.</p></div>'; return; } if (data.is_premium) { container.innerHTML = `<div style="background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; padding: 15px; border-radius: 8px; text-align: center;"><h4 style="color: #f5af19; margin-bottom: 5px;">⭐ Premium Active</h4><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 10px;">You have full access to all files in the Premium Room.</p><button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="switchPage('premium')">Go to Premium Room</button></div>`; return; } if (data.codes.length === 0) { container.innerHTML = '<p style="color: #666; font-size: 0.9rem;">No unlocked files.</p>'; return; } container.innerHTML = data.codes.map(item => { if (item.category.includes("Full Website")) { return `<div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;"><div><h4 style="color: #fff; margin-bottom: 5px;">${item.title}</h4></div><a href="${item.code}" target="_blank" class="submit-btn" style="width: auto; padding: 8px 15px; text-decoration: none;">Download</a></div>`; } else { const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); return `<div style="background: rgba(0,0,0,0.5); border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 10px;"><h4 style="color: #fff; margin-bottom: 10px;">${item.title}</h4><div style="background: #111; padding: 10px; border-radius: 5px; position: relative;"><button onclick="copyPrompt(this, \`${item.code.replace(/`/g, '\\`')}\`)" style="position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; z-index: 10;">Copy</button><pre class="language-javascript" style="margin: 0; max-height: 200px; overflow: hidden;"><code class="language-javascript">${safeCode}</code></pre></div></div>`; } }).join(''); if(window.Prism) Prism.highlightAll(); } } catch (err) {}
@@ -255,7 +256,12 @@ async function openCommentModal(type, id) {
 async function submitComment(e) {
     e.preventDefault(); if (!isLoggedIn) { alert("Please login to comment!"); return; }
     const type = document.getElementById('com-item-type').value; const id = document.getElementById('com-item-id').value; const text = document.getElementById('com-text').value;
-    try { const res = await fetch('/api/add-comment', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type, id, text}) }); if(res.ok) { document.getElementById('com-text').value = ''; openCommentModal(type, id); } } catch(e) {}
+    try { 
+        const res = await fetch('/api/add-comment', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type, id, text}) }); 
+        const data = await res.json();
+        if(res.ok) { document.getElementById('com-text').value = ''; openCommentModal(type, id); } 
+        else { alert("Error: " + data.error); if(data.error.includes("verify")) { document.getElementById('comment-modal-overlay').style.display='none'; switchPage('profile'); } }
+    } catch(e) {}
 }
 
 let currentModalPromptText = ""; 

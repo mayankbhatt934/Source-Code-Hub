@@ -10,9 +10,10 @@ def generate_ref_code():
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    username = db.Column(db.String(50), unique=True, nullable=False) # NEW: Unique Username
+    username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    is_verified = db.Column(db.Boolean, default=False) # NEW: Verification status
     is_premium = db.Column(db.Boolean, default=False)
     premium_expiry = db.Column(db.DateTime, nullable=True)
     profile_photo = db.Column(db.Text, nullable=True)
@@ -23,7 +24,6 @@ class User(db.Model):
     referral_code = db.Column(db.String(10), unique=True, default=generate_ref_code)
     earnings = db.Column(db.Integer, default=0)
 
-# NEW: Store OTPs securely
 class EmailOTP(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), nullable=False)

@@ -54,7 +54,6 @@ def force_db_reset(): db.drop_all(); db.create_all(); db.session.add(SiteAnalyti
 @app.route('/')
 def home(): stats = SiteAnalytics.query.first(); stats.page_views += 1; db.session.commit(); return render_template('index.html')
 
-# FAST REGISTRATION (NO OTP REQUIRED YET)
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -77,7 +76,6 @@ def register():
     if not ref_code: db.session.add(Notification(email=email, title="Welcome! 👋", message="Thanks for creating an account! Verify your email to unlock all features."))
     db.session.commit(); return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
-# USERNAME LOGIN BUG FIXED (Case insensitive checking)
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -91,7 +89,6 @@ def login():
 @app.route('/logout', methods=['POST'])
 def logout(): session.pop('user_email', None); session.pop('is_admin', None); return jsonify({"status": "success"})
 
-# NEW: DEFERRED OTP VERIFICATION ROUTES
 @app.route('/api/send-verification-otp', methods=['POST'])
 def send_verification_otp():
     if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
@@ -141,10 +138,29 @@ def get_profile():
 @app.route('/api/update-profile', methods=['POST'])
 def update_profile():
     if 'user_email' not in session: return jsonify({"error": "Not logged in"}), 401
-    data = request.json; user = User.query.filter_by(email=session['user_email']).first()
+    data = request.json
+    user = User.query.filter_by(email=session['user_email']).first()
+    
     if data.get('name'): user.name = data['name']
     if data.get('photo'): user.profile_photo = data['photo']
-    db.session.commit(); return jsonify({"status": "success"})
+    
+    # NEW: Username Update Logic
+    new_username = data.get('username')
+    if new_username and new_username.lower().replace(" ", "") != user.username:
+        new_un = new_username.lower().replace(" ", "")
+        if User.query.filter_by(username=new_un).first():
+            return jsonify({"status": "error", "message": "Username is already taken!"}), 400
+        
+        if user.username_last_changed and datetime.utcnow() < user.username_last_changed + timedelta(days=14):
+            days_left = (user.username_last_changed + timedelta(days=14) - datetime.utcnow()).days
+            days_left = max(1, days_left)
+            return jsonify({"status": "error", "message": f"You can change your username again in {days_left} days."}), 400
+            
+        user.username = new_un
+        user.username_last_changed = datetime.utcnow()
+
+    db.session.commit()
+    return jsonify({"status": "success", "message": "Profile updated!"})
 
 @app.route('/forgot-password', methods=['POST'])
 def forgot_password():
@@ -163,7 +179,6 @@ def reset_password():
     if user: user.password = generate_password_hash(data.get('new_password'), method='pbkdf2:sha256'); db.session.delete(reset_entry); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"status": "error"}), 404
 
-# SECURITY LOCK: Must verify email to pay
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():
     data = request.json
@@ -261,7 +276,6 @@ def get_comments(item_type, item_id):
         res.append({"user": uname, "text": c.text, "date": c.date_created.strftime('%b %d')})
     return jsonify(res)
 
-# SECURITY LOCK: Must verify email to comment
 @app.route('/api/add-comment', methods=['POST'])
 def add_comment():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
@@ -409,7 +423,6 @@ def admin_gift():
     elif data.get('type') == 'code': db.session.add(UserCodePurchase(email=user.email, code_id=data.get('value')))
     db.session.add(Notification(email=user.email, title="Gift! 🎁", message="Admin gifted you access!")); db.session.commit(); return jsonify({"status": "success"})
 
-# SECURITY LOCK: Must verify email to become staff
 @app.route('/admin/update-role', methods=['POST'])
 def admin_update_role():
     try:
@@ -417,7 +430,6 @@ def admin_update_role():
         if curr_role not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403
         data = request.json; email = data.get('email'); target_role = data.get('role', 'member'); is_friend = data.get('is_friend', False); send_email = data.get('send_email', False)
         if curr_role == 'admin' and target_role in ['admin', 'owner']: return jsonify({"status": "error", "message": "Admins cannot grant Admin or Owner roles!"}), 403
-        
         user = User.query.filter_by(email=email).first()
         if not user: return jsonify({"status": "error", "message": "User not found! They must register on the main website first."}), 404
         if not getattr(user, 'is_verified', False): return jsonify({"status": "error", "message": "Target user must verify their email in their profile before receiving Staff access."}), 400
@@ -466,7 +478,6 @@ def approve_submission():
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
     if obj: obj.is_approved = True; db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!")); db.session.commit(); return jsonify({"status": "success"})
 
-# NEW: SEND NOTIFICATION ROUTE (Admin/Owner Only)
 @app.route('/admin/send-notification', methods=['POST'])
 def admin_send_notification():
     if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403

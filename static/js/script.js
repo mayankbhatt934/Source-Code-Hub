@@ -1,4 +1,4 @@
-let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false;
+let isFlipped = false; let isLoggedIn = false; let isPremiumUser = false; let isBannedUser = false; let isVerifiedUser = false;
 let userBookmarks = [];
 
 function getURLParam(name) { const urlParams = new URLSearchParams(window.location.search); return urlParams.get(name); }
@@ -55,12 +55,9 @@ async function handleRegistration(e) {
             body: JSON.stringify({ name: document.getElementById('reg-name').value, username: document.getElementById('reg-username').value, email: document.getElementById('reg-email').value, password: document.getElementById('reg-password').value, ref_code: savedRef }) 
         }); 
         const data = await res.json(); 
-        if (res.ok) { 
-            localStorage.removeItem('refCode'); alert(data.message); 
-            document.getElementById('register-form').reset();
-            setAuthMode('normal'); 
-        } else { alert("Error: " + data.message); } 
-    } catch (err) { alert("Network error!"); } 
+        if (res.ok) { localStorage.removeItem('refCode'); alert(data.message); document.getElementById('register-form').reset(); setAuthMode('normal'); } 
+        else { alert("Error: " + data.message); } 
+    } catch (err) {} 
     btn.innerText = "Create Account";
 }
 
@@ -79,7 +76,7 @@ async function handleLogin(e) {
     } catch (err) {} 
 }
 
-async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; isBannedUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; document.getElementById('btn-staff-panel').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
+async function handleLogout() { await fetch('/logout', { method: 'POST' }); isLoggedIn = false; isPremiumUser = false; isBannedUser = false; isVerifiedUser = false; document.getElementById('nav-login').innerText = "Account"; document.getElementById('login-form').reset(); document.getElementById('nav-notifications').style.display = 'none'; document.getElementById('btn-staff-panel').style.display = 'none'; const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); loadDynamicContent(); switchPage('home'); }
 
 async function sendVerifyOTP() {
     const btn = document.getElementById('btn-send-verify'); btn.innerText = "Sending...";
@@ -141,8 +138,10 @@ async function loadUserProfile() {
         const res = await fetch('/api/profile');
         if (res.ok) {
             isLoggedIn = true; document.getElementById('nav-login').innerText = "Dashboard"; document.getElementById('nav-notifications').style.display = 'block';
-            const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; 
-            document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
+            const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; isVerifiedUser = user.is_verified;
+            document.getElementById('prof-name').value = user.name; 
+            document.getElementById('prof-email').value = user.email;
+            document.getElementById('prof-username').value = user.username;
             
             if(!user.is_verified) { document.getElementById('verify-email-box').style.display = 'block'; } else { document.getElementById('verify-email-box').style.display = 'none'; }
 
@@ -183,11 +182,28 @@ async function submitSupportTicket(e) { e.preventDefault(); const btn = e.target
 async function loadMyTickets() { try { const res = await fetch('/api/tickets'); if(res.ok) { const data = await res.json(); const container = document.getElementById('my-tickets-list'); if(data.length === 0) { container.innerHTML = '<p style="color: #888; font-size: 0.9rem;">No tickets found.</p>'; return; } container.innerHTML = data.map(t => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${t.status==='Closed'?'#00ff88':'#ff5f56'}; margin-bottom: 10px;"><div style="display:flex; justify-content:space-between;"><strong style="color:#fff;">${t.subject}</strong><span style="color:${t.status==='Closed'?'#00ff88':'#ff5f56'}; font-size:0.8rem;">${t.status}</span></div><p style="color:#ccc; font-size:0.9rem; margin:5px 0;">${t.message}</p>${t.admin_reply ? `<div style="background: rgba(0, 210, 255, 0.1); padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 2px solid #00d2ff;"><strong style="color: #00d2ff; font-size: 0.8rem;">Staff Reply:</strong><p style="color: #fff; font-size: 0.9rem; margin: 5px 0 0 0;">${t.admin_reply}</p></div>` : ''}</div>`).join(''); } } catch(e) {} }
 async function submitCreatorCode(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/creator/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sub_type: document.getElementById('cr-type').value, title: document.getElementById('cr-title').value, category: document.getElementById('cr-cat').value, price: document.getElementById('cr-price').value, code: document.getElementById('cr-code').value }) }); if(res.ok) { alert("Code submitted for review!"); e.target.reset(); switchProfTab('locker'); } else { alert("Failed."); } } catch(e) {} btn.innerText = "Submit for Review"; }
 async function loadNotifications() { try { const res = await fetch('/api/notifications'); if (res.ok) { const data = await res.json(); const unread = data.filter(n => !n.is_read).length; if (unread > 0) { const badge = document.getElementById('notif-badge'); badge.innerText = unread; badge.style.display = 'inline-block'; } const container = document.getElementById('notifications-list'); if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; } container.innerHTML = data.map(n => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span></div><p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p></div>`).join(''); } } catch(e) {} }
-async function updateProfileName(e) { e.preventDefault(); const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('prof-name').value }) }); if (res.ok) { alert("Profile updated!"); loadUserProfile(); } }
+
+async function updateProfileName(e) { 
+    e.preventDefault(); 
+    try {
+        const res = await fetch('/api/update-profile', { 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ name: document.getElementById('prof-name').value, username: document.getElementById('prof-username').value }) 
+        }); 
+        const data = await res.json();
+        if (res.ok) { alert("Profile updated!"); loadUserProfile(); }
+        else { alert("Error: " + data.message); }
+    } catch(err) {}
+}
+
 async function uploadPhoto(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = async function() { const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ photo: reader.result }) }); if (res.ok) { document.getElementById('profile-img').src = reader.result; alert("Photo updated!"); } }; reader.readAsDataURL(file); }
 
 let selectedPlan = ""; let selectedAmount = 0; let selectedCodeId = null; let isGifting = false;
-function openUPIModal(planName, price, codeId = null, giftMode = false) { if (!isLoggedIn) { alert("Please login first!"); switchAuthPage(); return; } selectedPlan = planName; selectedAmount = price; selectedCodeId = codeId; isGifting = giftMode; const desc = giftMode ? `GIFT - ${planName}` : `Source Code Hub - ${planName}`; const upiURL = `upi://pay?pa=mayank.code.ai@okaxis&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`; document.getElementById('upi-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`; document.getElementById('upi-mobile-link').href = upiURL; document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`; document.getElementById('modal-sender-upi').value = ''; const giftContainer = document.getElementById('gift-email-container'); const giftInput = document.getElementById('modal-gift-email'); if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } else { giftContainer.style.display = 'none'; giftInput.required = false; } document.getElementById('upi-modal-overlay').style.display = 'flex'; }
+function openUPIModal(planName, price, codeId = null, giftMode = false) { 
+    if (!isLoggedIn) { alert("Please login first!"); switchAuthPage(); return; } 
+    if (!isVerifiedUser) { alert("⚠️ Please verify your email in the Account Dashboard before purchasing!"); switchPage('profile'); return; }
+    selectedPlan = planName; selectedAmount = price; selectedCodeId = codeId; isGifting = giftMode; const desc = giftMode ? `GIFT - ${planName}` : `Source Code Hub - ${planName}`; const upiURL = `upi://pay?pa=mayank.code.ai@okaxis&pn=SourceCodeHub&am=${price}&cu=INR&tn=${encodeURIComponent(desc)}`; document.getElementById('upi-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiURL)}`; document.getElementById('upi-mobile-link').href = upiURL; document.getElementById('modal-plan-desc').innerHTML = giftMode ? `You are <strong style="color:#ff007f;">GIFTING</strong>: ${planName} (₹${price}).` : `You are purchasing: ${planName} (₹${price}).`; document.getElementById('modal-sender-upi').value = ''; const giftContainer = document.getElementById('gift-email-container'); const giftInput = document.getElementById('modal-gift-email'); if(giftMode) { giftContainer.style.display = 'block'; giftInput.required = true; giftInput.value = ''; } else { giftContainer.style.display = 'none'; giftInput.required = false; } document.getElementById('upi-modal-overlay').style.display = 'flex'; 
+}
 function closeUPIModal() { document.getElementById('upi-modal-overlay').style.display = 'none'; }
 async function submitUPIPayment(e) { e.preventDefault(); let giftEmail = null; if(isGifting) { giftEmail = document.getElementById('modal-gift-email').value; if(!giftEmail) { alert("Enter recipient email!"); return; } } const upiID = document.getElementById('modal-sender-upi').value; if (!upiID || !upiID.includes('@')) { alert("Enter a valid UPI ID"); return; } const btn = e.target.querySelector('button[type="submit"]'); const originalText = btn.innerText; btn.innerText = "Verifying..."; try { const res = await fetch('/submit-upi-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sender_upi: upiID, plan: selectedPlan, amount: selectedAmount, code_id: selectedCodeId, is_gift: isGifting, gift_email: giftEmail }) }); const data = await res.json(); if (res.ok) { alert(data.message); closeUPIModal(); e.target.reset(); loadNotifications(); } else { alert("Error: " + data.message); if(data.message.includes("verify")) { closeUPIModal(); switchPage('profile'); } } } catch(err) {} btn.innerText = originalText; }
 
@@ -246,6 +262,7 @@ function openReviewModal(codeId) { document.getElementById('rev-code-id').value 
 async function submitReview(e) { e.preventDefault(); if (!isLoggedIn) { alert("Please login first!"); return; } const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/submit-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code_id: document.getElementById('rev-code-id').value, rating: document.getElementById('rev-rating').value, comment: document.getElementById('rev-comment').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); document.getElementById('review-modal-overlay').style.display = 'none'; e.target.reset(); loadDynamicContent(); } else { alert("Error: " + data.message); } } catch (err) {} btn.innerText = "Submit Review"; }
 
 async function openCommentModal(type, id) {
+    if (!isVerifiedUser) { alert("⚠️ Please verify your email in the Account Dashboard before commenting!"); switchPage('profile'); return; }
     document.getElementById('com-item-type').value = type; document.getElementById('com-item-id').value = id; document.getElementById('comment-modal-overlay').style.display = 'flex';
     const listContainer = document.getElementById('comment-list-container'); listContainer.innerHTML = '<p style="color:#888;">Loading...</p>';
     try {

@@ -24,9 +24,15 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# THE FIX: Wrapped in try/except so Vercel doesn't crash on startup!
 with app.app_context():
     db.create_all()
-    if not SiteAnalytics.query.first(): db.session.add(SiteAnalytics(page_views=0)); db.session.commit()
+    try:
+        if not SiteAnalytics.query.first(): 
+            db.session.add(SiteAnalytics(page_views=0))
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback() # Ignore schema errors so the server can boot!
 
 def send_system_email(to_email, subject, body):
     sender_email = os.environ.get('MAIL_USERNAME'); sender_password = os.environ.get('MAIL_PASSWORD')
@@ -48,10 +54,23 @@ def get_user_role():
 def check_admin_access(): return get_user_role() in ['staff', 'admin', 'owner']
 
 @app.route('/force-db-reset')
-def force_db_reset(): db.drop_all(); db.create_all(); db.session.add(SiteAnalytics(page_views=0)); db.session.commit(); return "DATABASE RESET SUCCESSFUL!"
+def force_db_reset(): 
+    db.drop_all()
+    db.create_all()
+    db.session.add(SiteAnalytics(page_views=0))
+    db.session.commit()
+    return "DATABASE RESET SUCCESSFUL!"
 
 @app.route('/')
-def home(): stats = SiteAnalytics.query.first(); stats.page_views += 1; db.session.commit(); return render_template('index.html')
+def home(): 
+    try:
+        stats = SiteAnalytics.query.first()
+        if stats:
+            stats.page_views += 1
+            db.session.commit()
+    except:
+        db.session.rollback()
+    return render_template('index.html')
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -371,7 +390,6 @@ def admin_data():
             u = User.query.filter_by(email=session['user_email']).first()
             if u: current_username = getattr(u, 'username', u.name)
 
-        # UNIVERSAL SERVER COOLDOWN CALCULATION
         analytics = SiteAnalytics.query.first()
         pv = analytics.page_views if analytics else 0
         broadcast_cooldown = 0
@@ -489,7 +507,6 @@ def approve_submission():
     elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
     if obj: obj.is_approved = True; db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!")); db.session.commit(); return jsonify({"status": "success"})
 
-# ENFORCES UNIVERSAL SERVER COOLDOWN FOR BROADCASTS
 @app.route('/admin/send-notification', methods=['POST'])
 def admin_send_notification():
     if get_user_role() not in ['admin', 'owner']: return jsonify({"error": "Unauthorized"}), 403

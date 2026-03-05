@@ -216,11 +216,16 @@ async function loadLeaderboard() {
 }
 
 let currentGlobalContent = { premium_codes: [] };
+let lastContentHash = "";
 
 async function loadDynamicContent() {
     try {
         const res = await fetch('/api/content'); if (!res.ok) return; 
-        const data = await res.json(); currentGlobalContent = data; 
+        const rawText = await res.text();
+        if (rawText === lastContentHash) return; // Smart Diffing
+        lastContentHash = rawText;
+        const data = JSON.parse(rawText); currentGlobalContent = data; 
+        
         const generateCodeHTML = (codes, isPremiumSection = false, typeName) => {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items yet.</p>';
             return codes.map((item, index) => {
@@ -291,7 +296,3 @@ async function handleRequestCode(e) { e.preventDefault(); const email = document
 async function handleResetPassword(e) { e.preventDefault(); try { const res = await fetch('/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('reset-email').value, code: document.getElementById('reset-code').value, new_password: document.getElementById('reset-new-password').value }) }); const data = await res.json(); if (res.ok) { alert("Password updated!"); closeResetModal(); } else { alert("Error: " + data.message); } } catch (err) {} }
 
 window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loadLeaderboard(); }); };
-
-// --- REAL-TIME ENGINE ---
-setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 10000);
-setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 30000);

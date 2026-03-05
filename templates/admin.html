@@ -201,8 +201,10 @@
             async function submitAdminNotification(e) {
                 e.preventDefault();
                 const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value;
+                const btn = e.target.querySelector('button'); btn.innerText = "Sending...";
                 const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) });
-                if(res.ok) { alert("Notification Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; }
+                if(res.ok) { alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; }
+                btn.innerText = "Send Alert";
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }

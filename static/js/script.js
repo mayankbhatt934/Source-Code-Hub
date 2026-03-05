@@ -57,7 +57,7 @@ async function handleRegistration(e) {
         const data = await res.json(); 
         if (res.ok) { localStorage.removeItem('refCode'); alert(data.message); document.getElementById('register-form').reset(); setAuthMode('normal'); } 
         else { alert("Error: " + data.message); } 
-    } catch (err) {} 
+    } catch (err) { alert("Network error!"); } 
     btn.innerText = "Create Account";
 }
 
@@ -291,3 +291,7 @@ async function handleRequestCode(e) { e.preventDefault(); const email = document
 async function handleResetPassword(e) { e.preventDefault(); try { const res = await fetch('/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('reset-email').value, code: document.getElementById('reset-code').value, new_password: document.getElementById('reset-new-password').value }) }); const data = await res.json(); if (res.ok) { alert("Password updated!"); closeResetModal(); } else { alert("Error: " + data.message); } } catch (err) {} }
 
 window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loadLeaderboard(); }); };
+
+// --- REAL-TIME ENGINE ---
+setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 10000);
+setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 30000);

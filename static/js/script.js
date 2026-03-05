@@ -30,44 +30,6 @@ function switchAuthPage() { isLoggedIn ? switchPage('profile') : switchPage('log
 function toggleFlipCard() { isFlipped = !isFlipped; document.getElementById('flip-inner-box').style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'; }
 function setAuthMode(mode) { const btnNormal = document.getElementById('btn-normal'), btnPremium = document.getElementById('btn-premium'), toggleBg = document.querySelector('.toggle-bg'); if (mode === 'normal') { btnNormal.classList.add('active'); btnPremium.classList.remove('active'); toggleBg.style.left = '0'; if(isFlipped) toggleFlipCard(); } else { btnPremium.classList.add('active'); btnNormal.classList.remove('active'); toggleBg.style.left = '50%'; if(!isFlipped) toggleFlipCard(); } }
 
-function runSandbox(elementId) { 
-    // Use .textContent to grab the exact formatting and line breaks
-    const codeElement = document.getElementById(elementId);
-    const code = codeElement.textContent || codeElement.innerText; 
-    
-    const modal = document.getElementById('sandbox-modal'); 
-    modal.style.display = 'flex'; 
-    
-    const iframe = document.getElementById('sandbox-frame'); 
-    const doc = iframe.contentWindow.document; 
-    doc.open(); 
-    
-    // Check if the code contains common Web Development tags
-    const isWebCode = /<html|<body|<div|<style|<script|<canvas|<button/i.test(code);
-
-    if (isWebCode) {
-        // If it's a website, render it normally
-        doc.write(code);
-    } else {
-        // If it's Python/Backend code, format it nicely in dark mode instead of clumping it
-        // We replace < and > to prevent accidental HTML rendering inside the text
-        const safeCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        
-        doc.write(`
-            <html>
-            <body style="background: #1e1e1e; color: #dcdcaa; font-family: Consolas, 'Courier New', monospace; padding: 20px; margin: 0;">
-                <div style="background: rgba(255, 95, 86, 0.1); border-left: 4px solid #ff5f56; padding: 10px 15px; margin-bottom: 20px; font-family: sans-serif; border-radius: 4px;">
-                    <strong style="color: #ff5f56;">⚠️ Note:</strong> Live execution is only available for HTML/CSS/JS. Displaying formatted source code below.
-                </div>
-                <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 14px; line-height: 1.5; margin: 0;">${safeCode}</pre>
-            </body>
-            </html>
-        `);
-    }
-    
-    doc.close(); 
-}
-
 async function viewProfile(email) {
     try {
         const res = await fetch(`/api/public-profile/${email}`);
@@ -207,7 +169,7 @@ async function loadDynamicContent() {
 
                 let html = `<div class="code-wrapper" style="margin-bottom: 40px; position: relative;"><div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
                 if (isFullWebsite) { html += `<div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);"><div style="font-size: 3rem; margin-bottom: 15px;">📁</div><h3 style="color: #fff; margin-bottom: 20px;">Full Website Files</h3><a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;" onclick="interactCode('${typeName}', ${item.id}, 'view', null)">Download</a></div>`; } 
-                else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div>${reviewBtnHTML}<button class="copy-main-btn" style="background: transparent; color: #00ff88; border: 1px solid #00ff88; margin-right: 10px;" onclick="runSandbox('code-${item.id}')">▶ Run Preview</button><button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this, '${typeName}', ${item.id})">Copy Script</button></div></div><pre class="language-javascript"><code class="language-javascript" id="code-${item.id}">${item.code}</code></pre></div>`; }
+                else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div>${reviewBtnHTML}<button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this, '${typeName}', ${item.id})">Copy Script</button></div></div><pre class="language-javascript"><code class="language-javascript" id="code-${item.id}">${item.code}</code></pre></div>`; }
                 
                 html += `<div class="social-proof" style="${isLocked ? 'filter: blur(5px); pointer-events: none;' : ''}"><div style="display:flex; gap:15px; align-items:center;"><span>👁️ ${item.views} Views | By <a class="creator-link" onclick="viewProfile('${item.creator_email}')">${item.creator}</a></span>${commentBtnHTML}</div><div style="display:flex; gap:15px; align-items:center;"><button class="bookmark-btn ${bMarked}" onclick="toggleBookmark('${typeName}', ${item.id}, this)">🔖 ${bMarkText}</button><button class="like-btn" onclick="interactCode('${typeName}', ${item.id}, 'like', this)">🤍 ${item.likes}</button></div></div>`;
                 if (isLocked) { html += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;"><div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3><div style="display: flex; justify-content: center; gap: 10px;"><button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id})">Buy ₹${item.price}</button><button class="submit-btn" style="width: auto; padding: 10px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id}, true)">🎁</button><button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">Memberships</button></div></div>`; }
@@ -229,7 +191,6 @@ async function loadDynamicContent() {
             }).join(''); 
         }
         
-        // TRIGGER PRISM.JS SYNTAX HIGHLIGHTING
         if(window.Prism) Prism.highlightAll();
 
     } catch (err) {}
@@ -238,7 +199,6 @@ async function loadDynamicContent() {
 function openReviewModal(codeId) { document.getElementById('rev-code-id').value = codeId; const code = currentGlobalContent.premium_codes.find(c => c.id === codeId); const listContainer = document.getElementById('review-list-container'); if (code && code.reviews.length > 0) { listContainer.innerHTML = code.reviews.map(r => `<div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;"><strong style="color:#f5af19;">${'⭐'.repeat(r.rating)}</strong> <span style="color:#aaa; font-size:0.8rem;">- ${r.user}</span><p style="margin:5px 0 0 0; color:#fff; font-size:0.9rem;">${r.comment}</p></div>`).join(''); } else { listContainer.innerHTML = '<p style="color:#888; font-size:0.9rem;">No reviews yet. Be the first!</p>'; } document.getElementById('review-modal-overlay').style.display = 'flex'; }
 async function submitReview(e) { e.preventDefault(); if (!isLoggedIn) { alert("Please login first!"); return; } const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/submit-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code_id: document.getElementById('rev-code-id').value, rating: document.getElementById('rev-rating').value, comment: document.getElementById('rev-comment').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); document.getElementById('review-modal-overlay').style.display = 'none'; e.target.reset(); loadDynamicContent(); } else { alert("Error: " + data.message); } } catch (err) {} btn.innerText = "Submit Review"; }
 
-// NEW: COMMENTS ENGINE
 async function openCommentModal(type, id) {
     document.getElementById('com-item-type').value = type; document.getElementById('com-item-id').value = id;
     document.getElementById('comment-modal-overlay').style.display = 'flex';

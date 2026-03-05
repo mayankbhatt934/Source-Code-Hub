@@ -58,9 +58,16 @@ async function loadUserProfile() {
             const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; 
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             
-            // FIXED: PROPER AVATAR FALLBACK
+            // -------------------------------------------------------------
+            // THE FIX: Proper Avatar Fallback System
+            // -------------------------------------------------------------
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
-            document.getElementById('profile-img').src = (user.photo && user.photo !== 'null') ? user.photo : defaultAvatar;
+            let finalAvatar = defaultAvatar;
+            if (user.photo && String(user.photo).trim() !== '' && String(user.photo) !== 'null') {
+                finalAvatar = user.photo;
+            }
+            document.getElementById('profile-img').src = finalAvatar;
+            // -------------------------------------------------------------
             
             if(user.has_staff_access) document.getElementById('btn-staff-panel').style.display = 'block'; else document.getElementById('btn-staff-panel').style.display = 'none';
             if(user.is_premium || user.has_staff_access) { document.getElementById('creator-lock').style.display = 'none'; document.getElementById('creator-unlocked').style.display = 'block'; }
@@ -80,7 +87,6 @@ async function loadUserProfile() {
     } catch (err) {}
 }
 
-// Dynamic Creator Field Toggle
 function toggleCreatorFields() {
     const type = document.getElementById('cr-type').value;
     const cat = document.getElementById('cr-cat');

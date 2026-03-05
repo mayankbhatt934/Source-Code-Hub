@@ -36,13 +36,12 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: server.login(sender_email, sender_password); server.sendmail(sender_email, to_email, msg.as_string())
         except: pass
 
-# --- ADVANCED ROLE VERIFICATION ---
 def get_user_role():
     if 'user_email' in session:
         u = User.query.filter_by(email=session['user_email']).first()
         return getattr(u, 'role', 'member') if u else 'member'
     elif session.get('is_admin'):
-        return 'owner' # Master backdoor account acts as Owner
+        return 'owner'
     return 'member'
 
 def check_admin_access():
@@ -257,8 +256,12 @@ def admin_dashboard():
     if not check_admin_access(): return render_template('admin.html', logged_in=False)
     return render_template('admin.html', logged_in=True)
 
+# FIXED LOGOUT: Redirects safely to homepage!
 @app.route('/admin-logout')
-def admin_logout(): session.pop('is_admin', None); return redirect('/admin')
+def admin_logout(): 
+    session.pop('is_admin', None)
+    session.pop('user_email', None)
+    return redirect('/')
 
 @app.route('/api/admin-data')
 def admin_data():
@@ -448,7 +451,6 @@ def delete_submission():
     if obj: db.session.delete(obj); db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
-# --- SECURITY: PREVENT VERCEL FROM CACHING PRIVATE PAGES ---
 @app.after_request
 def add_cache_control(response):
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'

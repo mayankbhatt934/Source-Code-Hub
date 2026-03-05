@@ -8,7 +8,7 @@
     <style>
         body { background: #0a0a0a; color: #fff; font-family: sans-serif; padding: 20px; }
         .admin-container { max-width: 1200px; margin: 0 auto; }
-        .admin-card { background: rgba(20, 20, 20, 0.8); padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .admin-card { background: rgba(20, 20, 20, 0.8); padding: 25px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); }
         input, textarea, select { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #333; border-radius: 5px; box-sizing: border-box; }
         input:focus, textarea:focus, select:focus { border-color: #00d2ff; outline: none; }
         .delete-btn, .unban-btn { background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.3s; }
@@ -17,9 +17,9 @@
         .unban-btn:hover { background: #00ff88; color: #000; }
         .manage-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); padding: 10px 15px; margin-bottom: 10px; border-radius: 6px; border-left: 3px solid #333; }
         
-        /* FIXED: align-items: start; prevents vertical stretching */
-        .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; align-items: start; }
-        @media (max-width: 900px) { .admin-grid { grid-template-columns: 1fr; } }
+        /* THE FLEXBOX FIX: Forces independent, non-stretching columns */
+        .admin-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; align-items: flex-start; }
+        .admin-column { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 20px; }
     </style>
 </head>
 <body>
@@ -38,17 +38,17 @@
         {% else %}
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <h1 style="color: #00d2ff;">Staff Dashboard</h1>
-            <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Logout</a>
+            <a href="/admin-logout" style="color: #ff5f56; text-decoration: none; border: 1px solid #ff5f56; padding: 8px 15px; border-radius: 5px;">Secure Logout</a>
         </div>
         
         <div class="admin-grid">
-            <div>
+            <div class="admin-column">
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">Overview</h3><p style="margin-bottom: 8px; color: #ccc;">Users: <span id="stat-users" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Premium: <span id="stat-premium" style="color: #fff; font-weight: bold;">0</span></p><p style="margin-bottom: 8px; color: #ccc;">Revenue: <span style="color: #00ff88; font-weight: bold;">₹<span id="stat-revenue">0</span></span></p><p style="margin-bottom: 8px; color: #ccc;">Views: <span id="stat-views" style="color: #fff; font-weight: bold;">0</span></p></div>
                 <div class="admin-card" id="panel-incoming-payments"><h3 style="margin-bottom: 15px; color: #00ff88;">Incoming Payments</h3><div id="pending-list">Loading...</div></div>
                 <div class="admin-card" id="panel-payout-requests" style="border-color: #ff007f;"><h3 style="margin-bottom: 15px; color: #ff007f;">💸 Payout Requests</h3><div id="payout-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
             </div>
             
-            <div>
+            <div class="admin-column">
                 <div class="admin-card" style="border-color: #f5af19;"><h3 style="margin-bottom: 15px; color: #f5af19;">🌟 Creator Submissions</h3><div id="creator-codes-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
                 <div class="admin-card" style="border-color: #00d2ff;"><h3 style="margin-bottom: 15px; color: #00d2ff;">🛠️ Support Tickets</h3><div id="support-tickets-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
                 <div class="admin-card" style="border-color: #b06ab3;">
@@ -61,7 +61,7 @@
                 </div>
             </div>
             
-            <div>
+            <div class="admin-column">
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #00d2ff;">+ Free Code</h3><form onsubmit="submitNewCode(event)"><input type="text" id="code-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="code-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><textarea id="code-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn" style="width: 100%;">Publish</button></form></div>
                 <div class="admin-card"><h3 style="margin-bottom: 15px; color: #f5af19;">+ Premium Code</h3><form onsubmit="submitNewPremium(event)"><input type="text" id="prem-title" placeholder="Title" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="prem-category" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select><input type="number" id="prem-price" placeholder="Price" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><textarea id="prem-content" placeholder="Paste code..." required style="width: 100%; height: 60px; padding: 12px; margin-bottom: 12px;"></textarea><button type="submit" class="submit-btn premium-btn" style="width: 100%;">Publish</button></form></div>
                 
@@ -77,11 +77,11 @@
                         </select>
                         <div style="margin-bottom: 10px; text-align: left;"><label style="color: #ccc; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="role-friend" style="width: auto;"> Grant 'Friend 🤝' Badge</label></div>
                         <div style="margin-bottom: 15px; text-align: left;"><label style="color: #00ff88; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="role-email-cred" style="width: auto;" checked> Generate Password & Email</label></div>
-                        <button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Update & Hire Staff</button>
+                        <button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;">Update Staff</button>
                     </form>
                 </div>
                 
-                <div class="admin-card" id="panel-bans" style="border-color: #ff5f56;"><h3 style="margin-bottom: 15px; color: #ff5f56;">🚫 Bans</h3><form onsubmit="submitBanUser(event)"><input type="email" id="ban-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #ff5f56;"><input type="number" id="ban-duration" placeholder="Days (0=Perm)" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Ban</button></form><div id="banned-users-list" style="margin-top: 15px;"></div></div>
+                <div class="admin-card" id="panel-bans" style="border-color: #ff5f56;"><h3 style="margin-bottom: 15px; color: #ff5f56;">🚫 Bans</h3><form onsubmit="submitBanUser(event)"><input type="email" id="ban-email" placeholder="Email" required style="width: 100%; padding: 12px; margin-bottom: 12px; border-color: #ff5f56;"><input type="number" id="ban-duration" placeholder="Days (0=Perm)" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Ban User</button></form><div id="banned-users-list" style="margin-top: 15px;"></div></div>
                 <div class="admin-card" id="panel-gifts"><h3 style="margin-bottom: 15px; color: #ff007f;">🎁 Gift to User</h3><form onsubmit="submitAdminGift(event)"><input type="email" id="gift-email" placeholder="Recipient's Email" required style="width: 100%; padding: 12px; margin-bottom: 12px;"><select id="gift-type" required style="width: 100%; padding: 12px; margin-bottom: 12px;" onchange="toggleGiftType()"><option value="membership">Membership Pass</option><option value="code">Premium Code</option></select><select id="gift-membership-val" style="width: 100%; padding: 12px; margin-bottom: 12px;"><option value="Weekly Pass">Weekly Pass</option><option value="Monthly Pass">Monthly Pass</option><option value="Yearly Pass">Yearly Pass</option><option value="Lifetime Pass">Lifetime Pass</option></select><select id="gift-code-val" style="width: 100%; padding: 12px; margin-bottom: 12px; display: none;"></select><button type="submit" class="submit-btn" style="width: 100%; background: #ff007f; color: white; border: none;">Send Gift</button></form></div>
             </div>
         </div>
@@ -89,9 +89,9 @@
         <div class="admin-card" id="panel-manage-content">
             <h2 style="margin-bottom: 20px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 10px;">Manage Content</h2>
             <div class="admin-grid" style="margin-bottom: 0;">
-                <div><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div>
-                <div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div>
-                <div><h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3><div id="manage-prompts-list"></div></div>
+                <div class="admin-column"><h3 style="color: #00d2ff; margin-bottom: 15px;">Free</h3><div id="manage-codes-list"></div></div>
+                <div class="admin-column"><h3 style="color: #f5af19; margin-bottom: 15px;">Premium</h3><div id="manage-premium-list"></div></div>
+                <div class="admin-column"><h3 style="color: #b06ab3; margin-bottom: 15px;">AI Prompts</h3><div id="manage-prompts-list"></div></div>
             </div>
         </div>
 
@@ -101,11 +101,16 @@
 
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
-                if (res.status === 401) { window.location.href = '/admin-logout'; return; }
+                
+                // INFINITE LOOP FIX: Safely informs the user to re-login instead of looping
+                if (res.status === 401) {
+                    document.body.innerHTML = '<div style="text-align:center; margin-top:100px;"><h2 style="color:#ff5f56;">Session Expired</h2><p style="color:#ccc; margin-bottom:20px;">You are viewing a cached page or your session ended.</p><button onclick="window.location.href=\'/admin-logout\'" style="background:#00d2ff; color:#000; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Click here to safely login</button></div>';
+                    return;
+                }
+
                 if (res.ok) {
                     const d = await res.json();
                     
-                    // NEW: UI PERMISSION MANAGER
                     if (d.current_role === 'staff') {
                         const hideIds = ['panel-incoming-payments', 'panel-payout-requests', 'panel-hiring', 'panel-bans', 'panel-gifts', 'panel-manage-content'];
                         hideIds.forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
@@ -148,12 +153,12 @@
                 e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing...";
                 const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked };
                 const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
-                const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Update & Hire Staff";
+                const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Update Staff";
             }
             
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
-            async function deleteSubmission(id, type) { if(confirm("Reject/Delete this?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
+            async function deleteSubmission(id, type) { if(confirm("Reject this?")) { await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); } }
             
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); }

@@ -58,16 +58,10 @@ async function loadUserProfile() {
             const user = await res.json(); isPremiumUser = user.is_premium; isBannedUser = user.is_banned; 
             document.getElementById('prof-name').value = user.name; document.getElementById('prof-email').value = user.email;
             
-            // -------------------------------------------------------------
-            // THE FIX: Proper Avatar Fallback System
-            // -------------------------------------------------------------
             const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=00d2ff&color=fff`;
             let finalAvatar = defaultAvatar;
-            if (user.photo && String(user.photo).trim() !== '' && String(user.photo) !== 'null') {
-                finalAvatar = user.photo;
-            }
+            if (user.photo && String(user.photo).trim() !== '' && String(user.photo) !== 'null') { finalAvatar = user.photo; }
             document.getElementById('profile-img').src = finalAvatar;
-            // -------------------------------------------------------------
             
             if(user.has_staff_access) document.getElementById('btn-staff-panel').style.display = 'block'; else document.getElementById('btn-staff-panel').style.display = 'none';
             if(user.is_premium || user.has_staff_access) { document.getElementById('creator-lock').style.display = 'none'; document.getElementById('creator-unlocked').style.display = 'block'; }
@@ -79,7 +73,7 @@ async function loadUserProfile() {
             
             if (isBannedUser) {
                 ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'none');
-                let banner = document.getElementById('ban-banner'); if(!banner) { banner = document.createElement('div'); banner.id = 'ban-banner'; banner.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: rgba(20,20,20,0.95); border: 2px solid #ff5f56; color: #fff; text-align: center; padding: 25px; border-radius: 12px; z-index: 999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); backdrop-filter: blur(5px);'; banner.innerHTML = ' <div style="font-size: 2.5rem; margin-bottom: 10px;">🚫</div><h3 style="color: #ff5f56; margin-bottom: 10px;">Account Restricted</h3><p style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px; line-height: 1.4;">Your access has been limited.</p><button onclick="this.parentElement.style.display=\'none\'" style="background: #ff5f56; color: #fff; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">I Understand</button>'; document.body.appendChild(banner); } else { banner.style.display = 'block'; }
+                let banner = document.getElementById('ban-banner'); if(!banner) { banner = document.createElement('div'); banner.id = 'ban-banner'; banner.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; background: rgba(20,20,20,0.95); border: 2px solid #ff5f56; color: #fff; text-align: center; padding: 25px; border-radius: 12px; z-index: 999999; box-shadow: 0 10px 50px rgba(0,0,0,0.9); backdrop-filter: blur(5px);'; banner.innerHTML = ' <div style="font-size: 2.5rem; margin-bottom: 10px;">🚫</div><h3 style="color: #ff5f56; margin-bottom: 10px;">Account Restricted</h3><p style="font-size: 0.9rem; color: #ccc; margin-bottom: 20px; line-height: 1.4;">Your access has been limited.</p><button onclick="this.parentElement.style.display=\'none\'" style="background: #ff5f56; color: #fff; border: none; padding: 8px 20px; border-radius: 5px; cursor: font-weight: bold;">I Understand</button>'; document.body.appendChild(banner); } else { banner.style.display = 'block'; }
                 const activePage = document.querySelector('.page-section.active'); if(!activePage || !['page-profile', 'page-notifications'].includes(activePage.id)) switchPage('notifications');
             } else { const banner = document.getElementById('ban-banner'); if(banner) banner.remove(); ['nav-home', 'nav-free', 'nav-premium', 'nav-prompts', 'nav-pricing'].forEach(id => document.getElementById(id).style.display = 'block'); }
             loadMyPurchases(); loadNotifications();
@@ -88,10 +82,7 @@ async function loadUserProfile() {
 }
 
 function toggleCreatorFields() {
-    const type = document.getElementById('cr-type').value;
-    const cat = document.getElementById('cr-cat');
-    const price = document.getElementById('cr-price');
-    const code = document.getElementById('cr-code');
+    const type = document.getElementById('cr-type').value; const cat = document.getElementById('cr-cat'); const price = document.getElementById('cr-price'); const code = document.getElementById('cr-code');
     if(type === 'prompt') { cat.style.display = 'none'; price.style.display = 'none'; code.placeholder = "Paste your AI Prompt here..."; }
     else if(type === 'free') { cat.style.display = 'block'; price.style.display = 'none'; code.placeholder = "Paste your code or Drive link here..."; }
     else { cat.style.display = 'block'; price.style.display = 'block'; code.placeholder = "Paste your code or Drive link here..."; }
@@ -118,17 +109,31 @@ async function loadLeaderboard() {
     try { const res = await fetch('/api/leaderboard'); if(res.ok) { const data = await res.json(); const container = document.getElementById('leaderboard-list'); if(data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No creators ranked yet.</p>'; return; } container.innerHTML = data.map((c, i) => `<div style="display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #333; align-items: center;"><div><span style="color: ${i===0?'#f5af19':i===1?'#ccc':i===2?'#cd7f32':'#888'}; font-weight: bold; font-size: 1.2rem; margin-right: 15px;">#${i+1}</span><a class="creator-link" onclick="viewProfile('${c.email}')">${c.name}</a></div><span style="color: #ff5f56; font-weight: bold;">❤️ ${c.score} Score</span></div>`).join(''); } } catch(e) {}
 }
 
+// NEW: GLOBAL REVIEWS STORE
+let currentGlobalContent = { premium_codes: [] };
+
 async function loadDynamicContent() {
     try {
-        const res = await fetch('/api/content'); if (!res.ok) return; const data = await res.json();
+        const res = await fetch('/api/content'); if (!res.ok) return; 
+        const data = await res.json();
+        currentGlobalContent = data; // Save for modal
+        
         const generateCodeHTML = (codes, isPremiumSection = false, typeName) => {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items yet.</p>';
             return codes.map((item, index) => {
                 const isLocked = isPremiumSection && !isPremiumUser; const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
                 const mainColor = isPremiumSection ? '#f5af19' : '#00d2ff'; const isFullWebsite = item.category.includes("Full Website");
+                
+                // NEW: REVIEWS BUTTON UI
+                let reviewBtnHTML = '';
+                if (isPremiumSection) {
+                    const stars = item.avg_rating > 0 ? `⭐ ${item.avg_rating}` : '⭐ New';
+                    reviewBtnHTML = `<button onclick="openReviewModal(${item.id})" style="background: transparent; border: 1px solid #f5af19; color: #f5af19; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; margin-right: 10px;">${stars} (${item.reviews.length})</button>`;
+                }
+
                 let html = `<div class="code-wrapper" style="margin-bottom: 40px; position: relative;"><div class="code-title" style="color: ${mainColor};"><span>0${index + 1}. ${item.title}</span></div>`;
                 if (isFullWebsite) { html += `<div class="code-container" style="${blurStyle} padding: 40px; text-align: center; background: rgba(0,0,0,0.4);"><div style="font-size: 3rem; margin-bottom: 15px;">📁</div><h3 style="color: #fff; margin-bottom: 20px;">Full Website Files</h3><a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;" onclick="interactCode('${typeName}', ${item.id}, 'view', null)">Download</a></div>`; } 
-                else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div><button class="copy-main-btn" style="background: transparent; color: #00ff88; border: 1px solid #00ff88; margin-right: 10px;" onclick="runSandbox('code-${item.id}')">▶ Run Preview</button><button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this, '${typeName}', ${item.id})">Copy Script</button></div></div><pre id="code-${item.id}">${item.code}</pre></div>`; }
+                else { html += `<div class="code-container" style="${blurStyle}"><div class="code-header"><div class="dots"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div><div>${reviewBtnHTML}<button class="copy-main-btn" style="background: transparent; color: #00ff88; border: 1px solid #00ff88; margin-right: 10px;" onclick="runSandbox('code-${item.id}')">▶ Run Preview</button><button class="copy-main-btn" style="background: ${isPremiumSection ? '#f5af19' : ''}; color: ${isPremiumSection ? '#000' : ''};" onclick="copyMainCode('code-${item.id}', this, '${typeName}', ${item.id})">Copy Script</button></div></div><pre id="code-${item.id}">${item.code}</pre></div>`; }
                 html += `<div class="social-proof" style="${isLocked ? 'filter: blur(5px); pointer-events: none;' : ''}"><div>👁️ ${item.views} Views | By <a class="creator-link" onclick="viewProfile('${item.creator_email}')">${item.creator}</a></div><button class="like-btn" onclick="interactCode('${typeName}', ${item.id}, 'like', this)">🤍 ${item.likes}</button></div>`;
                 if (isLocked) { html += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;"><div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3><div style="display: flex; justify-content: center; gap: 10px;"><button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id})">Buy ₹${item.price}</button><button class="submit-btn" style="width: auto; padding: 10px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title}', ${item.price}, ${item.id}, true)">🎁</button><button class="submit-btn" style="width: auto; padding: 10px 20px;" onclick="switchPage('pricing')">Memberships</button></div></div>`; }
                 html += `</div>`; return html;
@@ -144,6 +149,35 @@ async function loadDynamicContent() {
         const promptContainer = document.getElementById('dynamic-prompts');
         if (promptContainer) { promptContainer.innerHTML = data.prompts.length === 0 ? '<p style="text-align: center; color: #888;">No prompts published yet.</p>' : data.prompts.map((item) => `<div class="prompt-box" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid #333;"><span class="prompt-text" style="font-weight: bold; color: #00d2ff;">${item.title}</span><div style="display: flex; gap: 10px;"><button class="submit-btn" style="padding: 5px 15px; font-size: 0.8rem; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="openPromptModal(\`${item.title.replace(/`/g, '\\`')}\`, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">View</button><button class="copy-btn" style="padding: 5px 15px; font-size: 0.8rem;" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`')}\`)">Copy</button></div></div>`).join(''); }
     } catch (err) {}
+}
+
+// NEW: REVIEW ENGINE
+function openReviewModal(codeId) {
+    document.getElementById('rev-code-id').value = codeId;
+    const code = currentGlobalContent.premium_codes.find(c => c.id === codeId);
+    const listContainer = document.getElementById('review-list-container');
+    if (code && code.reviews.length > 0) {
+        listContainer.innerHTML = code.reviews.map(r => `<div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;"><strong style="color:#f5af19;">${'⭐'.repeat(r.rating)}</strong> <span style="color:#aaa; font-size:0.8rem;">- ${r.user}</span><p style="margin:5px 0 0 0; color:#fff; font-size:0.9rem;">${r.comment}</p></div>`).join('');
+    } else {
+        listContainer.innerHTML = '<p style="color:#888; font-size:0.9rem;">No reviews yet. Be the first!</p>';
+    }
+    document.getElementById('review-modal-overlay').style.display = 'flex';
+}
+
+async function submitReview(e) {
+    e.preventDefault();
+    if (!isLoggedIn) { alert("Please login first!"); return; }
+    const btn = e.target.querySelector('button'); btn.innerText = "Submitting...";
+    try {
+        const res = await fetch('/api/submit-review', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code_id: document.getElementById('rev-code-id').value, rating: document.getElementById('rev-rating').value, comment: document.getElementById('rev-comment').value })
+        });
+        const data = await res.json();
+        if (res.ok) { alert(data.message); document.getElementById('review-modal-overlay').style.display = 'none'; e.target.reset(); loadDynamicContent(); } 
+        else { alert("Error: " + data.message); }
+    } catch (err) {}
+    btn.innerText = "Submit Review";
 }
 
 let currentModalPromptText = ""; 

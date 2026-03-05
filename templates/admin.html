@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Dashboard - Source Code Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { margin: 0; padding: 0; min-height: 100vh; }
         .dash-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; z-index: 10; position: relative; }
@@ -67,11 +66,6 @@
         </div>
 
         <div class="grid-2" id="panel-finance">
-            <div class="glass-panel" style="grid-column: 1 / -1;">
-                <div class="panel-header" style="color: #00ff88;">📈 7-Day Revenue Growth</div>
-                <canvas id="revenueChart" height="80"></canvas>
-            </div>
-            
             <div class="glass-panel">
                 <div class="panel-header" style="color: #00ff88;">💵 Incoming Payments</div>
                 <div class="list-container" id="pending-list"><p style="color: #888;">No pending payments.</p></div>
@@ -137,8 +131,6 @@
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
 
-            let revenueChartInstance = null;
-
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
                 if (res.status === 401) { document.body.innerHTML = '<div style="text-align:center; margin-top:15vh;"><h2 style="color:#ff5f56; font-size: 2.5rem;">Session Invalid</h2><p style="color:#aaa; font-size: 1.1rem; margin-bottom:30px;">Your secure access token has expired.</p><button onclick="window.location.href=\'/\'" class="submit-btn" style="width: auto; padding: 15px 40px; font-size: 1.2rem;">Return to Homepage</button></div>'; return; }
@@ -156,17 +148,6 @@
 
                     document.getElementById('stat-users').innerText = d.total_users; document.getElementById('stat-premium').innerText = d.premium_users; document.getElementById('stat-revenue').innerText = d.total_revenue; document.getElementById('stat-views').innerText = d.page_views;
                     
-                    // NEW: RENDER CHART
-                    if (d.current_role !== 'staff' && document.getElementById('revenueChart')) {
-                        const ctx = document.getElementById('revenueChart').getContext('2d');
-                        if (revenueChartInstance) revenueChartInstance.destroy();
-                        revenueChartInstance = new Chart(ctx, {
-                            type: 'line',
-                            data: { labels: d.chart_labels, datasets: [{ label: 'Revenue (₹)', data: d.chart_revenue, borderColor: '#00ff88', backgroundColor: 'rgba(0, 255, 136, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#fff', pointBorderColor: '#00ff88', pointRadius: 4 }] },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }, x: { grid: { display: false }, ticks: { color: '#888' } } } }
-                        });
-                    }
-
                     const pDiv = document.getElementById('pending-list');
                     if (d.pending_payments.length === 0) pDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending payments.</p>';
                     else pDiv.innerHTML = d.pending_payments.map(tx => `<div class="list-item" style="border-left-color: #00ff88;"><div style="margin-bottom: 8px;"><strong style="color:#fff; display:block;">${tx.email}</strong><span style="color:#ccc; font-size:0.85rem;">${tx.plan} <b style="color:#00ff88;">(₹${tx.amount})</b></span><br><span style="color:#888; font-size:0.75rem;">UPI: ${tx.sender_upi}</span></div><button onclick="approvePayment(${tx.id})" class="submit-btn" style="background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 8px; font-size: 0.8rem;">Verify & Approve</button></div>`).join('');

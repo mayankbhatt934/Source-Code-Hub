@@ -28,7 +28,6 @@ with app.app_context():
     db.create_all()
     if not SiteAnalytics.query.first(): db.session.add(SiteAnalytics(page_views=0)); db.session.commit()
 
-# NEW: BEAUTIFUL HTML EMAIL ENGINE
 def send_system_email(to_email, subject, body):
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
@@ -169,18 +168,14 @@ def my_purchases():
     code_list = [{"id": c.id, "title": c.title, "category": c.category, "code": c.code} for c in codes]
     return jsonify({"status": "success", "is_premium": user.is_premium, "codes": code_list})
 
-# NEW: API to submit reviews
 @app.route('/api/submit-review', methods=['POST'])
 def submit_review():
     if 'user_email' not in session: return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     user = User.query.filter_by(email=session['user_email']).first()
-    
-    # Check if they own the code or have global premium access
     purchased = UserCodePurchase.query.filter_by(email=user.email, code_id=data.get('code_id')).first()
     if not purchased and not user.is_premium and getattr(user, 'role', 'member') not in ['admin', 'owner', 'staff']:
         return jsonify({"status": "error", "message": "You must purchase this code to review it."}), 403
-        
     db.session.add(Review(email=user.email, code_id=data.get('code_id'), rating=data.get('rating'), comment=data.get('comment')))
     db.session.commit()
     return jsonify({"status": "success", "message": "Review published!"})
@@ -290,7 +285,6 @@ def admin_dashboard():
 @app.route('/admin-logout')
 def admin_logout(): session.pop('is_admin', None); session.pop('user_email', None); return redirect('/')
 
-# NEW: ENGINE FOR CHART DATA
 @app.route('/api/admin-data')
 def admin_data():
     try:
@@ -300,14 +294,6 @@ def admin_data():
         all_tx = Transaction.query.filter_by(status='Success').all()
         revenue = sum([t.amount for t in all_tx])
         
-        # Build 7-day chart data
-        chart_labels = [(datetime.utcnow() - timedelta(days=i)).strftime('%b %d') for i in range(6, -1, -1)]
-        chart_revenue = [0] * 7
-        for tx in all_tx:
-            if hasattr(tx, 'date_created') and tx.date_created:
-                days_ago = (datetime.utcnow().date() - tx.date_created.date()).days
-                if 0 <= days_ago <= 6: chart_revenue[6 - days_ago] += tx.amount
-
         pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
         open_tickets = [{"id": t.id, "email": t.email, "subject": t.subject, "message": t.message} for t in SupportTicket.query.filter_by(status='Open').all()]
@@ -317,7 +303,7 @@ def admin_data():
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt"} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
         
         pv = SiteAnalytics.query.first().page_views if SiteAnalytics.query.first() else 0
-        return jsonify({"current_role": role, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts, "chart_labels": chart_labels, "chart_revenue": chart_revenue})
+        return jsonify({"current_role": role, "total_users": User.query.count(), "premium_users": User.query.filter_by(is_premium=True).count(), "total_revenue": revenue, "page_views": pv, "pending_payments": pending_list, "banned_users": banned_users, "tickets": open_tickets, "pending_codes": pend_prem + pend_free + pend_prompt, "payouts": payouts})
     except Exception as e: return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
@@ -441,7 +427,6 @@ def approve_submission():
         db.session.commit(); return jsonify({"status": "success"})
     return jsonify({"error": "Not found"}), 404
 
-# NEW: SENDING REVIEWS WITH CONTENT
 @app.route('/api/content', methods=['GET'])
 def get_content():
     try:

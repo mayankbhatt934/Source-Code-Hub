@@ -143,7 +143,16 @@
             </div>
         </div>
 
+        <div id="preview-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) this.style.display='none'">
+            <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; max-height: 85vh; overflow-y: auto; border: 1px solid #00d2ff; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                <div onclick="document.getElementById('preview-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
+                <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">🔍 Content Preview</h3>
+                <pre style="background: #1e1e1e; padding: 15px; border-radius: 8px; color: #dcdcaa; overflow-x: auto; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-wrap: break-word; margin: 0;" id="preview-code-content"></pre>
+            </div>
+        </div>
+
         <script>
+            let pendingCodesData = [];
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
             
@@ -220,10 +229,23 @@
                     if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All caught up!</p>';
                     else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
+                    // (Inside loadAdminData...)
+                    pendingCodesData = d.pending_codes; // Save data globally for the preview modal
+
                     const cDiv = document.getElementById('creator-codes-list');
                     if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending content.</p>';
-                    else cDiv.innerHTML = d.pending_codes.map(c => `<div class="list-item" style="border-left-color: #f5af19;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#f5af19; border:1px solid #f5af19; float:right; text-transform:uppercase;">${c.type}</span><strong style="color:#fff; font-size:1rem; display:block;">${c.title}</strong><span style="color:#aaa; font-size:0.8rem;">By: ${c.creator}</span></div><div style="display:flex; gap:10px;"><button onclick="approveSubmission(${c.id}, '${c.type}')" class="submit-btn premium-btn" style="padding: 8px; font-size: 0.8rem;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">Reject</button></div></div>`).join('');
+                    else cDiv.innerHTML = d.pending_codes.map((c, index) => `<div class="list-item" style="border-left-color: #f5af19;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#f5af19; border:1px solid #f5af19; float:right; text-transform:uppercase;">${c.type}</span><strong style="color:#fff; font-size:1rem; display:block;">${c.title}</strong><span style="color:#aaa; font-size:0.8rem;">By: ${c.creator}</span></div><div style="display:flex; gap:10px;"><button onclick="previewSubmission(${index})" style="background:transparent; border:1px solid #00d2ff; color:#00d2ff; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">View</button><button onclick="approveSubmission(${c.id}, '${c.type}')" class="submit-btn premium-btn" style="padding: 8px; font-size: 0.8rem; flex: 1;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">Reject</button></div></div>`).join('');
                 }
+            }
+
+            // NEW: Function to open the code preview modal safely
+            function previewSubmission(index) {
+                const item = pendingCodesData[index];
+                if (!item) return;
+                // Safely escape brackets so HTML code doesn't execute in the admin panel
+                const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                document.getElementById('preview-code-content').innerHTML = safeCode;
+                document.getElementById('preview-modal-overlay').style.display = 'flex';
             }
 
             async function approvePayment(id) { if(!confirm("Verify this payment?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }

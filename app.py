@@ -3,7 +3,8 @@ from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, PremiumCode, AIPrompt, UserCodePurchase, Notification, SupportTicket, CodeLike, PayoutRequest, Review, Bookmark, Comment, EmailOTP
+
+from models import db, User, Transaction, SiteAnalytics, PasswordReset, FreeCode, PremiumCode, AIPrompt, UserCodePurchase, Notification, SupportTicket, CodeLike, PayoutRequest, Review, Bookmark, Comment, EmailOTP, SystemConfig, PromoCode
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
@@ -11,6 +12,8 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 app.secret_key = 'super_secret_key_change_this_later' 
+
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 ADMIN_USERNAME = 'mayank@123'
 ADMIN_PASSWORD = 'password123'
@@ -26,17 +29,6 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-class SystemConfig(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    maintenance_mode = db.Column(db.Boolean, default=False)
-
-class PromoCode(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(50), unique=True, nullable=False)
-    discount = db.Column(db.Integer, nullable=False)
-    limit = db.Column(db.Integer, default=0)
-    uses = db.Column(db.Integer, default=0)
-
 with app.app_context():
     db.create_all()
     try:
@@ -49,19 +41,23 @@ with app.app_context():
         db.session.rollback()
 
 def get_current_user():
-    if 'user_email' not in session: return None
+    if 'user_email' not in session: 
+        return None
     try:
         u = User.query.filter_by(email=session['user_email']).first()
-        if not u: session.pop('user_email', None)
+        if not u: 
+            session.pop('user_email', None)
         return u
     except:
         session.pop('user_email', None)
         return None
 
 def get_user_role():
-    if session.get('is_admin'): return 'owner'
+    if session.get('is_admin'): 
+        return 'owner'
     u = get_current_user()
-    if u: return getattr(u, 'role', 'member')
+    if u: 
+        return getattr(u, 'role', 'member')
     return 'member'
 
 def check_admin_access(): 
@@ -69,6 +65,7 @@ def check_admin_access():
 
 @app.before_request
 def check_maintenance():
+    session.permanent = True 
     if request.endpoint in ['static', 'admin_dashboard', 'admin_data', 'toggle_maintenance', 'admin_logout', 'login', 'force_db_reset']:
         return
     try:
@@ -97,7 +94,8 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: 
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, to_email, msg.as_string())
-        except Exception as e: pass
+        except Exception as e: 
+            pass
 
 @app.route('/force-db-reset')
 def force_db_reset(): 
@@ -107,7 +105,7 @@ def force_db_reset():
         db.session.add(SiteAnalytics(page_views=0))
         db.session.add(SystemConfig(maintenance_mode=False))
         db.session.commit()
-        return "DATABASE RESET SUCCESSFUL!"
+        return "DATABASE RESET SUCCESSFUL! Tables created safely."
     except Exception as e: 
         return f"Reset Failed: {str(e)}"
 
@@ -125,9 +123,12 @@ def home():
 @app.route('/code/<item_type>/<int:item_id>')
 def view_seo_item(item_type, item_id):
     item = None
-    if item_type == 'free': item = FreeCode.query.get_or_404(item_id)
-    elif item_type == 'prem': item = PremiumCode.query.get_or_404(item_id)
-    elif item_type == 'prompt': item = AIPrompt.query.get_or_404(item_id)
+    if item_type == 'free': 
+        item = FreeCode.query.get_or_404(item_id)
+    elif item_type == 'prem': 
+        item = PremiumCode.query.get_or_404(item_id)
+    elif item_type == 'prompt': 
+        item = AIPrompt.query.get_or_404(item_id)
     
     if not getattr(item, 'is_approved', True): 
         return "Item not available.", 404
@@ -190,6 +191,7 @@ def register():
     db.session.add(new_user)
     db.session.add(Notification(email=email, title="Welcome! 👋", message="Thanks for creating an account! Verify your email to unlock all features."))
     db.session.commit()
+    
     return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
 @app.route('/login', methods=['POST'])
@@ -202,6 +204,7 @@ def login():
     if user and check_password_hash(user.password, password):
         session['user_email'] = user.email
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
+        
     return jsonify({"status": "error", "message": "Invalid username/email or password!"}), 401
 
 @app.route('/logout', methods=['POST'])
@@ -250,13 +253,21 @@ def get_user_badges(user):
         badges.append({"name": "Banned 🚫", "class": "badge-banned"})
     else:
         r = getattr(user, 'role', 'member')
-        if r == 'owner': badges.append({"name": "Owner 👑", "class": "badge-owner"})
-        elif r == 'admin': badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
-        elif r == 'staff': badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
-        if getattr(user, 'is_friend', False): badges.append({"name": "Friend 🤝", "class": "badge-friend"})
+        if r == 'owner': 
+            badges.append({"name": "Owner 👑", "class": "badge-owner"})
+        elif r == 'admin': 
+            badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
+        elif r == 'staff': 
+            badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
+            
+        if getattr(user, 'is_friend', False): 
+            badges.append({"name": "Friend 🤝", "class": "badge-friend"})
+            
         if r not in ['owner', 'admin']:
-            if user.is_premium: badges.append({"name": "Premium ⭐", "class": "badge-premium"})
-            elif r == 'member': badges.append({"name": "Member", "class": "badge-basic"})
+            if user.is_premium: 
+                badges.append({"name": "Premium ⭐", "class": "badge-premium"})
+            elif r == 'member': 
+                badges.append({"name": "Member", "class": "badge-basic"})
     return badges
 
 @app.route('/api/profile', methods=['GET'])
@@ -298,9 +309,11 @@ def update_profile():
         return jsonify({"error": "Not logged in"}), 401
         
     data = request.json
-    if data.get('name'): user.name = data['name']
-    if data.get('photo'): user.profile_photo = data['photo']
-    
+    if data.get('name'): 
+        user.name = data['name']
+    if data.get('photo'): 
+        user.profile_photo = data['photo']
+        
     new_username = data.get('username')
     if new_username and new_username.lower().replace(" ", "") != user.username:
         new_un = new_username.lower().replace(" ", "")
@@ -336,7 +349,6 @@ def change_password():
 def forgot_password():
     email = request.json.get('email')
     user = User.query.filter_by(email=email).first()
-    
     if not user: 
         return jsonify({"status": "success"})
         
@@ -351,7 +363,6 @@ def forgot_password():
 def reset_password():
     data = request.json
     reset_entry = PasswordReset.query.filter_by(email=data.get('email'), code=data.get('code')).first()
-    
     if not reset_entry or datetime.utcnow() > reset_entry.expiry: 
         return jsonify({"status": "error", "message": "Invalid code!"}), 400
         
@@ -373,9 +384,10 @@ def validate_promo():
     promo = PromoCode.query.filter_by(code=code).first()
     if not promo: 
         return jsonify({"error": "Invalid promo code"}), 404
+        
     if promo.limit > 0 and promo.uses >= promo.limit: 
         return jsonify({"error": "This promo code is fully claimed!"}), 400
-    
+        
     discount_amt = int(amount * (promo.discount / 100))
     new_amt = max(0, amount - discount_amt)
     return jsonify({"status": "success", "new_amount": new_amt, "discount": promo.discount})
@@ -442,7 +454,6 @@ def submit_review():
         
     db.session.add(Review(email=user.email, code_id=data.get('code_id'), rating=data.get('rating'), comment=data.get('comment')))
     db.session.commit()
-    
     return jsonify({"status": "success", "message": "Review published!"})
 
 @app.route('/api/notifications', methods=['GET'])
@@ -539,6 +550,7 @@ def get_bookmarks():
         
     marks = Bookmark.query.filter_by(email=user.email).all()
     res = []
+    
     for m in marks:
         title = ""
         if m.item_type == 'free': 
@@ -560,10 +572,12 @@ def get_bookmarks():
 def get_comments(item_type, item_id):
     comments = Comment.query.filter_by(item_type=item_type, item_id=item_id).order_by(Comment.date_created.desc()).all()
     res = []
+    
     for c in comments:
         u = User.query.filter_by(email=c.email).first()
         uname = u.username if u and hasattr(u, 'username') else c.email.split('@')[0]
         res.append({"user": uname, "text": c.text, "date": c.date_created.strftime('%b %d')})
+        
     return jsonify(res)
 
 @app.route('/api/add-comment', methods=['POST'])
@@ -609,6 +623,7 @@ def creator_upload():
         
     data = request.json
     sub_type = data.get('sub_type')
+    
     try: 
         price_val = data.get('price')
         price_int = int(price_val) if price_val else 0
@@ -736,6 +751,7 @@ def admin_data():
         analytics = SiteAnalytics.query.first()
         pv = analytics.page_views if analytics else 0
         broadcast_cooldown = 0
+        
         if analytics and analytics.last_broadcast_time:
             time_since = datetime.utcnow() - analytics.last_broadcast_time
             if time_since < timedelta(minutes=2): 
@@ -746,9 +762,11 @@ def admin_data():
 
         all_tx = Transaction.query.filter_by(status='Success').all()
         revenue = sum([t.amount for t in all_tx])
+        
         pending_list = [{"id": t.id, "email": t.email, "plan": t.plan, "amount": t.amount, "sender_upi": t.sender_upi, "is_gift": t.is_gift, "gift_email": t.gift_recipient_email} for t in Transaction.query.filter_by(status='Pending').all()]
         banned_users = [{"email": u.email, "expiry": u.ban_expiry.strftime('%b %d') if u.ban_expiry else "Perm"} for u in User.query.filter_by(is_banned=True).all()]
         open_tickets = [{"id": t.id, "email": t.email, "subject": t.subject, "message": t.message} for t in SupportTicket.query.filter_by(status='Open').all()]
+        
         payouts = [{"id": p.id, "email": p.email, "amount": p.amount, "upi": p.upi_id} for p in getattr(PayoutRequest, 'query').filter_by(status='Pending').all()] if hasattr(PayoutRequest, 'query') else []
         pend_prem = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "premium", "code": c.code} for c in PremiumCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free", "code": c.code} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
@@ -796,7 +814,6 @@ def add_promo():
         
     data = request.json
     code = data.get('code').upper()
-    
     if PromoCode.query.filter_by(code=code).first(): 
         return jsonify({"error": "Code already exists"}), 400
         
@@ -830,10 +847,14 @@ def approve_payment(tx_id):
         if user:
             if 'Pass' in tx.plan:
                 user.is_premium = True
-                if tx.plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
-                elif tx.plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-                elif tx.plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
-                elif tx.plan == 'Lifetime Pass': user.premium_expiry = None
+                if tx.plan == 'Weekly Pass': 
+                    user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+                elif tx.plan == 'Monthly Pass': 
+                    user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+                elif tx.plan == 'Yearly Pass': 
+                    user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+                elif tx.plan == 'Lifetime Pass': 
+                    user.premium_expiry = None
             elif tx.code_id: 
                 db.session.add(UserCodePurchase(email=user.email, code_id=tx.code_id))
                 code = PremiumCode.query.get(tx.code_id)
@@ -874,10 +895,14 @@ def admin_gift():
     if data.get('type') == 'membership':
         user.is_premium = True
         plan = data.get('value')
-        if plan == 'Weekly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=7)
-        elif plan == 'Monthly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=30)
-        elif plan == 'Yearly Pass': user.premium_expiry = datetime.utcnow() + timedelta(days=365)
-        elif plan == 'Lifetime Pass': user.premium_expiry = None
+        if plan == 'Weekly Pass': 
+            user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+        elif plan == 'Monthly Pass': 
+            user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+        elif plan == 'Yearly Pass': 
+            user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+        elif plan == 'Lifetime Pass': 
+            user.premium_expiry = None
     elif data.get('type') == 'code': 
         db.session.add(UserCodePurchase(email=user.email, code_id=data.get('value')))
         
@@ -947,6 +972,7 @@ def admin_ban_user():
         
     data = request.json
     user = User.query.filter_by(email=data.get('email')).first()
+    
     if not user: 
         return jsonify({"status": "error"}), 404
         
@@ -954,6 +980,7 @@ def admin_ban_user():
     user.is_banned = True
     user.ban_expiry = None if days == 0 else datetime.utcnow() + timedelta(days=days)
     db.session.commit()
+    
     return jsonify({"status": "success"})
 
 @app.route('/admin/unban-user', methods=['POST'])
@@ -962,9 +989,10 @@ def admin_unban_user():
         return jsonify({"error": "Unauthorized"}), 403
         
     user = User.query.filter_by(email=request.json.get('email')).first()
-    user.is_banned = False
-    user.ban_expiry = None
-    db.session.commit()
+    if user:
+        user.is_banned = False
+        user.ban_expiry = None
+        db.session.commit()
     return jsonify({"status": "success"})
 
 @app.route('/admin/reply-ticket', methods=['POST'])
@@ -974,10 +1002,11 @@ def admin_reply_ticket():
         
     data = request.json
     ticket = SupportTicket.query.get(data.get('ticket_id'))
-    ticket.admin_reply = data.get('reply')
-    ticket.status = 'Closed'
-    db.session.add(Notification(email=ticket.email, title="Ticket Replied 🛠️", message=f"Staff replied to: {ticket.subject}"))
-    db.session.commit()
+    if ticket:
+        ticket.admin_reply = data.get('reply')
+        ticket.status = 'Closed'
+        db.session.add(Notification(email=ticket.email, title="Ticket Replied 🛠️", message=f"Staff replied to: {ticket.subject}"))
+        db.session.commit()
     return jsonify({"status": "success"})
 
 @app.route('/admin/approve-submission', methods=['POST'])
@@ -995,6 +1024,8 @@ def approve_submission():
         obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': 
         obj = AIPrompt.query.get(item_id)
+    else:
+        obj = None
         
     if obj: 
         obj.is_approved = True

@@ -139,3 +139,14 @@ class Comment(db.Model):
     item_id = db.Column(db.Integer, nullable=False)
     text = db.Column(db.Text, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SystemConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    maintenance_mode = db.Column(db.Boolean, default=False)
+
+class PromoCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    discount = db.Column(db.Integer, nullable=False)
+    limit = db.Column(db.Integer, default=0)
+    uses = db.Column(db.Integer, default=0)

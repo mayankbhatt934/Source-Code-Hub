@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Dashboard - Source Code Hub</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=final-1">
     <style>
         body { margin: 0; padding: 0; min-height: 100vh; }
         .dash-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; z-index: 10; position: relative; }
@@ -21,7 +21,7 @@
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
         .admin-form input, .admin-form select, .admin-form textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; transition: 0.3s; box-sizing: border-box;}
         .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: #00d2ff; background: rgba(0,0,0,0.5); outline: none; }
-        textarea, .admin-form textarea { resize: none !important; overflow-y: auto !important; }
+        
         .list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; flex-grow: 1;}
         .list-item { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #555; transition: 0.2s; }
         .list-item:hover { background: rgba(0,0,0,0.5); }
@@ -118,7 +118,7 @@
                     <input type="text" id="code-title" placeholder="Content Title" required>
                     <select id="code-category" required onchange="toggleInputType('code-category', 'code-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select>
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('code-content')" style="background: transparent; color: #00d2ff; border: 1px solid #00d2ff; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
-                    <textarea id="code-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <textarea id="code-content" placeholder="Paste script or URL here..." required style="height: 100px; resize: none;"></textarea>
                     <button type="submit" class="submit-btn" style="margin-top: auto;">Publish to Free Section</button>
                 </form>
             </div>
@@ -129,7 +129,7 @@
                     <select id="prem-category" required onchange="toggleInputType('prem-category', 'prem-content')"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website Link</option></select>
                     <input type="number" id="prem-price" placeholder="Price (₹)" required>
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('prem-content')" style="background: transparent; color: #f5af19; border: 1px solid #f5af19; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
-                    <textarea id="prem-content" placeholder="Paste script or URL here..." required style="height: 100px;"></textarea>
+                    <textarea id="prem-content" placeholder="Paste script or URL here..." required style="height: 100px; resize: none;"></textarea>
                     <button type="submit" class="submit-btn premium-btn" style="margin-top: auto;">Publish to Premium</button>
                 </form>
             </div>
@@ -138,7 +138,7 @@
                 <form class="admin-form" onsubmit="submitNewPrompt(event)">
                     <input type="text" id="prompt-title" placeholder="Prompt Title" required>
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 5px;"><button type="button" onclick="openEditor('prompt-content')" style="background: transparent; color: #b06ab3; border: 1px solid #b06ab3; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">⛶ Open Editor</button></div>
-                    <textarea id="prompt-content" placeholder="Paste exactly what the AI should read..." required style="height: 165px;"></textarea>
+                    <textarea id="prompt-content" placeholder="Paste exactly what the AI should read..." required style="height: 165px; resize: none;"></textarea>
                     <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a2387); margin-top: auto;">Publish Prompt</button>
                 </form>
             </div>
@@ -164,7 +164,7 @@
                     </select>
                     <input type="email" id="notif-email" placeholder="User Email Address" style="display: none;">
                     <input type="text" id="notif-title" placeholder="Notification Title" required>
-                    <textarea id="notif-message" placeholder="Type your message..." required style="height: 80px;"></textarea>
+                    <textarea id="notif-message" placeholder="Type your message..." required style="height: 80px; resize: none;"></textarea>
                     <button type="submit" id="btn-broadcast" class="submit-btn" style="margin-top: auto; transition: 0.3s;">Send Alert</button>
                 </form>
             </div>
@@ -196,7 +196,7 @@
         <div id="editor-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
             <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
                 <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px;">⛶ Full Screen Editor</h3>
-                <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; outline: none; margin-bottom: 15px;" placeholder="Paste your entire code here..."></textarea>
+                <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; outline: none; margin-bottom: 15px; resize: none;"></textarea>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="submit-btn" style="width: auto; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px;" onclick="closeEditor()">Cancel</button>
                     <button type="button" class="submit-btn" style="width: auto; background: #00d2ff; color: #000; padding: 10px 20px; font-weight: bold;" onclick="saveEditor()">Save & Close</button>
@@ -211,10 +211,8 @@
             function saveEditor() { if(currentEditorTarget) { document.getElementById(currentEditorTarget).value = document.getElementById('global-editor-textarea').value; } closeEditor(); }
 
             let pendingCodesData = [];
-
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
-            
             document.getElementById('notif-target').addEventListener('change', function() { document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none'; document.getElementById('notif-email').required = this.value === 'specific'; });
 
             function checkBroadcastCooldown() { const cooldownEnd = localStorage.getItem('broadcastCooldown'); if (cooldownEnd) { const now = new Date().getTime(); if (now < cooldownEnd) { startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000)); } else { localStorage.removeItem('broadcastCooldown'); } } }
@@ -226,7 +224,6 @@
                 window.broadcastInterval = setInterval(() => { timeLeft--; if (timeLeft <= 0) { clearInterval(window.broadcastInterval); btn.disabled = false; btn.innerText = "Send Alert"; btn.style.background = ""; btn.style.color = ""; btn.style.cursor = "pointer"; } else { btn.innerText = `Cooldown: ${timeLeft}s`; } }, 1000);
             }
 
-            // SPRINT 1: OWNER JAVASCRIPT FUNCTIONS
             async function toggleMaintenance() {
                 const res = await fetch('/admin/toggle-maintenance', { method: 'POST' }); const data = await res.json();
                 if(res.ok) {
@@ -237,10 +234,7 @@
                     document.getElementById('maintenance-status').style.color = data.mode ? '#ff5f56' : '#00ff88';
                 }
             }
-            async function createPromo(e) {
-                e.preventDefault(); await fetch('/admin/promo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: document.getElementById('promo-code').value, discount: document.getElementById('promo-discount').value, limit: document.getElementById('promo-limit').value }) });
-                e.target.reset(); loadAdminData();
-            }
+            async function createPromo(e) { e.preventDefault(); await fetch('/admin/promo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: document.getElementById('promo-code').value, discount: document.getElementById('promo-discount').value, limit: document.getElementById('promo-limit').value }) }); e.target.reset(); loadAdminData(); }
             async function deletePromo(id) { await fetch(`/admin/promo/${id}`, { method: 'DELETE' }); loadAdminData(); }
 
             async function loadAdminData() {
@@ -249,9 +243,7 @@
 
                 if (res.ok) {
                     const d = await res.json();
-                    document.getElementById('header-role').innerText = d.current_role;
-                    document.getElementById('header-username').innerText = d.current_username;
-                    
+                    document.getElementById('header-role').innerText = d.current_role; document.getElementById('header-username').innerText = d.current_username;
                     if (d.broadcast_cooldown && d.broadcast_cooldown > 0) startBroadcastTimer(d.broadcast_cooldown);
                     
                     if (d.current_role === 'staff') { ['panel-finance', 'panel-system', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; }); } 
@@ -263,7 +255,6 @@
                         document.getElementById('btn-maintenance').innerText = d.maintenance_mode ? 'Disable Maintenance' : 'Enable Maintenance';
                         document.getElementById('maintenance-status').innerText = d.maintenance_mode ? 'STATUS: ACTIVE 🔴' : 'STATUS: OFFLINE 🟢';
                         document.getElementById('maintenance-status').style.color = d.maintenance_mode ? '#ff5f56' : '#00ff88';
-                        
                         const promoDiv = document.getElementById('promo-list');
                         promoDiv.innerHTML = d.promos.length === 0 ? '<p style="color:#888;">No promo codes.</p>' : d.promos.map(p => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding:10px 0;"><div><strong style="color:#00ff88;">${p.code}</strong> <span style="color:#aaa; font-size:0.8rem;">(${p.discount}% OFF)</span><br><span style="font-size:0.75rem; color:#888;">Uses: ${p.uses} / ${p.limit === 0 ? '∞' : p.limit}</span></div><button class="delete-btn" onclick="deletePromo(${p.id})">Delete</button></div>`).join('');
                     }
@@ -284,7 +275,7 @@
 
                     const tDiv = document.getElementById('support-tickets-list');
                     if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All caught up!</p>';
-                    else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
+                    else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff; resize: none;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
                     pendingCodesData = d.pending_codes;
                     const cDiv = document.getElementById('creator-codes-list');

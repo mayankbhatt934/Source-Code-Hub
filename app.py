@@ -1,4 +1,7 @@
-import os, random, smtplib, string
+import os
+import random
+import smtplib
+import string
 from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -48,7 +51,7 @@ def get_current_user():
         if not u: 
             session.pop('user_email', None)
         return u
-    except:
+    except Exception:
         session.pop('user_email', None)
         return None
 
@@ -94,7 +97,7 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: 
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, to_email, msg.as_string())
-        except Exception as e: 
+        except Exception:
             pass
 
 @app.route('/force-db-reset')
@@ -116,7 +119,7 @@ def home():
         if stats: 
             stats.page_views += 1
             db.session.commit()
-    except: 
+    except Exception: 
         db.session.rollback()
     return render_template('index.html')
 
@@ -194,7 +197,6 @@ def register():
     
     return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
-# FIXED: Now strictly wipes old sessions on user login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -202,8 +204,9 @@ def login():
     password = data.get('password')
     
     user = User.query.filter((User.email == login_id) | (User.username == login_id.lower().replace(" ", ""))).first()
+    
     if user and check_password_hash(user.password, password):
-        session.clear() # DESTROY old cookies to prevent admin leaks
+        session.clear() 
         session.permanent = True
         session['user_email'] = user.email
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
@@ -274,6 +277,9 @@ def get_user_badges(user):
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
+    if 'user_email' not in session:
+        return jsonify({"error": "Not logged in"}), 401
+        
     user = get_current_user()
     if not user: 
         return jsonify({"error": "User deleted or DB wiped."}), 401
@@ -709,7 +715,6 @@ def get_leaderboard():
     top = sorted(creators.values(), key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(top)
 
-# FIXED: Completely wipes conflicting sessions on Admin login
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':

@@ -398,7 +398,6 @@ def validate_promo():
     new_amt = max(0, amount - int(amount * (promo.discount / 100)))
     return jsonify({"status": "success", "new_amount": new_amt, "discount": promo.discount})
 
-# SPRINT 2: TIPPING AND REPORTS
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():
     user = get_current_user()
@@ -801,7 +800,27 @@ def admin_data():
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt", "code": p.prompt_text} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
         
         promos_list = [{"id": p.id, "code": p.code, "discount": p.discount, "limit": p.limit, "uses": p.uses} for p in PromoCode.query.all()] if role == 'owner' else []
-        reports_list = [{"id": r.id, "reporter": r.reporter_email.split('@')[0], "type": r.item_type, "item_id": r.item_id, "reason": r.reason} for r in PlatformReport.query.filter_by(status='Open').all()]
+        
+        # ADVANCED REPORT RENDERING
+        reports_list = []
+        for r in PlatformReport.query.filter_by(status='Open').all():
+            i_title = "Deleted Content"
+            c_email = "Unknown"
+            if r.item_type == 'premium': 
+                obj = PremiumCode.query.get(r.item_id)
+                if obj: i_title = obj.title; c_email = obj.creator_email
+            elif r.item_type == 'free':
+                obj = FreeCode.query.get(r.item_id)
+                if obj: i_title = obj.title; c_email = obj.creator_email
+            elif r.item_type == 'prompt':
+                obj = AIPrompt.query.get(r.item_id)
+                if obj: i_title = obj.title; c_email = obj.creator_email
+            
+            reports_list.append({
+                "id": r.id, "reporter": r.reporter_email.split('@')[0], 
+                "type": r.item_type, "item_id": r.item_id, "reason": r.reason,
+                "item_title": i_title, "creator": c_email
+            })
 
         return jsonify({
             "current_role": role, 
@@ -1012,11 +1031,13 @@ def admin_ban_user():
     if get_user_role() not in ['admin', 'owner']: 
         return jsonify({"error": "Unauthorized"}), 403
         
-    user = User.query.filter_by(email=request.json.get('email')).first()
+    data = request.json
+    user = User.query.filter_by(email=data.get('email')).first()
+    
     if not user: 
         return jsonify({"status": "error"}), 404
         
-    days = int(request.json.get('duration_days', 0))
+    days = int(data.get('duration_days', 0))
     user.is_banned = True
     user.ban_expiry = None if days == 0 else datetime.utcnow() + timedelta(days=days)
     db.session.commit()
@@ -1050,18 +1071,34 @@ def admin_reply_ticket():
         
     return jsonify({"status": "success"})
 
-@app.route('/admin/dismiss-report/<int:id>', methods=['POST'])
-def dismiss_report(id):
+# ADVANCED REPORT ACTIONS
+@app.route('/admin/action-report', methods=['POST'])
+def admin_action_report():
     if not check_admin_access(): 
         return jsonify({"error": "Unauthorized"}), 401
         
-    report = PlatformReport.query.get(id)
-    if report: 
-        report.status = 'Closed'
-        db.session.commit()
-        return jsonify({"status": "success"})
+    data = request.json
+    report = PlatformReport.query.get(data.get('report_id'))
+    if not report: 
+        return jsonify({"error": "Not found"}), 404
         
-    return jsonify({"error": "Not found"}), 404
+    action = data.get('action')
+    
+    if action == 'delete_content':
+        if report.item_type == 'premium': obj = PremiumCode.query.get(report.item_id)
+        elif report.item_type == 'free': obj = FreeCode.query.get(report.item_id)
+        elif report.item_type == 'prompt': obj = AIPrompt.query.get(report.item_id)
+        else: obj = None
+        
+        if obj: 
+            creator_email = getattr(obj, 'creator_email', 'admin')
+            db.session.delete(obj)
+            if creator_email != 'admin':
+                db.session.add(Notification(email=creator_email, title="Content Removed 🚨", message=f"Your {report.item_type} was removed by Staff due to Community Reports."))
+                
+    report.status = 'Closed'
+    db.session.commit()
+    return jsonify({"status": "success"})
 
 @app.route('/admin/approve-submission', methods=['POST'])
 def approve_submission():
@@ -1078,7 +1115,7 @@ def approve_submission():
         obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': 
         obj = AIPrompt.query.get(item_id)
-    else: 
+    else:
         obj = None
         
     if obj: 

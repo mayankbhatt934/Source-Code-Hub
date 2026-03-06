@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Dashboard - Source Code Hub</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=sprint2-1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=sprint2-fix1">
     <style>
         body { margin: 0; padding: 0; min-height: 100vh; }
         .dash-container { max-width: 1400px; margin: 40px auto; padding: 0 20px; z-index: 10; position: relative; }
@@ -178,6 +178,33 @@
                 <form class="admin-form" onsubmit="submitBanUser(event)" style="margin-bottom: 20px;"><input type="email" id="ban-email" placeholder="Violator Email" required><input type="number" id="ban-duration" placeholder="Days (0 = Permanent)" required><button type="submit" class="submit-btn" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Execute Ban</button></form>
                 <div class="list-container" id="banned-users-list" style="max-height: 120px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;"></div>
             </div>
+            
+            <div class="glass-panel" id="panel-gifts" style="grid-column: 1 / -1;">
+                <div class="panel-header" style="color: #ff007f;">🎁 Gift Engine</div>
+                <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px; margin-top: 0;">Bypass payments and instantly grant access to any user.</p>
+                <form class="admin-form" onsubmit="submitAdminGift(event)" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <input type="email" id="gift-email" placeholder="Recipient's Email" required style="margin-bottom: 0;">
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <select id="gift-type" required onchange="toggleGiftType()" style="margin-bottom: 0;">
+                            <option value="membership">Membership Pass</option>
+                            <option value="code">Premium Code Access</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <select id="gift-membership-val" style="margin-bottom: 0;">
+                            <option value="Weekly Pass">Weekly Pass</option>
+                            <option value="Monthly Pass">Monthly Pass</option>
+                            <option value="Yearly Pass">Yearly Pass</option>
+                            <option value="Lifetime Pass">Lifetime Pass</option>
+                        </select>
+                        <select id="gift-code-val" style="display: none; margin-bottom: 0;"></select>
+                    </div>
+                    <button type="submit" class="submit-btn" style="background: linear-gradient(90deg, #ff007f, #ff0055); width: auto; padding: 12px 30px;">Dispatch Gift</button>
+                </form>
+            </div>
+            
         </div>
 
         <div class="glass-panel" id="panel-manage-content" style="margin-bottom: 50px;">
@@ -216,7 +243,7 @@
 
             let pendingCodesData = [];
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
-            
+            function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
             document.getElementById('notif-target').addEventListener('change', function() { document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none'; document.getElementById('notif-email').required = this.value === 'specific'; });
 
             function checkBroadcastCooldown() { const cooldownEnd = localStorage.getItem('broadcastCooldown'); if (cooldownEnd) { const now = new Date().getTime(); if (now < cooldownEnd) { startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000)); } else { localStorage.removeItem('broadcastCooldown'); } } }
@@ -272,9 +299,22 @@
                     if (d.tickets.length === 0) tDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All caught up!</p>';
                     else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff; resize: none;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
+                    // ADVANCED REPORTS RENDER
                     const rDiv = document.getElementById('reports-list');
                     if (d.reports && d.reports.length === 0) rDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">All clean!</p>';
-                    else if (d.reports) rDiv.innerHTML = d.reports.map(r => `<div class="list-item" style="border-left-color: #ff5f56;"><strong style="color:#fff; font-size:0.85rem;">Reporter: ${r.reporter}</strong><span style="color:#ff5f56; font-size:0.75rem; float:right; text-transform:uppercase;">${r.type} ID: ${r.item_id}</span><p style="font-size:0.85rem; color:#aaa; margin:5px 0 10px 0;">${r.reason}</p><button onclick="dismissReport(${r.id})" class="submit-btn" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; padding: 8px; font-size: 0.8rem;">Dismiss Report</button></div>`).join('');
+                    else if (d.reports) rDiv.innerHTML = d.reports.map(r => `
+                        <div class="list-item" style="border-left-color: #ff5f56; background: rgba(255,95,86,0.05);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                                <strong style="color:#ff5f56; font-size:0.95rem;">${r.item_title}</strong>
+                                <span class="badge" style="background:rgba(255,95,86,0.1); color:#ff5f56; font-size:0.7rem; text-transform:uppercase; border:1px solid #ff5f56;">${r.type}</span>
+                            </div>
+                            <p style="font-size:0.85rem; color:#fff; margin:5px 0 10px 0;">${r.reason}</p>
+                            <div style="font-size:0.75rem; color:#888; margin-bottom:10px;">Reporter: ${r.reporter} | Content By: <span style="color:#f5af19;">${r.creator}</span></div>
+                            <div style="display:flex; gap:10px;">
+                                <button onclick="actionReport(${r.id}, 'dismiss')" class="submit-btn" style="background:transparent; border:1px solid #aaa; color:#aaa; padding: 6px; font-size: 0.75rem; flex:1;">Dismiss</button>
+                                <button onclick="actionReport(${r.id}, 'delete_content')" class="submit-btn" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; padding: 6px; font-size: 0.75rem; flex:1;">🗑️ Delete Content</button>
+                            </div>
+                        </div>`).join('');
 
                     pendingCodesData = d.pending_codes;
                     const cDiv = document.getElementById('creator-codes-list');
@@ -292,7 +332,21 @@
             async function submitRoleUpdate(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing..."; const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked }; const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change"; }
             async function submitAdminNotification(e) { e.preventDefault(); const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value; const btn = document.getElementById('btn-broadcast'); btn.disabled = true; btn.innerText = "Sending..."; try { const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) }); const data = await res.json(); if(res.ok) { alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; startBroadcastTimer(data.cooldown); } else { alert("Error: " + (data.error || "Failed to send")); if (data.cooldown) { startBroadcastTimer(data.cooldown); } else { btn.disabled = false; btn.innerText = "Send Alert"; } } } catch(err) { alert("Network Error!"); btn.disabled = false; btn.innerText = "Send Alert"; } }
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
-            async function dismissReport(id) { await fetch(`/admin/dismiss-report/${id}`, { method: 'POST' }); loadAdminData(); }
+            
+            // SPRINT 2: ADVANCED REPORT ACTION LOGIC
+            async function actionReport(id, actionType) { 
+                if (actionType === 'delete_content') {
+                    if(!confirm("Are you SURE you want to instantly delete this content? This cannot be undone.")) return;
+                }
+                await fetch(`/admin/action-report`, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ report_id: id, action: actionType }) 
+                }); 
+                loadAdminData(); 
+                loadManageContent(); // Refresh DB view in case it was deleted
+            }
+
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
             async function deleteSubmission(id, type) { const reason = prompt("Enter reason for rejection (this will be sent to the creator):"); if(reason !== null) { const finalReason = reason.trim() === "" ? "Does not meet quality guidelines." : reason; await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type, reason: finalReason }) }); loadAdminData(); loadManageContent(); } }
             

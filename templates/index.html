@@ -13,7 +13,7 @@
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=sprint2-1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=sprint2-fix1">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
@@ -209,7 +209,6 @@
                         </div>
                         <h3 style="color: #b06ab3; margin-bottom: 10px;">Upload Content</h3>
                         <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit Free Codes, Premium Codes, or AI Prompts. Staff will review it before it goes live!</p>
-                        
                         <form onsubmit="submitCreatorCode(event)" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;">
                             <select id="cr-type" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;" onchange="toggleCreatorFields()"><option value="premium">Premium Code (Earn ₹)</option><option value="free">Free Code (Earn 🤍)</option><option value="prompt">AI Prompt</option></select>
                             <input type="text" id="cr-title" placeholder="Title" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
@@ -282,11 +281,19 @@
         <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; border: 1px solid #ff5f56; text-align: left;">
             <div onclick="document.getElementById('report-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
             <h2 style="color: #ff5f56; margin-bottom: 15px; margin-top: 0;">🚩 Report Content</h2>
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Report stolen code, broken links, or inappropriate content to the staff.</p>
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Help keep the community safe. Select a reason below.</p>
             <form onsubmit="submitReport(event)">
                 <input type="hidden" id="rep-item-id">
                 <input type="hidden" id="rep-item-type">
-                <textarea id="rep-reason" placeholder="Why are you reporting this?" required style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none;"></textarea>
+                <select id="rep-reason-type" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                    <option value="" disabled selected>Select a reason...</option>
+                    <option value="Broken Download Link">Broken Download Link</option>
+                    <option value="Stolen / Plagiarized Code">Stolen / Plagiarized Code</option>
+                    <option value="Code Doesn't Work / Buggy">Code Doesn't Work / Buggy</option>
+                    <option value="Inappropriate Content">Inappropriate Content</option>
+                    <option value="Other">Other (Explain below)</option>
+                </select>
+                <textarea id="rep-reason" placeholder="Additional details (optional)..." style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 60px; resize: none;"></textarea>
                 <button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Submit Report</button>
             </form>
         </div>
@@ -333,7 +340,7 @@
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=sprint2-1"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=sprint2-fix1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>

@@ -36,7 +36,6 @@ function switchProfTab(tab) {
 function copyMainCode(elementId, btnElement, type, codeId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); interactCode(type, codeId, 'view', null); }
 function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
 
-// SPRINT 2: ADVANCED FILTERING (TAGS & TITLES)
 function filterCodes(type) { 
     const query = document.getElementById(`search-${type}`).value.toLowerCase(); 
     ['single', 'full'].forEach(tab => { 
@@ -147,12 +146,34 @@ async function loadMyTickets() { try { const res = await fetch('/api/tickets'); 
 
 async function submitCreatorCode(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/creator/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sub_type: document.getElementById('cr-type').value, title: document.getElementById('cr-title').value, category: document.getElementById('cr-cat').value, tags: document.getElementById('cr-tags').value, price: document.getElementById('cr-price').value, code: document.getElementById('cr-code').value }) }); const data = await res.json(); if(res.ok) { alert("Code submitted for review!"); e.target.reset(); switchProfTab('locker'); } else { alert("Error: " + (data.error || "Upload failed.")); if (data.error && data.error.includes("log in")) { handleLogout(); switchAuthPage(); } } } catch(e) {} btn.innerText = "Submit for Review"; }
 
-// SPRINT 2: REPORT SYSTEM
-function openReportModal(type, id) { if(!isLoggedIn) { alert("Login to report content."); switchAuthPage(); return; } document.getElementById('rep-item-type').value = type; document.getElementById('rep-item-id').value = id; document.getElementById('rep-reason').value = ""; document.getElementById('report-modal-overlay').style.display = 'flex'; }
-async function submitReport(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/report', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: document.getElementById('rep-item-type').value, id: document.getElementById('rep-item-id').value, reason: document.getElementById('rep-reason').value }) }); if(res.ok) { alert("Report sent to Admins."); document.getElementById('report-modal-overlay').style.display = 'none'; } } catch(err) {} btn.innerText = "Submit Report"; }
+// SPRINT 2: ADVANCED REPORT SYSTEM
+function openReportModal(type, id) { 
+    if(!isLoggedIn) { alert("Login to report content."); switchAuthPage(); return; } 
+    document.getElementById('rep-item-type').value = type; 
+    document.getElementById('rep-item-id').value = id; 
+    document.getElementById('rep-reason-type').value = "";
+    document.getElementById('rep-reason').value = ""; 
+    document.getElementById('report-modal-overlay').style.display = 'flex'; 
+}
+
+async function submitReport(e) { 
+    e.preventDefault(); 
+    const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; 
+    const reasonType = document.getElementById('rep-reason-type').value;
+    let reasonText = document.getElementById('rep-reason').value;
+    if(!reasonType) { alert("Please select a reason."); btn.innerText = "Submit Report"; return; }
+    
+    const finalReason = reasonText ? `${reasonType} - ${reasonText}` : reasonType;
+    
+    try { 
+        const res = await fetch('/api/report', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: document.getElementById('rep-item-type').value, id: document.getElementById('rep-item-id').value, reason: finalReason }) }); 
+        if(res.ok) { alert("Report sent to Admins. Thank you for keeping the community safe."); document.getElementById('report-modal-overlay').style.display = 'none'; } 
+    } catch(err) {} 
+    btn.innerText = "Submit Report"; 
+}
 
 let lastNotifHash = "";
-async function loadNotifications() { try { const res = await fetch('/api/notifications'); if (res.ok) { const rawText = await res.text(); if (rawText === lastNotifHash) return; lastNotifHash = rawText; const data = JSON.parse(rawText); const unread = data.filter(n => !n.is_read).length; const badge = document.getElementById('notif-badge'); if (unread > 0) { badge.innerText = unread; badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; } const container = document.getElementById('notifications-list'); if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; } container.innerHTML = data.map(n => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span></div><p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p></div>`).join(''); } } catch(e) {} }
+async function loadNotifications() { try { const res = await fetch('/api/notifications'); if (res.ok) { const rawText = await res.text(); if (rawText === lastNotifHash) return; lastNotifHash = rawText; const data = JSON.parse(rawText); const unread = data.filter(n => !n.is_read).length; const badge = document.getElementById('notif-badge'); if (unread > 0) { badge.innerText = unread; badge.style.display = 'inline-block'; } else { badge.style.display = 'none'; } const container = document.getElementById('notifications-list'); if (data.length === 0) { container.innerHTML = '<p style="text-align: center; color: #888;">No new alerts.</p>'; return; } container.innerHTML = data.map(n => `<div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border-left: 3px solid ${n.title.includes('Banned') || n.title.includes('Suspended') || n.title.includes('Removed') || n.title.includes('Restricted') ? '#ff5f56' : '#00d2ff'}; margin-bottom: 10px;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><strong style="color: #fff;">${n.title}</strong><span style="color: #666; font-size: 0.8rem;">${n.date}</span></div><p style="color: #ccc; font-size: 0.9rem; margin: 0;">${n.message}</p></div>`).join(''); } } catch(e) {} }
 async function updateProfileName(e) { e.preventDefault(); try { const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: document.getElementById('prof-name').value, username: document.getElementById('prof-username').value }) }); const data = await res.json(); if (res.ok) { alert("Profile updated!"); loadUserProfile(); } else { alert("Error: " + (data.error || data.message)); if(data.error && data.error.includes("log in")) { handleLogout(); switchAuthPage(); } } } catch(err) {} }
 async function uploadPhoto(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onloadend = async function() { const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ photo: reader.result }) }); if (res.ok) { document.getElementById('profile-img').src = reader.result; alert("Photo updated!"); } }; reader.readAsDataURL(file); }
 
@@ -164,7 +185,6 @@ function openUPIModal(planName, price, codeId = null, giftMode = false) {
     selectedPlan = planName; selectedAmount = price; baseAmount = price; selectedCodeId = codeId; isGifting = giftMode; appliedPromo = null;
     document.getElementById('modal-promo').value = ""; document.getElementById('modal-promo').disabled = false;
     
-    // Hide Promo Input if it is a TIP
     if(planName.includes("Creator Tip")) { document.getElementById('promo-container').style.display = 'none'; } else { document.getElementById('promo-container').style.display = 'block'; }
     
     updateQRAndDesc();
@@ -247,7 +267,6 @@ async function loadDynamicContent() {
                 let commentBtnHTML = ''; if (!isPremiumSection) { commentBtnHTML = `<button class="comment-btn" onclick="openCommentModal('${typeName}', ${item.id})">💬 Discuss</button>`; }
                 const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 
-                // SPRINT 2: TAGS AND TIPS IMPLEMENTATION
                 let tagsHTML = ""; 
                 if(item.tags) { const tagsArray = item.tags.split(',').map(t => t.trim()).filter(t => t); tagsHTML = tagsArray.map(t => `<span class="tag-badge">#${t}</span>`).join(''); }
 

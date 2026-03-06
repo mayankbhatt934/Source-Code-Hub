@@ -445,7 +445,8 @@ def submit_report():
         reporter_email=user.email, 
         item_type=data.get('type'), 
         item_id=data.get('id'), 
-        reason=data.get('reason')
+        reason=data.get('reason'),
+        proof=data.get('proof', '') # NEW PROOF FIELD
     ))
     db.session.add(Notification(email=user.email, title="Report Received 🚩", message="Staff will review your report shortly."))
     db.session.commit()
@@ -801,25 +802,36 @@ def admin_data():
         
         promos_list = [{"id": p.id, "code": p.code, "discount": p.discount, "limit": p.limit, "uses": p.uses} for p in PromoCode.query.all()] if role == 'owner' else []
         
-        # ADVANCED REPORT RENDERING
         reports_list = []
         for r in PlatformReport.query.filter_by(status='Open').all():
             i_title = "Deleted Content"
             c_email = "Unknown"
             if r.item_type == 'premium': 
                 obj = PremiumCode.query.get(r.item_id)
-                if obj: i_title = obj.title; c_email = obj.creator_email
+                if obj: 
+                    i_title = obj.title
+                    c_email = obj.creator_email
             elif r.item_type == 'free':
                 obj = FreeCode.query.get(r.item_id)
-                if obj: i_title = obj.title; c_email = obj.creator_email
+                if obj: 
+                    i_title = obj.title
+                    c_email = obj.creator_email
             elif r.item_type == 'prompt':
                 obj = AIPrompt.query.get(r.item_id)
-                if obj: i_title = obj.title; c_email = obj.creator_email
+                if obj: 
+                    i_title = obj.title
+                    c_email = obj.creator_email
             
             reports_list.append({
-                "id": r.id, "reporter": r.reporter_email.split('@')[0], 
-                "type": r.item_type, "item_id": r.item_id, "reason": r.reason,
-                "item_title": i_title, "creator": c_email
+                "id": r.id, 
+                "reporter": r.reporter_email.split('@')[0], 
+                "type": r.item_type, 
+                "item_id": r.item_id, 
+                "reason": r.reason,
+                "proof": getattr(r, 'proof', ''),
+                "item_title": i_title, 
+                "creator": c_email,
+                "link": f"/code/{r.item_type}/{r.item_id}"
             })
 
         return jsonify({
@@ -1071,7 +1083,6 @@ def admin_reply_ticket():
         
     return jsonify({"status": "success"})
 
-# ADVANCED REPORT ACTIONS
 @app.route('/admin/action-report', methods=['POST'])
 def admin_action_report():
     if not check_admin_access(): 
@@ -1083,19 +1094,36 @@ def admin_action_report():
         return jsonify({"error": "Not found"}), 404
         
     action = data.get('action')
+    reply_text = data.get('reply', '').strip()
     
     if action == 'delete_content':
-        if report.item_type == 'premium': obj = PremiumCode.query.get(report.item_id)
-        elif report.item_type == 'free': obj = FreeCode.query.get(report.item_id)
-        elif report.item_type == 'prompt': obj = AIPrompt.query.get(report.item_id)
-        else: obj = None
+        if report.item_type == 'premium': 
+            obj = PremiumCode.query.get(report.item_id)
+        elif report.item_type == 'free': 
+            obj = FreeCode.query.get(report.item_id)
+        elif report.item_type == 'prompt': 
+            obj = AIPrompt.query.get(report.item_id)
+        else: 
+            obj = None
         
         if obj: 
             creator_email = getattr(obj, 'creator_email', 'admin')
             db.session.delete(obj)
             if creator_email != 'admin':
                 db.session.add(Notification(email=creator_email, title="Content Removed 🚨", message=f"Your {report.item_type} was removed by Staff due to Community Reports."))
+        
+        msg = f"Thank you for reporting. The {report.item_type} was reviewed and deleted."
+        if reply_text: 
+            msg += f"\nStaff Note: {reply_text}"
+        db.session.add(Notification(email=report.reporter_email, title="Report Action Taken ✔️", message=msg))
                 
+    elif action == 'dismiss':
+        msg = f"Your report regarding the {report.item_type} was reviewed, but no action was deemed necessary."
+        if reply_text: 
+            msg += f"\nStaff Note: {reply_text}"
+        db.session.add(Notification(email=report.reporter_email, title="Report Reviewed ℹ️", message=msg))
+
+    report.admin_reply = reply_text
     report.status = 'Closed'
     db.session.commit()
     return jsonify({"status": "success"})

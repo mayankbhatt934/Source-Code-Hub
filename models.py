@@ -160,5 +160,7 @@ class PlatformReport(db.Model):
     item_type = db.Column(db.String(50), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
     reason = db.Column(db.String(500), nullable=False)
+    proof = db.Column(db.String(500), nullable=True) # Added Proof
+    admin_reply = db.Column(db.String(500), nullable=True) # Added Admin Reply
     status = db.Column(db.String(50), default='Open')
     date_created = db.Column(db.DateTime, default=datetime.utcnow)

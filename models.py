@@ -84,6 +84,7 @@ class FreeCode(db.Model):
     likes = db.Column(db.Integer, default=0)
     creator_email = db.Column(db.String(100), default='admin')
     is_approved = db.Column(db.Boolean, default=True)
+    tags = db.Column(db.String(200), default="")
 
 class PremiumCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -95,6 +96,7 @@ class PremiumCode(db.Model):
     likes = db.Column(db.Integer, default=0)
     creator_email = db.Column(db.String(100), default='admin')
     is_approved = db.Column(db.Boolean, default=True)
+    tags = db.Column(db.String(200), default="")
 
 class CodeLike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,6 +119,7 @@ class AIPrompt(db.Model):
     prompt_text = db.Column(db.Text, nullable=False)
     creator_email = db.Column(db.String(100), default='admin')
     is_approved = db.Column(db.Boolean, default=True)
+    tags = db.Column(db.String(200), default="")
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -150,3 +153,12 @@ class PromoCode(db.Model):
     discount = db.Column(db.Integer, nullable=False)
     limit = db.Column(db.Integer, default=0)
     uses = db.Column(db.Integer, default=0)
+
+class PlatformReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_email = db.Column(db.String(120), nullable=False)
+    item_type = db.Column(db.String(50), nullable=False)
+    item_id = db.Column(db.Integer, nullable=False)
+    reason = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(50), default='Open')
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)

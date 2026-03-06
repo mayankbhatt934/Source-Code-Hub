@@ -26,14 +26,63 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+class SystemConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    maintenance_mode = db.Column(db.Boolean, default=False)
+
+class PromoCode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    discount = db.Column(db.Integer, nullable=False)
+    limit = db.Column(db.Integer, default=0)
+    uses = db.Column(db.Integer, default=0)
+
 with app.app_context():
     db.create_all()
     try:
         if not SiteAnalytics.query.first(): 
             db.session.add(SiteAnalytics(page_views=0))
-            db.session.commit()
+        if not SystemConfig.query.first():
+            db.session.add(SystemConfig(maintenance_mode=False))
+        db.session.commit()
     except Exception as e:
         db.session.rollback()
+
+def get_current_user():
+    if 'user_email' not in session: return None
+    try:
+        u = User.query.filter_by(email=session['user_email']).first()
+        if not u: session.pop('user_email', None)
+        return u
+    except:
+        session.pop('user_email', None)
+        return None
+
+def get_user_role():
+    if session.get('is_admin'): return 'owner'
+    u = get_current_user()
+    if u: return getattr(u, 'role', 'member')
+    return 'member'
+
+def check_admin_access(): 
+    return get_user_role() in ['staff', 'admin', 'owner']
+
+@app.before_request
+def check_maintenance():
+    if request.endpoint in ['static', 'admin_dashboard', 'admin_data', 'toggle_maintenance', 'admin_logout', 'login', 'force_db_reset']:
+        return
+    try:
+        conf = SystemConfig.query.first()
+        if conf and conf.maintenance_mode:
+            if get_user_role() in ['staff', 'admin', 'owner'] or session.get('is_admin'):
+                return 
+            if request.path.startswith('/api/'):
+                return jsonify({"error": "Maintenance Mode Active. Please wait."}), 503
+            
+            maintenance_html = """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Maintenance - Source Code Hub</title><style>body { background-color: #0f0c29; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; } .box { background: #1a1a1a; padding: 40px; border-radius: 12px; border: 1px solid #ff5f56; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); } h1 { color: #ff5f56; margin-bottom: 10px; }</style></head><body><div class="box"><div style="font-size: 3rem; margin-bottom: 20px;">🛠️</div><h1>System Upgrade in Progress</h1><p style="color: #ccc; line-height: 1.6;">We are currently deploying new enterprise features to Source Code Hub. We will be back online shortly. Thank you for your patience!</p></div></body></html>"""
+            return maintenance_html, 503
+    except Exception:
+        pass
 
 def send_system_email(to_email, subject, body):
     sender_email = os.environ.get('MAIL_USERNAME')
@@ -48,31 +97,7 @@ def send_system_email(to_email, subject, body):
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: 
                 server.login(sender_email, sender_password)
                 server.sendmail(sender_email, to_email, msg.as_string())
-        except Exception as e: 
-            pass
-
-def get_current_user():
-    if 'user_email' not in session: 
-        return None
-    try:
-        u = User.query.filter_by(email=session['user_email']).first()
-        if not u: 
-            session.pop('user_email', None)
-        return u
-    except:
-        session.pop('user_email', None)
-        return None
-
-def get_user_role():
-    if session.get('is_admin'): 
-        return 'owner'
-    u = get_current_user()
-    if u: 
-        return getattr(u, 'role', 'member')
-    return 'member'
-
-def check_admin_access(): 
-    return get_user_role() in ['staff', 'admin', 'owner']
+        except Exception as e: pass
 
 @app.route('/force-db-reset')
 def force_db_reset(): 
@@ -80,9 +105,10 @@ def force_db_reset():
         db.drop_all()
         db.create_all()
         db.session.add(SiteAnalytics(page_views=0))
+        db.session.add(SystemConfig(maintenance_mode=False))
         db.session.commit()
         return "DATABASE RESET SUCCESSFUL!"
-    except Exception as e:
+    except Exception as e: 
         return f"Reset Failed: {str(e)}"
 
 @app.route('/')
@@ -95,6 +121,52 @@ def home():
     except: 
         db.session.rollback()
     return render_template('index.html')
+
+@app.route('/code/<item_type>/<int:item_id>')
+def view_seo_item(item_type, item_id):
+    item = None
+    if item_type == 'free': item = FreeCode.query.get_or_404(item_id)
+    elif item_type == 'prem': item = PremiumCode.query.get_or_404(item_id)
+    elif item_type == 'prompt': item = AIPrompt.query.get_or_404(item_id)
+    
+    if not getattr(item, 'is_approved', True): 
+        return "Item not available.", 404
+    
+    title = item.title
+    category = item.category if hasattr(item, 'category') else "AI Prompt"
+    price = getattr(item, 'price', 0)
+    price_text = f"₹{price}" if price > 0 else "Free Open Source"
+    
+    seo_html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{title} | Source Code Hub</title>
+        <meta name="description" content="Download '{title}' ({category}). Get high-performance scripts, website templates, and AI prompts exclusively on Source Code Hub.">
+        <script type="application/ld+json">
+        {{ "@context": "https://schema.org/", "@type": "Product", "name": "{title}", "description": "{category} code snippet available on Source Code Hub.", "offers": {{ "@type": "Offer", "url": "{request.url}", "priceCurrency": "INR", "price": "{price}" }} }}
+        </script>
+        <style>
+            body {{ background: #0f0c29; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }}
+            .box {{ background: #1a1a1a; padding: 40px; border-radius: 12px; border: 1px solid #00d2ff; max-width: 500px; box-shadow: 0 10px 40px rgba(0,210,255,0.1); }}
+            a {{ background: linear-gradient(90deg, #00d2ff, #3a7bd5); color: #000; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-top: 25px; transition: 0.3s; }}
+            a:hover {{ box-shadow: 0 0 20px rgba(0,210,255,0.4); transform: translateY(-2px); }}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+            <span style="color: #00d2ff; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;">{category}</span>
+            <h1 style="margin-top: 10px; margin-bottom: 10px;">{title}</h1>
+            <p style="color: #aaa; margin-bottom: 20px;">Price: <strong style="color: #00ff88;">{price_text}</strong></p>
+            <p style="line-height: 1.6; color: #ccc;">This code is safely hosted on the Source Code Hub platform. Click below to view the full script, access the download, and read community reviews.</p>
+            <a href="/">Open in Dashboard</a>
+        </div>
+    </body>
+    </html>
+    """
+    return seo_html
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -130,7 +202,6 @@ def login():
     if user and check_password_hash(user.password, password):
         session['user_email'] = user.email
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
-        
     return jsonify({"status": "error", "message": "Invalid username/email or password!"}), 401
 
 @app.route('/logout', methods=['POST'])
@@ -147,8 +218,8 @@ def send_verification_otp():
         
     email = user.email
     otp = str(random.randint(100000, 999999))
-    
     EmailOTP.query.filter_by(email=email).delete() 
+    
     db.session.add(EmailOTP(email=email, otp=otp, expiry=datetime.utcnow() + timedelta(minutes=15)))
     db.session.commit()
     
@@ -182,15 +253,10 @@ def get_user_badges(user):
         if r == 'owner': badges.append({"name": "Owner 👑", "class": "badge-owner"})
         elif r == 'admin': badges.append({"name": "Admin 🛡️", "class": "badge-admin"})
         elif r == 'staff': badges.append({"name": "Staff 🛠️", "class": "badge-staff"})
-        
-        if getattr(user, 'is_friend', False): 
-            badges.append({"name": "Friend 🤝", "class": "badge-friend"})
-            
+        if getattr(user, 'is_friend', False): badges.append({"name": "Friend 🤝", "class": "badge-friend"})
         if r not in ['owner', 'admin']:
-            if user.is_premium: 
-                badges.append({"name": "Premium ⭐", "class": "badge-premium"})
-            elif r == 'member': 
-                badges.append({"name": "Member", "class": "badge-basic"})
+            if user.is_premium: badges.append({"name": "Premium ⭐", "class": "badge-premium"})
+            elif r == 'member': badges.append({"name": "Member", "class": "badge-basic"})
     return badges
 
 @app.route('/api/profile', methods=['GET'])
@@ -232,39 +298,34 @@ def update_profile():
         return jsonify({"error": "Not logged in"}), 401
         
     data = request.json
-    if data.get('name'): 
-        user.name = data['name']
-    if data.get('photo'): 
-        user.profile_photo = data['photo']
-        
+    if data.get('name'): user.name = data['name']
+    if data.get('photo'): user.profile_photo = data['photo']
+    
     new_username = data.get('username')
     if new_username and new_username.lower().replace(" ", "") != user.username:
         new_un = new_username.lower().replace(" ", "")
         if User.query.filter_by(username=new_un).first(): 
             return jsonify({"status": "error", "message": "Username is already taken!"}), 400
-            
         if user.username_last_changed and datetime.utcnow() < user.username_last_changed + timedelta(days=14):
             days_left = max(1, (user.username_last_changed + timedelta(days=14) - datetime.utcnow()).days)
             return jsonify({"status": "error", "message": f"You can change your username again in {days_left} days."}), 400
-            
         user.username = new_un
         user.username_last_changed = datetime.utcnow()
         
     db.session.commit()
     return jsonify({"status": "success", "message": "Profile updated!"})
 
-# NEW: Dashboard Change Password Route
 @app.route('/api/change-password', methods=['POST'])
 def change_password():
     user = get_current_user()
-    if not user:
+    if not user: 
         return jsonify({"error": "Not logged in"}), 401
         
     data = request.json
     old_password = data.get('old_password')
     new_password = data.get('new_password')
     
-    if not check_password_hash(user.password, old_password):
+    if not check_password_hash(user.password, old_password): 
         return jsonify({"status": "error", "message": "Incorrect current password!"}), 400
         
     user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
@@ -275,6 +336,7 @@ def change_password():
 def forgot_password():
     email = request.json.get('email')
     user = User.query.filter_by(email=email).first()
+    
     if not user: 
         return jsonify({"status": "success"})
         
@@ -302,6 +364,22 @@ def reset_password():
         
     return jsonify({"status": "error"}), 404
 
+@app.route('/api/validate-promo', methods=['POST'])
+def validate_promo():
+    data = request.json
+    code = data.get('code', '').upper()
+    amount = data.get('amount', 0)
+    
+    promo = PromoCode.query.filter_by(code=code).first()
+    if not promo: 
+        return jsonify({"error": "Invalid promo code"}), 404
+    if promo.limit > 0 and promo.uses >= promo.limit: 
+        return jsonify({"error": "This promo code is fully claimed!"}), 400
+    
+    discount_amt = int(amount * (promo.discount / 100))
+    new_amt = max(0, amount - discount_amt)
+    return jsonify({"status": "success", "new_amount": new_amt, "discount": promo.discount})
+
 @app.route('/submit-upi-payment', methods=['POST'])
 def submit_upi_payment():
     user = get_current_user()
@@ -317,9 +395,25 @@ def submit_upi_payment():
         if not recipient: 
             return jsonify({"error": "Recipient email not found!"}), 404
             
-    db.session.add(Transaction(email=user.email, sender_upi=data.get('sender_upi'), amount=data.get('amount'), plan=data.get('plan'), code_id=data.get('code_id'), is_gift=data.get('is_gift', False), gift_recipient_email=data.get('gift_email'), status='Pending'))
+    promo_code = data.get('promo_code')
+    if promo_code:
+        promo = PromoCode.query.filter_by(code=promo_code).first()
+        if promo: 
+            promo.uses += 1
+            
+    db.session.add(Transaction(
+        email=user.email, 
+        sender_upi=data.get('sender_upi'), 
+        amount=data.get('amount'), 
+        plan=data.get('plan'), 
+        code_id=data.get('code_id'), 
+        is_gift=data.get('is_gift', False), 
+        gift_recipient_email=data.get('gift_email'), 
+        status='Pending'
+    ))
     db.session.add(Notification(email=user.email, title="Payment Submitted ⏳", message=f"Verifying ₹{data.get('amount')}. Please wait."))
     db.session.commit()
+    
     return jsonify({"status": "success", "message": "Payment submitted! Admin will verify."})
 
 @app.route('/api/my-purchases', methods=['GET'])
@@ -348,6 +442,7 @@ def submit_review():
         
     db.session.add(Review(email=user.email, code_id=data.get('code_id'), rating=data.get('rating'), comment=data.get('comment')))
     db.session.commit()
+    
     return jsonify({"status": "success", "message": "Review published!"})
 
 @app.route('/api/notifications', methods=['GET'])
@@ -444,7 +539,6 @@ def get_bookmarks():
         
     marks = Bookmark.query.filter_by(email=user.email).all()
     res = []
-    
     for m in marks:
         title = ""
         if m.item_type == 'free': 
@@ -466,12 +560,10 @@ def get_bookmarks():
 def get_comments(item_type, item_id):
     comments = Comment.query.filter_by(item_type=item_type, item_id=item_id).order_by(Comment.date_created.desc()).all()
     res = []
-    
     for c in comments:
         u = User.query.filter_by(email=c.email).first()
         uname = u.username if u and hasattr(u, 'username') else c.email.split('@')[0]
         res.append({"user": uname, "text": c.text, "date": c.date_created.strftime('%b %d')})
-        
     return jsonify(res)
 
 @app.route('/api/add-comment', methods=['POST'])
@@ -486,7 +578,6 @@ def add_comment():
     data = request.json
     db.session.add(Comment(email=user.email, item_type=data.get('type'), item_id=data.get('id'), text=data.get('text')))
     db.session.commit()
-    
     return jsonify({"status": "success"})
 
 @app.route('/api/creator/stats', methods=['GET'])
@@ -515,16 +606,15 @@ def creator_upload():
         
     if not user.is_premium and getattr(user, 'role', 'member') not in ['admin', 'owner', 'staff']: 
         return jsonify({"error": "Must be premium!"}), 403
-    
+        
     data = request.json
     sub_type = data.get('sub_type')
-    
-    try:
+    try: 
         price_val = data.get('price')
         price_int = int(price_val) if price_val else 0
-    except ValueError:
+    except ValueError: 
         price_int = 0
-
+        
     if sub_type == 'premium': 
         db.session.add(PremiumCode(title=data.get('title'), category=data.get('category'), price=price_int, code=data.get('code'), creator_email=user.email, is_approved=False))
     elif sub_type == 'free': 
@@ -534,7 +624,6 @@ def creator_upload():
         
     db.session.add(Notification(email=user.email, title="Submission Sent 🚀", message="Your content was sent to the Staff for approval!"))
     db.session.commit()
-    
     return jsonify({"status": "success"})
 
 @app.route('/api/creator/payout', methods=['POST'])
@@ -647,11 +736,13 @@ def admin_data():
         analytics = SiteAnalytics.query.first()
         pv = analytics.page_views if analytics else 0
         broadcast_cooldown = 0
-        
         if analytics and analytics.last_broadcast_time:
             time_since = datetime.utcnow() - analytics.last_broadcast_time
-            if time_since < timedelta(minutes=2):
+            if time_since < timedelta(minutes=2): 
                 broadcast_cooldown = 120 - int(time_since.total_seconds())
+
+        sys_conf = SystemConfig.query.first()
+        m_mode = sys_conf.maintenance_mode if sys_conf else False
 
         all_tx = Transaction.query.filter_by(status='Success').all()
         revenue = sum([t.amount for t in all_tx])
@@ -663,6 +754,8 @@ def admin_data():
         pend_free = [{"id": c.id, "title": c.title, "creator": getattr(c, 'creator_email', 'admin'), "type": "free", "code": c.code} for c in FreeCode.query.all() if not getattr(c, 'is_approved', True)]
         pend_prompt = [{"id": p.id, "title": p.title, "creator": getattr(p, 'creator_email', 'admin'), "type": "prompt", "code": p.prompt_text} for p in AIPrompt.query.all() if not getattr(p, 'is_approved', True)]
         
+        promos_list = [{"id": p.id, "code": p.code, "discount": p.discount, "limit": p.limit, "uses": p.uses} for p in PromoCode.query.all()] if role == 'owner' else []
+
         return jsonify({
             "current_role": role, 
             "current_username": current_username, 
@@ -675,10 +768,53 @@ def admin_data():
             "tickets": open_tickets, 
             "pending_codes": pend_prem + pend_free + pend_prompt, 
             "payouts": payouts, 
-            "broadcast_cooldown": broadcast_cooldown
+            "broadcast_cooldown": broadcast_cooldown, 
+            "maintenance_mode": m_mode, 
+            "promos": promos_list
         })
     except Exception as e: 
         return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/toggle-maintenance', methods=['POST'])
+def toggle_maintenance():
+    if get_user_role() != 'owner': 
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    conf = SystemConfig.query.first()
+    if not conf: 
+        conf = SystemConfig(maintenance_mode=False)
+        db.session.add(conf)
+        
+    conf.maintenance_mode = not conf.maintenance_mode
+    db.session.commit()
+    return jsonify({"status": "success", "mode": conf.maintenance_mode})
+
+@app.route('/admin/promo', methods=['POST'])
+def add_promo():
+    if get_user_role() not in ['admin', 'owner']: 
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    data = request.json
+    code = data.get('code').upper()
+    
+    if PromoCode.query.filter_by(code=code).first(): 
+        return jsonify({"error": "Code already exists"}), 400
+        
+    db.session.add(PromoCode(code=code, discount=int(data.get('discount')), limit=int(data.get('limit'))))
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/admin/promo/<int:id>', methods=['DELETE'])
+def delete_promo(id):
+    if get_user_role() not in ['admin', 'owner']: 
+        return jsonify({"error": "Unauthorized"}), 403
+        
+    p = PromoCode.query.get(id)
+    if p: 
+        db.session.delete(p)
+        db.session.commit()
+        
+    return jsonify({"status": "success"})
 
 @app.route('/admin/approve-payment/<int:tx_id>', methods=['POST'])
 def approve_payment(tx_id):
@@ -771,13 +907,13 @@ def admin_update_role():
             
         if not getattr(user, 'is_verified', False): 
             return jsonify({"status": "error", "message": "Target user must verify their email in their profile before receiving Staff access."}), 400
-        
+            
         old_role = getattr(user, 'role', 'member')
         old_friend = getattr(user, 'is_friend', False)
         
         if curr_role == 'admin' and old_role in ['admin', 'owner']: 
             return jsonify({"status": "error", "message": "You cannot modify an Admin or Owner!"}), 403
-        
+            
         user.role = target_role
         user.is_friend = is_friend
         new_password = None
@@ -818,7 +954,6 @@ def admin_ban_user():
     user.is_banned = True
     user.ban_expiry = None if days == 0 else datetime.utcnow() + timedelta(days=days)
     db.session.commit()
-    
     return jsonify({"status": "success"})
 
 @app.route('/admin/unban-user', methods=['POST'])
@@ -843,7 +978,6 @@ def admin_reply_ticket():
     ticket.status = 'Closed'
     db.session.add(Notification(email=ticket.email, title="Ticket Replied 🛠️", message=f"Staff replied to: {ticket.subject}"))
     db.session.commit()
-    
     return jsonify({"status": "success"})
 
 @app.route('/admin/approve-submission', methods=['POST'])
@@ -861,9 +995,7 @@ def approve_submission():
         obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': 
         obj = AIPrompt.query.get(item_id)
-    else:
-        obj = None
-    
+        
     if obj: 
         obj.is_approved = True
         db.session.add(Notification(email=getattr(obj, 'creator_email', 'admin'), title="Approved! 🌟", message=f"Your {item_type} '{obj.title}' is now live!"))
@@ -876,13 +1008,13 @@ def approve_submission():
 def admin_send_notification():
     if get_user_role() not in ['admin', 'owner']: 
         return jsonify({"error": "Unauthorized"}), 403
-    
+        
     analytics = SiteAnalytics.query.first()
     if analytics and analytics.last_broadcast_time:
         time_since = datetime.utcnow() - analytics.last_broadcast_time
-        if time_since < timedelta(minutes=2):
+        if time_since < timedelta(minutes=2): 
             return jsonify({"error": "Universal Cooldown active.", "cooldown": 120 - int(time_since.total_seconds())}), 429
-
+            
     data = request.json
     target = data.get('target', 'all')
     title = data.get('title')
@@ -890,12 +1022,12 @@ def admin_send_notification():
     
     if target == 'all':
         users = User.query.all()
-        for u in users:
+        for u in users: 
             db.session.add(Notification(email=u.email, title=title, message=message))
-    else:
+    else: 
         db.session.add(Notification(email=target, title=title, message=message))
         
-    if analytics:
+    if analytics: 
         analytics.last_broadcast_time = datetime.utcnow()
         
     db.session.commit()
@@ -921,7 +1053,7 @@ def get_content():
             if getattr(c, 'is_approved', True):
                 info = get_c_info(getattr(c, 'creator_email', 'admin'))
                 c_list.append({"id": c.id, "title": c.title, "category": getattr(c, 'category', 'Single Page'), "code": c.code, "views": getattr(c, 'views', 0), "likes": getattr(c, 'likes', 0), "creator": info['name'], "creator_username": info['username']})
-        
+                
         p_list = []
         for p in PremiumCode.query.all():
             if getattr(p, 'is_approved', True):
@@ -934,7 +1066,6 @@ def get_content():
         pr_list = [{"id": p.id, "title": p.title, "prompt_text": p.prompt_text} for p in AIPrompt.query.all() if getattr(p, 'is_approved', True)]
         
         return jsonify({"codes": c_list, "premium_codes": p_list, "prompts": pr_list})
-        
     except Exception as e: 
         return jsonify({"error": str(e)}), 500
 
@@ -943,7 +1074,7 @@ def admin_add_code():
     if not check_admin_access(): 
         return jsonify({"error": "Unauthorized"}), 401
         
-    creator = session.get('user_email', 'admin') 
+    creator = session.get('user_email', 'admin')
     db.session.add(FreeCode(title=request.json.get('title'), category=request.json.get('category'), code=request.json.get('code'), creator_email=creator, is_approved=True))
     db.session.commit()
     return jsonify({"status": "success"})
@@ -984,18 +1115,13 @@ def delete_submission():
         obj = FreeCode.query.get(item_id)
     elif item_type == 'prompt': 
         obj = AIPrompt.query.get(item_id)
-    else:
+    else: 
         obj = None
-    
+        
     if obj: 
         creator_email = getattr(obj, 'creator_email', 'admin')
-        if creator_email != 'admin':
-            db.session.add(Notification(
-                email=creator_email, 
-                title="Submission Rejected ❌", 
-                message=f"Your {item_type} '{obj.title}' was rejected. Reason: {reason}"
-            ))
-            
+        if creator_email != 'admin': 
+            db.session.add(Notification(email=creator_email, title="Submission Rejected ❌", message=f"Your {item_type} '{obj.title}' was rejected. Reason: {reason}"))
         db.session.delete(obj)
         db.session.commit()
         return jsonify({"status": "success"})

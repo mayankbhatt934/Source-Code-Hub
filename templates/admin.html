@@ -21,10 +21,7 @@
         @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
         .admin-form input, .admin-form select, .admin-form textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; transition: 0.3s; box-sizing: border-box;}
         .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: #00d2ff; background: rgba(0,0,0,0.5); outline: none; }
-        
-        /* STRICT ENFORCEMENT: No resizing, uses internal scroll instead */
         textarea, .admin-form textarea { resize: none !important; overflow-y: auto !important; }
-        
         .list-container { max-height: 350px; overflow-y: auto; padding-right: 5px; flex-grow: 1;}
         .list-item { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 3px solid #555; transition: 0.2s; }
         .list-item:hover { background: rgba(0,0,0,0.5); }
@@ -66,6 +63,30 @@
             <div class="stat-box" style="border-bottom: 3px solid #f5af19;"><span>Premium Members</span><strong id="stat-premium" style="color: #f5af19;">0</strong></div>
             <div class="stat-box" style="border-bottom: 3px solid #00ff88;"><span>Total Revenue</span><strong style="color: #00ff88; display: flex; justify-content: center; align-items: center; gap: 2px;">₹<b id="stat-revenue" style="font-weight: 600;">0</b></strong></div>
             <div class="stat-box" style="border-bottom: 3px solid #b06ab3;"><span>Page Views</span><strong id="stat-views" style="color: #b06ab3;">0</strong></div>
+        </div>
+
+        <div class="glass-panel" id="panel-owner" style="display: none; border-color: #ff00ff; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(255,0,255,0.1);">
+            <div class="panel-header" style="color: #ff00ff;">👑 Owner Operations</div>
+            <div class="grid-2">
+                <div>
+                    <h4 style="color: #fff; margin-top:0;">🛡️ System Kill Switch</h4>
+                    <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 15px;">Instantly locks the main website for all users. Only Staff can bypass.</p>
+                    <button onclick="toggleMaintenance()" id="btn-maintenance" class="submit-btn" style="background: transparent; border: 2px solid #ff5f56; color: #ff5f56;">Toggle Maintenance Mode</button>
+                    <p id="maintenance-status" style="margin-top: 10px; font-weight: bold;"></p>
+                </div>
+                <div>
+                    <h4 style="color: #fff; margin-top:0;">🎟️ Promo Code Engine</h4>
+                    <form class="admin-form" onsubmit="createPromo(event)">
+                        <input type="text" id="promo-code" placeholder="PROMO CODE (e.g. LAUNCH50)" required style="text-transform: uppercase;">
+                        <div style="display:flex; gap:10px;">
+                            <input type="number" id="promo-discount" placeholder="% Discount (1-100)" required min="1" max="100">
+                            <input type="number" id="promo-limit" placeholder="Usage Limit (0=Unlimited)" required min="0">
+                        </div>
+                        <button type="submit" class="submit-btn premium-btn" style="width:100%;">Generate Promo Code</button>
+                    </form>
+                    <div class="list-container" id="promo-list" style="max-height: 150px; margin-top: 15px;"></div>
+                </div>
+            </div>
         </div>
 
         <div class="grid-2" id="panel-finance">
@@ -175,7 +196,7 @@
         <div id="editor-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
             <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
                 <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px;">⛶ Full Screen Editor</h3>
-                <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; resize: none; outline: none; margin-bottom: 15px;" placeholder="Paste your entire code here..."></textarea>
+                <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; outline: none; margin-bottom: 15px;" placeholder="Paste your entire code here..."></textarea>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="submit-btn" style="width: auto; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px;" onclick="closeEditor()">Cancel</button>
                     <button type="button" class="submit-btn" style="width: auto; background: #00d2ff; color: #000; padding: 10px 20px; font-weight: bold;" onclick="saveEditor()">Save & Close</button>
@@ -184,73 +205,43 @@
         </div>
 
         <script>
-            // NEW MODAL LOGIC FOR INPUTS
             let currentEditorTarget = "";
-            function openEditor(targetId) {
-                currentEditorTarget = targetId;
-                document.getElementById('global-editor-textarea').value = document.getElementById(targetId).value;
-                document.getElementById('editor-modal-overlay').style.display = 'flex';
-            }
-            function closeEditor() {
-                document.getElementById('editor-modal-overlay').style.display = 'none';
-                currentEditorTarget = "";
-            }
-            function saveEditor() {
-                if(currentEditorTarget) {
-                    document.getElementById(currentEditorTarget).value = document.getElementById('global-editor-textarea').value;
-                }
-                closeEditor();
-            }
+            function openEditor(targetId) { currentEditorTarget = targetId; document.getElementById('global-editor-textarea').value = document.getElementById(targetId).value; document.getElementById('editor-modal-overlay').style.display = 'flex'; }
+            function closeEditor() { document.getElementById('editor-modal-overlay').style.display = 'none'; currentEditorTarget = ""; }
+            function saveEditor() { if(currentEditorTarget) { document.getElementById(currentEditorTarget).value = document.getElementById('global-editor-textarea').value; } closeEditor(); }
 
             let pendingCodesData = [];
 
             function toggleInputType(s, i) { const v = document.getElementById(s).value; const e = document.getElementById(i); if (v.includes('Full')) { e.placeholder = "Paste Google Drive/Dropbox link here..."; e.style.height = "60px"; } else { e.placeholder = "Paste raw code here..."; e.style.height = "100px"; } }
             function toggleGiftType() { const t = document.getElementById('gift-type').value; if(t === 'membership') { document.getElementById('gift-membership-val').style.display = 'block'; document.getElementById('gift-code-val').style.display = 'none'; } else { document.getElementById('gift-membership-val').style.display = 'none'; document.getElementById('gift-code-val').style.display = 'block'; } }
             
-            document.getElementById('notif-target').addEventListener('change', function() {
-                document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none';
-                document.getElementById('notif-email').required = this.value === 'specific';
-            });
+            document.getElementById('notif-target').addEventListener('change', function() { document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none'; document.getElementById('notif-email').required = this.value === 'specific'; });
 
-            function checkBroadcastCooldown() {
-                const cooldownEnd = localStorage.getItem('broadcastCooldown');
-                if (cooldownEnd) {
-                    const now = new Date().getTime();
-                    if (now < cooldownEnd) {
-                        startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000));
-                    } else {
-                        localStorage.removeItem('broadcastCooldown');
-                    }
+            function checkBroadcastCooldown() { const cooldownEnd = localStorage.getItem('broadcastCooldown'); if (cooldownEnd) { const now = new Date().getTime(); if (now < cooldownEnd) { startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000)); } else { localStorage.removeItem('broadcastCooldown'); } } }
+            function startBroadcastTimer(seconds) {
+                const btn = document.getElementById('btn-broadcast'); if(!btn) return;
+                btn.disabled = true; btn.style.background = "#555"; btn.style.color = "#ccc"; btn.style.cursor = "not-allowed";
+                let timeLeft = seconds; btn.innerText = `Cooldown: ${timeLeft}s`;
+                if (window.broadcastInterval) clearInterval(window.broadcastInterval);
+                window.broadcastInterval = setInterval(() => { timeLeft--; if (timeLeft <= 0) { clearInterval(window.broadcastInterval); btn.disabled = false; btn.innerText = "Send Alert"; btn.style.background = ""; btn.style.color = ""; btn.style.cursor = "pointer"; } else { btn.innerText = `Cooldown: ${timeLeft}s`; } }, 1000);
+            }
+
+            // SPRINT 1: OWNER JAVASCRIPT FUNCTIONS
+            async function toggleMaintenance() {
+                const res = await fetch('/admin/toggle-maintenance', { method: 'POST' }); const data = await res.json();
+                if(res.ok) {
+                    document.getElementById('btn-maintenance').style.background = data.mode ? '#ff5f56' : 'transparent';
+                    document.getElementById('btn-maintenance').style.color = data.mode ? '#fff' : '#ff5f56';
+                    document.getElementById('btn-maintenance').innerText = data.mode ? 'Disable Maintenance' : 'Enable Maintenance';
+                    document.getElementById('maintenance-status').innerText = data.mode ? 'STATUS: ACTIVE 🔴' : 'STATUS: OFFLINE 🟢';
+                    document.getElementById('maintenance-status').style.color = data.mode ? '#ff5f56' : '#00ff88';
                 }
             }
-
-            function startBroadcastTimer(seconds) {
-                const btn = document.getElementById('btn-broadcast');
-                if(!btn) return;
-                btn.disabled = true;
-                btn.style.background = "#555";
-                btn.style.color = "#ccc";
-                btn.style.cursor = "not-allowed";
-
-                let timeLeft = seconds;
-                btn.innerText = `Cooldown: ${timeLeft}s`;
-                
-                if (window.broadcastInterval) clearInterval(window.broadcastInterval);
-
-                window.broadcastInterval = setInterval(() => {
-                    timeLeft--;
-                    if (timeLeft <= 0) {
-                        clearInterval(window.broadcastInterval);
-                        btn.disabled = false;
-                        btn.innerText = "Send Alert";
-                        btn.style.background = ""; 
-                        btn.style.color = "";
-                        btn.style.cursor = "pointer";
-                    } else {
-                        btn.innerText = `Cooldown: ${timeLeft}s`;
-                    }
-                }, 1000);
+            async function createPromo(e) {
+                e.preventDefault(); await fetch('/admin/promo', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ code: document.getElementById('promo-code').value, discount: document.getElementById('promo-discount').value, limit: document.getElementById('promo-limit').value }) });
+                e.target.reset(); loadAdminData();
             }
+            async function deletePromo(id) { await fetch(`/admin/promo/${id}`, { method: 'DELETE' }); loadAdminData(); }
 
             async function loadAdminData() {
                 const res = await fetch('/api/admin-data');
@@ -261,15 +252,20 @@
                     document.getElementById('header-role').innerText = d.current_role;
                     document.getElementById('header-username').innerText = d.current_username;
                     
-                    if (d.broadcast_cooldown && d.broadcast_cooldown > 0) {
-                        startBroadcastTimer(d.broadcast_cooldown);
-                    }
+                    if (d.broadcast_cooldown && d.broadcast_cooldown > 0) startBroadcastTimer(d.broadcast_cooldown);
                     
-                    if (d.current_role === 'staff') {
-                        ['panel-finance', 'panel-system', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-                    } else if (d.current_role === 'admin') {
-                        const roleSelect = document.getElementById('role-select');
-                        if(roleSelect) { Array.from(roleSelect.options).forEach(opt => { if(opt.value === 'owner' || opt.value === 'admin') opt.remove(); }); }
+                    if (d.current_role === 'staff') { ['panel-finance', 'panel-system', 'panel-manage-content'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; }); } 
+                    else if (d.current_role === 'admin') { const roleSelect = document.getElementById('role-select'); if(roleSelect) { Array.from(roleSelect.options).forEach(opt => { if(opt.value === 'owner' || opt.value === 'admin') opt.remove(); }); } }
+                    else if (d.current_role === 'owner') {
+                        document.getElementById('panel-owner').style.display = 'block';
+                        document.getElementById('btn-maintenance').style.background = d.maintenance_mode ? '#ff5f56' : 'transparent';
+                        document.getElementById('btn-maintenance').style.color = d.maintenance_mode ? '#fff' : '#ff5f56';
+                        document.getElementById('btn-maintenance').innerText = d.maintenance_mode ? 'Disable Maintenance' : 'Enable Maintenance';
+                        document.getElementById('maintenance-status').innerText = d.maintenance_mode ? 'STATUS: ACTIVE 🔴' : 'STATUS: OFFLINE 🟢';
+                        document.getElementById('maintenance-status').style.color = d.maintenance_mode ? '#ff5f56' : '#00ff88';
+                        
+                        const promoDiv = document.getElementById('promo-list');
+                        promoDiv.innerHTML = d.promos.length === 0 ? '<p style="color:#888;">No promo codes.</p>' : d.promos.map(p => `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding:10px 0;"><div><strong style="color:#00ff88;">${p.code}</strong> <span style="color:#aaa; font-size:0.8rem;">(${p.discount}% OFF)</span><br><span style="font-size:0.75rem; color:#888;">Uses: ${p.uses} / ${p.limit === 0 ? '∞' : p.limit}</span></div><button class="delete-btn" onclick="deletePromo(${p.id})">Delete</button></div>`).join('');
                     }
 
                     document.getElementById('stat-users').innerText = d.total_users; document.getElementById('stat-premium').innerText = d.premium_users; document.getElementById('stat-revenue').innerText = d.total_revenue; document.getElementById('stat-views').innerText = d.page_views;
@@ -291,59 +287,23 @@
                     else tDiv.innerHTML = d.tickets.map(t => `<div class="list-item" style="border-left-color: #00d2ff;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#00d2ff; border:1px solid #00d2ff; float:right;">New</span><strong style="color:#fff; font-size:0.85rem;">${t.email}</strong><h4 style="color:#fff; margin: 5px 0;">${t.subject}</h4><p style="font-size:0.85rem; color:#aaa; margin:0; line-height: 1.4;">${t.message}</p></div><textarea id="reply-${t.id}" class="admin-form" placeholder="Type your reply..." style="margin-bottom: 8px; height: 60px; width: 100%; border: 1px solid #00d2ff;"></textarea><button onclick="replyTicket(${t.id})" class="submit-btn" style="padding: 8px; font-size: 0.8rem;">Send Reply & Close</button></div>`).join('');
 
                     pendingCodesData = d.pending_codes;
-
                     const cDiv = document.getElementById('creator-codes-list');
                     if (d.pending_codes.length === 0) cDiv.innerHTML = '<p style="color: #666; text-align: center; margin-top: 20px;">No pending content.</p>';
                     else cDiv.innerHTML = d.pending_codes.map((c, index) => `<div class="list-item" style="border-left-color: #f5af19;"><div style="margin-bottom: 10px;"><span class="badge" style="color:#f5af19; border:1px solid #f5af19; float:right; text-transform:uppercase;">${c.type}</span><strong style="color:#fff; font-size:1rem; display:block;">${c.title}</strong><span style="color:#aaa; font-size:0.8rem;">By: ${c.creator}</span></div><div style="display:flex; gap:10px;"><button onclick="previewSubmission(${index})" style="background:transparent; border:1px solid #00d2ff; color:#00d2ff; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">View</button><button onclick="approveSubmission(${c.id}, '${c.type}')" class="submit-btn premium-btn" style="padding: 8px; font-size: 0.8rem; flex: 1;">Approve</button><button onclick="deleteSubmission(${c.id}, '${c.type}')" style="background:transparent; border:1px solid #ff5f56; color:#ff5f56; border-radius:8px; padding: 8px; font-size:0.8rem; font-weight:bold; cursor:pointer; flex:1;">Reject</button></div></div>`).join('');
                 }
             }
 
-            function previewSubmission(index) {
-                const item = pendingCodesData[index];
-                if (!item) return;
-                const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                document.getElementById('preview-code-content').innerHTML = safeCode;
-                document.getElementById('preview-modal-overlay').style.display = 'flex';
-            }
-
+            function previewSubmission(index) { const item = pendingCodesData[index]; if (!item) return; const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); document.getElementById('preview-code-content').innerHTML = safeCode; document.getElementById('preview-modal-overlay').style.display = 'flex'; }
             async function approvePayment(id) { if(!confirm("Verify this payment?")) return; await fetch(`/admin/approve-payment/${id}`, { method: 'POST' }); loadAdminData(); }
             async function approvePayout(id) { if(!confirm("Did you send the money via UPI?")) return; await fetch(`/admin/approve-payout/${id}`, { method: 'POST' }); loadAdminData(); }
             async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); alert("Gift Sent!"); }
             async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
             async function unbanUser(email) { if(!confirm(`Unban ${email}?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
-            
-            async function submitRoleUpdate(e) { 
-                e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing...";
-                const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked };
-                const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
-                const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change";
-            }
-            
-            async function submitAdminNotification(e) {
-                e.preventDefault();
-                const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value;
-                const btn = document.getElementById('btn-broadcast');
-                btn.disabled = true; btn.innerText = "Sending...";
-                try {
-                    const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) });
-                    const data = await res.json();
-                    if(res.ok) { alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; startBroadcastTimer(data.cooldown); } 
-                    else { alert("Error: " + (data.error || "Failed to send")); if (data.cooldown) { startBroadcastTimer(data.cooldown); } else { btn.disabled = false; btn.innerText = "Send Alert"; } }
-                } catch(err) { alert("Network Error!"); btn.disabled = false; btn.innerText = "Send Alert"; }
-            }
-            
+            async function submitRoleUpdate(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing..."; const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked }; const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change"; }
+            async function submitAdminNotification(e) { e.preventDefault(); const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value; const btn = document.getElementById('btn-broadcast'); btn.disabled = true; btn.innerText = "Sending..."; try { const res = await fetch('/admin/send-notification', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) }); const data = await res.json(); if(res.ok) { alert("Broadcast Sent!"); e.target.reset(); document.getElementById('notif-email').style.display='none'; startBroadcastTimer(data.cooldown); } else { alert("Error: " + (data.error || "Failed to send")); if (data.cooldown) { startBroadcastTimer(data.cooldown); } else { btn.disabled = false; btn.innerText = "Send Alert"; } } } catch(err) { alert("Network Error!"); btn.disabled = false; btn.innerText = "Send Alert"; } }
             async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
             async function approveSubmission(id, type) { await fetch(`/admin/approve-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type }) }); loadAdminData(); loadManageContent(); }
-            
-            async function deleteSubmission(id, type) { 
-                const reason = prompt("Enter reason for rejection (this will be sent to the creator):");
-                if(reason !== null) { 
-                    const finalReason = reason.trim() === "" ? "Does not meet quality guidelines." : reason;
-                    await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type, reason: finalReason }) }); 
-                    loadAdminData(); loadManageContent(); 
-                } 
-            }
-            
+            async function deleteSubmission(id, type) { const reason = prompt("Enter reason for rejection (this will be sent to the creator):"); if(reason !== null) { const finalReason = reason.trim() === "" ? "Does not meet quality guidelines." : reason; await fetch(`/admin/delete-submission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, type: type, reason: finalReason }) }); loadAdminData(); loadManageContent(); } }
             async function submitNewCode(e) { e.preventDefault(); await fetch('/admin/add-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('code-title').value, category: document.getElementById('code-category').value, code: document.getElementById('code-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
             async function submitNewPremium(e) { e.preventDefault(); await fetch('/admin/add-premium', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prem-title').value, category: document.getElementById('prem-category').value, price: document.getElementById('prem-price').value, code: document.getElementById('prem-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
             async function submitNewPrompt(e) { e.preventDefault(); await fetch('/admin/add-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: document.getElementById('prompt-title').value, prompt_text: document.getElementById('prompt-content').value }) }); e.target.reset(); loadManageContent(); alert("Published!"); }
@@ -356,7 +316,6 @@
                     document.getElementById('gift-code-val').innerHTML = d.premium_codes.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
                 }
             }
-            
             window.onload = () => { loadAdminData(); loadManageContent(); checkBroadcastCooldown(); };
         </script>
         {% endif %}

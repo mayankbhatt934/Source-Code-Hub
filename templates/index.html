@@ -14,13 +14,11 @@
 
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-8">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=update-9">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
-        /* STRICT ENFORCEMENT: No resizing, uses internal scroll instead */
         textarea { resize: none !important; overflow-y: auto !important; }
-        
         .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
         .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
         .cat-tab:hover { border-color: #555; color: #fff; }
@@ -221,7 +219,6 @@
                                 <button type="button" onclick="openEditor('cr-code')" style="background: transparent; color: #b06ab3; border: 1px solid #b06ab3; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">⛶ Open Full Editor</button>
                             </div>
                             <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px;"></textarea>
-                            
                             <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button>
                         </form>
                     </div>
@@ -278,11 +275,34 @@
         </div>
     </div>
 
-    <div id="upi-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeUPIModal()"><div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);"><div onclick="closeUPIModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div><h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px; font-size: 1.6rem;">Secure Checkout</h2><p id="modal-plan-desc" style="color: #ccc; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.4;"></p><div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;"><img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;"></div><div style="margin-bottom: 25px;"><p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay via App</a></div><form onsubmit="submitUPIPayment(event)"><div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 20px; text-align: left; background: rgba(255, 0, 127, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ff007f;"><label style="font-size: 0.9rem; color: #ff007f; font-weight: bold; margin-bottom: 8px; display: block;">🎁 Recipient's Email</label><input type="email" id="modal-gift-email" placeholder="friend@example.com" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;"></div><div class="form-group" style="margin-bottom: 15px; text-align: left;"><label style="font-size: 0.85rem; color: #00ff88; font-weight: bold; margin-bottom: 8px; display: block;">✅ Your UPI ID</label><input type="text" id="modal-sender-upi" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #00ff88; color: white; border-radius: 5px;"></div><p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Click ONLY after payment completes.</p><button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 5px;">I have completed the payment</button></form></div></div>
+    <div id="upi-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeUPIModal()">
+        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+            <div onclick="closeUPIModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+            <h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px; font-size: 1.6rem;">Secure Checkout</h2>
+            <p id="modal-plan-desc" style="color: #ccc; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.4;"></p>
+            
+            <div class="form-group" id="promo-container" style="margin-bottom: 20px; text-align: left;">
+                <label style="font-size: 0.85rem; color: #b06ab3; font-weight: bold; margin-bottom: 8px; display: block;">🎟️ Promo Code (Optional)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="modal-promo" placeholder="Enter Code" style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #b06ab3; color: white; border-radius: 5px; text-transform: uppercase;">
+                    <button type="button" class="submit-btn" style="width: auto; padding: 0 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="applyPromo()">Apply</button>
+                </div>
+            </div>
+
+            <div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;"><img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;"></div>
+            <div style="margin-bottom: 25px;"><p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay via App</a></div>
+            
+            <form onsubmit="submitUPIPayment(event)">
+                <div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 20px; text-align: left; background: rgba(255, 0, 127, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ff007f;"><label style="font-size: 0.9rem; color: #ff007f; font-weight: bold; margin-bottom: 8px; display: block;">🎁 Recipient's Email</label><input type="email" id="modal-gift-email" placeholder="friend@example.com" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;"></div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: left;"><label style="font-size: 0.85rem; color: #00ff88; font-weight: bold; margin-bottom: 8px; display: block;">✅ Your UPI ID</label><input type="text" id="modal-sender-upi" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #00ff88; color: white; border-radius: 5px;"></div>
+                <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Click ONLY after payment completes.</p>
+                <button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 5px;">I have completed the payment</button>
+            </form>
+        </div>
+    </div>
+
     <div id="reset-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeResetModal()"><div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);"><div onclick="closeResetModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div><h2 style="color: #00d2ff; margin-bottom: 20px; margin-top: 10px; font-size: 1.6rem;">Reset Password</h2><form id="request-code-form" onsubmit="handleRequestCode(event)"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 20px;"><button type="submit" class="submit-btn" style="width: 100%; padding: 12px;">Send Code</button></form><form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px;">Update Password</button></form></div></div>
     
-    <div id="prompt-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closePromptModal()"><div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: left; box-shadow: 0 10px 40px rgba(0,0,0,0.8);"><div onclick="closePromptModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div><h2 id="modal-prompt-title" style="color: #00d2ff; margin-bottom: 20px; margin-top: 5px; font-size: 1.5rem; padding-right: 40px;">Prompt Title</h2><div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 8px; border: 1px solid #222; max-height: 40vh; overflow-y: auto; margin-bottom: 25px;"><p id="modal-prompt-text" style="color: #ddd; font-size: 1rem; line-height: 1.6; white-space: pre-wrap; margin: 0;"></p></div><button class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem;" onclick="copyFromModal(this)">Copy Prompt</button></div></div>
-
     <div id="editor-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
         <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
             <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px;">⛶ Full Screen Editor</h3>
@@ -296,7 +316,7 @@
 
     <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-8"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=update-9"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>

@@ -194,6 +194,7 @@ def register():
     
     return jsonify({"status": "success", "message": "Account created! You can now log in."})
 
+# FIXED: Now strictly wipes old sessions on user login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -202,6 +203,8 @@ def login():
     
     user = User.query.filter((User.email == login_id) | (User.username == login_id.lower().replace(" ", ""))).first()
     if user and check_password_hash(user.password, password):
+        session.clear() # DESTROY old cookies to prevent admin leaks
+        session.permanent = True
         session['user_email'] = user.email
         return jsonify({"status": "success", "message": "Logged in successfully!", "is_premium": user.is_premium, "is_banned": user.is_banned})
         
@@ -209,8 +212,7 @@ def login():
 
 @app.route('/logout', methods=['POST'])
 def logout(): 
-    session.pop('user_email', None)
-    session.pop('is_admin', None)
+    session.clear()
     return jsonify({"status": "success"})
 
 @app.route('/api/send-verification-otp', methods=['POST'])
@@ -349,6 +351,7 @@ def change_password():
 def forgot_password():
     email = request.json.get('email')
     user = User.query.filter_by(email=email).first()
+    
     if not user: 
         return jsonify({"status": "success"})
         
@@ -363,6 +366,7 @@ def forgot_password():
 def reset_password():
     data = request.json
     reset_entry = PasswordReset.query.filter_by(email=data.get('email'), code=data.get('code')).first()
+    
     if not reset_entry or datetime.utcnow() > reset_entry.expiry: 
         return jsonify({"status": "error", "message": "Invalid code!"}), 400
         
@@ -454,6 +458,7 @@ def submit_review():
         
     db.session.add(Review(email=user.email, code_id=data.get('code_id'), rating=data.get('rating'), comment=data.get('comment')))
     db.session.commit()
+    
     return jsonify({"status": "success", "message": "Review published!"})
 
 @app.route('/api/notifications', methods=['GET'])
@@ -704,6 +709,7 @@ def get_leaderboard():
     top = sorted(creators.values(), key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(top)
 
+# FIXED: Completely wipes conflicting sessions on Admin login
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     if request.method == 'POST':
@@ -711,13 +717,16 @@ def admin_dashboard():
         password = request.form.get('password')
         
         if staff_email == ADMIN_USERNAME and password == ADMIN_PASSWORD: 
+            session.clear() 
+            session.permanent = True
             session['is_admin'] = True
             return redirect('/admin')
             
         user = User.query.filter_by(email=staff_email).first()
         if user and check_password_hash(user.password, password):
             if getattr(user, 'role', 'member') in ['staff', 'admin', 'owner']: 
-                session.pop('is_admin', None)
+                session.clear() 
+                session.permanent = True
                 session['user_email'] = user.email
                 return redirect('/admin')
             else: 

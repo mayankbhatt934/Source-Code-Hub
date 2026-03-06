@@ -100,8 +100,11 @@ def send_system_email(to_email, subject, body):
         except Exception:
             pass
 
+# MASSIVE SECURITY FIX: Only the logged-in Owner can reset the DB now
 @app.route('/force-db-reset')
 def force_db_reset(): 
+    if not session.get('is_admin'):
+        return "ACCESS DENIED. Master Admin authentication required. Please go to /admin and log in with the Owner credentials first.", 403
     try:
         db.drop_all()
         db.create_all()
@@ -446,7 +449,7 @@ def submit_report():
         item_type=data.get('type'), 
         item_id=data.get('id'), 
         reason=data.get('reason'),
-        proof=data.get('proof', '') # NEW PROOF FIELD
+        proof=data.get('proof', '')
     ))
     db.session.add(Notification(email=user.email, title="Report Received 🚩", message="Staff will review your report shortly."))
     db.session.commit()

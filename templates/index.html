@@ -119,7 +119,7 @@
                 <div class="flip-back">
                     <form id="register-form" onsubmit="handleRegistration(event)">
                         <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-username" placeholder="Unique Username" required pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores allowed"></div>
+                        <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-username" placeholder="Unique Username" required pattern="[a-zA-Z0-9_.]+" title="Only letters, numbers, underscores and dotsallowed"></div>
                         <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div>
                         <div class="form-group" style="margin-bottom: 10px;"><input type="password" id="reg-password" placeholder="Password" required></div>
                         <button type="submit" id="btn-send-otp" class="submit-btn auth-action-btn">Create Account</button>

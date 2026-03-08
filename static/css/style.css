@@ -140,6 +140,7 @@ footer { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.3); marg
 .status-badge.basic { background: rgba(255, 255, 255, 0.1); color: #ccc; border: 1px solid #555; }
 .status-badge.premium { background: rgba(245, 175, 25, 0.2); color: #f5af19; border: 1px solid #f5af19; box-shadow: 0 0 15px rgba(245, 175, 25, 0.2); }
 
+/* --- MOBILE RESPONSIVENESS FIXES --- */
 @media (max-width: 900px) {
     header { padding: 1.5rem 5%; }
     .menu-btn { display: block; }
@@ -153,13 +154,13 @@ footer { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.3); marg
     .prompt-text { margin-right: 0; margin-bottom: 15px; }
     .center-box { padding: 30px 20px; }
     .flip-container { height: 350px; }
+    
+    /* Sandbox Fixes */
+    #sandbox-editor, #sandbox-output { height: 30vh !important; }
+    #btn-run-code { width: 100% !important; margin-top: 10px; }
+    .sandbox-controls { flex-direction: column; gap: 5px !important; }
 }
 
-/* =======================================================================
-   🪄 PANDORA'S BOX: ENTERPRISE POLISH & ANIMATIONS
-   ======================================================================= */
-
-/* RGB GAMER GLOW FOR PREMIUM CARDS */
 @keyframes rgbGlowBorder {
     0% { border-color: #ff007f; box-shadow: 0 15px 40px rgba(255, 0, 127, 0.4); }
     33% { border-color: #00d2ff; box-shadow: 0 15px 40px rgba(0, 210, 255, 0.4); }
@@ -172,14 +173,11 @@ footer { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.3); marg
     transform: translateY(-12px) scale(1.05) !important;
 }
 
-/* ZERO-GRAVITY HOVER PHYSICS FOR ALL CARDS */
 .home-card, .pricing-card, .code-container {
     transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.5s ease, border-color 0.5s ease !important;
 }
 
-.home-card:hover {
-    transform: translateY(-12px) scale(1.03) !important;
-}
+.home-card:hover { transform: translateY(-12px) scale(1.03) !important; }
 
 .code-wrapper:hover .code-container {
     transform: translateY(-5px);

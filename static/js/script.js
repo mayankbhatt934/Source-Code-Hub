@@ -352,3 +352,15 @@ window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loa
 
 setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 5000);
 setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 10000);
+
+// --- PASSWORD VISIBILITY TOGGLE ---
+function togglePasswordVisibility(inputId, iconElement) {
+    const input = document.getElementById(inputId);
+    if (input.type === "password") {
+        input.type = "text";
+        iconElement.innerText = "🙈"; // Monkey covering eyes when password is shown
+    } else {
+        input.type = "password";
+        iconElement.innerText = "👁️"; // Open eye when password is hidden
+    }
+}

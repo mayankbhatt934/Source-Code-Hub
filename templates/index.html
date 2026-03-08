@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Source Code Hub | Premium Scripts & Prompts</title>
-    <meta name="description" content="Download high-performance scripts, full website templates, and engineered AI prompts. Buy, sell, and learn on Source Code Hub.">
+    <meta name="description"
+        content="Download high-performance scripts, full website templates, and engineered AI prompts. Buy, sell, and learn on Source Code Hub.">
     <meta property="og:title" content="Source Code Hub 🚀">
     <meta property="og:description" content="Your central dashboard for premium algorithms and AI Prompts.">
     <meta property="og:image" content="{{ url_for('static', filename='logo.png') }}">
@@ -18,34 +20,191 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
 
     <style>
-        textarea { resize: none !important; overflow-y: auto !important; }
-        .category-tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; }
-        .cat-tab { background: rgba(0,0,0,0.5); border: 1px solid #333; color: #888; padding: 10px 25px; border-radius: 30px; cursor: pointer; transition: 0.3s; font-size: 0.9rem; }
-        .cat-tab:hover { border-color: #555; color: #fff; }
-        .cat-tab.active { background: #00d2ff; color: #000; border-color: #00d2ff; font-weight: bold; }
-        .cat-tab.premium-tab.active { background: #f5af19; border-color: #f5af19; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .search-bar { width: 100%; padding: 15px; border-radius: 30px; border: 1px solid #333; background: rgba(0,0,0,0.5); color: #fff; outline: none; text-align: center; font-size: 1rem; transition: 0.3s; margin-bottom: 30px; }
-        .search-bar:focus { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2); }
-        .premium-search:focus { border-color: #f5af19; box-shadow: 0 0 15px rgba(245, 175, 25, 0.2); }
-        .social-proof { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(0,0,0,0.6); border-top: 1px solid #333; border-radius: 0 0 12px 12px; font-size: 0.85rem; color: #888; }
-        .like-btn, .bookmark-btn, .comment-btn, .report-btn { background: transparent; border: none; color: #888; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;}
-        .like-btn:hover, .like-btn.liked { color: #ff5f56; }
-        .bookmark-btn:hover, .bookmark-btn.bookmarked { color: #00d2ff; }
-        .comment-btn:hover { color: #00ff88; }
-        .report-btn:hover { color: #ff5f56; }
-        .prof-tab-btn { background: #111; color: #aaa; border: 1px solid #333; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: 0.3s; }
-        .prof-tab-btn.active { background: #00d2ff; color: #000; font-weight: bold; border-color: #00d2ff; }
-        .creator-link { color: #00d2ff; text-decoration: none; cursor: pointer; transition: 0.3s; }
-        .creator-link:hover { text-decoration: underline; color: #fff; }
-        .stats-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; text-align: left; }
-        .stats-table th { padding: 10px; border-bottom: 1px solid #333; color: #00d2ff; }
-        .stats-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #ccc; }
-        .stats-table tr:hover td { background: rgba(255,255,255,0.05); }
-        .tag-badge { background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 5px; display: inline-block; margin-bottom: 5px;}
+        textarea {
+            resize: none !important;
+            overflow-y: auto !important;
+        }
+
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .cat-tab {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            color: #888;
+            padding: 10px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .cat-tab:hover {
+            border-color: #555;
+            color: #fff;
+        }
+
+        .cat-tab.active {
+            background: #00d2ff;
+            color: #000;
+            border-color: #00d2ff;
+            font-weight: bold;
+        }
+
+        .cat-tab.premium-tab.active {
+            background: #f5af19;
+            border-color: #f5af19;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 15px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            outline: none;
+            text-align: center;
+            font-size: 1rem;
+            transition: 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .search-bar:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+
+        .premium-search:focus {
+            border-color: #f5af19;
+            box-shadow: 0 0 15px rgba(245, 175, 25, 0.2);
+        }
+
+        .social-proof {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border-top: 1px solid #333;
+            border-radius: 0 0 12px 12px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .like-btn,
+        .bookmark-btn,
+        .comment-btn,
+        .report-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .like-btn:hover,
+        .like-btn.liked {
+            color: #ff5f56;
+        }
+
+        .bookmark-btn:hover,
+        .bookmark-btn.bookmarked {
+            color: #00d2ff;
+        }
+
+        .comment-btn:hover {
+            color: #00ff88;
+        }
+
+        .report-btn:hover {
+            color: #ff5f56;
+        }
+
+        .prof-tab-btn {
+            background: #111;
+            color: #aaa;
+            border: 1px solid #333;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .prof-tab-btn.active {
+            background: #00d2ff;
+            color: #000;
+            font-weight: bold;
+            border-color: #00d2ff;
+        }
+
+        .creator-link {
+            color: #00d2ff;
+            text-decoration: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .creator-link:hover {
+            text-decoration: underline;
+            color: #fff;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        .stats-table th {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            color: #00d2ff;
+        }
+
+        .stats-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #ccc;
+        }
+
+        .stats-table tr:hover td {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tag-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            color: #aaa;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 5px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
+
 <body>
     <div class="glass-bg"></div>
     <a href="https://ig.me/m/mayank.code.ai" target="_blank" class="floating-dm"><span>DM for Help</span></a>
@@ -53,7 +212,9 @@
     <header>
         <div style="display: flex; flex-direction: column;">
             <div class="logo" onclick="switchPage('home')">SOURCE CODE <span>HUB</span></div>
-            <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px;">By <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></span>
+            <span style="font-size: 0.7rem; color: #888; margin-top: -3px; margin-left: 2px;">By <a
+                    href="https://instagram.com/mayank.code.ai" target="_blank"
+                    style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></span>
         </div>
         <div class="menu-btn" onclick="toggleMobileMenu()">&#9776;</div>
         <ul class="nav-links" id="nav-menu">
@@ -62,175 +223,392 @@
             <li onclick="switchPage('premium')" id="nav-premium">Premium Room</li>
             <li onclick="switchPage('prompts')" id="nav-prompts">AI Prompts</li>
             <li onclick="switchPage('pricing')" id="nav-pricing">Pricing</li>
-            <li onclick="switchPage('notifications')" id="nav-notifications" style="display: none;">🔔 Alerts <span id="notif-badge" style="background: #ff5f56; color: #fff; border-radius: 50%; padding: 2px 7px; font-size: 0.7rem; margin-left: 5px; display: none;">0</span></li>
+            <li onclick="switchPage('notifications')" id="nav-notifications" style="display: none;">🔔 Alerts <span
+                    id="notif-badge"
+                    style="background: #ff5f56; color: #fff; border-radius: 50%; padding: 2px 7px; font-size: 0.7rem; margin-left: 5px; display: none;">0</span>
+            </li>
             <li onclick="switchAuthPage()" id="nav-login" class="login-nav-btn">Account</li>
         </ul>
     </header>
 
     <section id="page-home" class="page-section active">
-        <section class="hero"><h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1><p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts and premium algorithms.</p></section>
+        <section class="hero">
+            <h1 data-aos="zoom-in">Welcome to <span>Source Code Hub</span></h1>
+            <p data-aos="fade-up" data-aos-delay="200">Your central dashboard for high-performance scripts and premium
+                algorithms.</p>
+        </section>
         <div class="home-grid" data-aos="fade-up" data-aos-delay="300">
-            <div class="home-card" onclick="switchPage('free')"><h2 style="color: #00d2ff;">Free Code</h2><p>Access our open collection completely free.</p></div>
-            <div class="home-card premium-card" onclick="switchPage('premium')"><h2 style="color: #f5af19;">Premium Room</h2><p>Unlock exclusive, high-end code.</p></div>
-            <div class="home-card" onclick="switchPage('prompts')"><h2 style="color: #b06ab3;">AI Prompts</h2><p>Browse engineered prompts.</p></div>
+            <div class="home-card" onclick="switchPage('free')">
+                <h2 style="color: #00d2ff;">Free Code</h2>
+                <p>Access our open collection completely free.</p>
+            </div>
+            <div class="home-card premium-card" onclick="switchPage('premium')">
+                <h2 style="color: #f5af19;">Premium Room</h2>
+                <p>Unlock exclusive, high-end code.</p>
+            </div>
+            <div class="home-card" onclick="switchPage('prompts')">
+                <h2 style="color: #b06ab3;">AI Prompts</h2>
+                <p>Browse engineered prompts.</p>
+            </div>
         </div>
     </section>
 
     <section id="page-free" class="page-section">
-        <section class="hero"><h1>Free <span>Source Codes</span></h1></section>
-        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-free" class="search-bar" onkeyup="filterCodes('free')" placeholder="🔍 Search codes or #tags..."></div>
-        <div class="category-tabs"><button id="btn-free-single" class="cat-tab free-tab-btn active" onclick="switchCategoryTab('free', 'single')">Single Page Codes</button><button id="btn-free-full" class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button></div>
-        <div id="free-single-content" class="free-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
-        <div id="free-full-content" class="free-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
+        <section class="hero">
+            <h1>Free <span>Source Codes</span></h1>
+        </section>
+        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-free"
+                class="search-bar" onkeyup="filterCodes('free')" placeholder="🔍 Search codes or #tags..."></div>
+        <div class="category-tabs"><button id="btn-free-single" class="cat-tab free-tab-btn active"
+                onclick="switchCategoryTab('free', 'single')">Single Page Codes</button><button id="btn-free-full"
+                class="cat-tab free-tab-btn" onclick="switchCategoryTab('free', 'full')">Full Website Codes</button>
+        </div>
+        <div id="free-single-content" class="free-tab-content tab-content active"
+            style="max-width: 900px; margin: 0 auto; padding: 20px;">
+            <p style="text-align: center; color: #888;">Loading...</p>
+        </div>
+        <div id="free-full-content" class="free-tab-content tab-content"
+            style="max-width: 900px; margin: 0 auto; padding: 20px;">
+            <p style="text-align: center; color: #888;">Loading...</p>
+        </div>
     </section>
 
     <section id="page-premium" class="page-section">
-        <section class="hero"><h1>Premium <span>Source Code</span></h1><p>Buy for yourself or click 🎁 to gift to a friend!</p></section>
-        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-prem" class="search-bar premium-search" onkeyup="filterCodes('prem')" placeholder="🔍 Search codes or #tags..."></div>
-        <div class="category-tabs"><button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active" onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button><button id="btn-prem-full" class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website Codes</button></div>
-        <div id="prem-single-content" class="prem-tab-content tab-content active" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
-        <div id="prem-full-content" class="prem-tab-content tab-content" style="max-width: 900px; margin: 0 auto; padding: 20px;"><p style="text-align: center; color: #888;">Loading...</p></div>
+        <section class="hero">
+            <h1>Premium <span>Source Code</span></h1>
+            <p>Buy for yourself or click 🎁 to gift to a friend!</p>
+        </section>
+        <div style="max-width: 600px; margin: 0 auto; padding: 0 20px;"><input type="text" id="search-prem"
+                class="search-bar premium-search" onkeyup="filterCodes('prem')"
+                placeholder="🔍 Search codes or #tags..."></div>
+        <div class="category-tabs"><button id="btn-prem-single" class="cat-tab premium-tab prem-tab-btn active"
+                onclick="switchCategoryTab('prem', 'single')">Single Page Codes</button><button id="btn-prem-full"
+                class="cat-tab premium-tab prem-tab-btn" onclick="switchCategoryTab('prem', 'full')">Full Website
+                Codes</button></div>
+        <div id="prem-single-content" class="prem-tab-content tab-content active"
+            style="max-width: 900px; margin: 0 auto; padding: 20px;">
+            <p style="text-align: center; color: #888;">Loading...</p>
+        </div>
+        <div id="prem-full-content" class="prem-tab-content tab-content"
+            style="max-width: 900px; margin: 0 auto; padding: 20px;">
+            <p style="text-align: center; color: #888;">Loading...</p>
+        </div>
     </section>
 
     <section id="page-prompts" class="page-section">
-        <section class="hero"><h1>AI <span>Prompts Library</span></h1></section>
+        <section class="hero">
+            <h1>AI <span>Prompts Library</span></h1>
+        </section>
         <div class="prompt-section-wrapper" data-aos="fade-up" style="max-width: 800px; margin: 0 auto; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto 30px auto;"><input type="text" id="search-prompts" class="search-bar" style="border-color: #b06ab3;" onkeyup="filterPrompts()" placeholder="🔍 Search prompts or #tags..."></div>
-            <h3 class="prompt-section-title" style="color: #00d2ff; text-align: center; margin-bottom: 20px;">Live <span>Community Prompts</span></h3>
+            <div style="max-width: 600px; margin: 0 auto 30px auto;"><input type="text" id="search-prompts"
+                    class="search-bar" style="border-color: #b06ab3;" onkeyup="filterPrompts()"
+                    placeholder="🔍 Search prompts or #tags..."></div>
+            <h3 class="prompt-section-title" style="color: #00d2ff; text-align: center; margin-bottom: 20px;">Live
+                <span>Community Prompts</span>
+            </h3>
             <div id="dynamic-prompts"></div>
         </div>
     </section>
 
     <section id="page-pricing" class="page-section">
-        <section class="hero"><h1>Premium <span>Memberships</span></h1><p>Buy for yourself or gift permanent access to a friend!</p></section>
+        <section class="hero">
+            <h1>Premium <span>Memberships</span></h1>
+            <p>Buy for yourself or gift permanent access to a friend!</p>
+        </section>
         <div class="pricing-grid" data-aos="fade-up">
-            <div class="pricing-card"><h3 class="plan-name">Monthly</h3><div class="plan-price">₹499<span>/mo</span></div><ul class="plan-benefits"><li>30 days access</li><li>Upload as Creator</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button><button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Monthly Pass', 499, null, true)">🎁</button></div></div>
-            <div class="pricing-card popular"><h3 class="plan-name" style="color: #fff;">Lifetime</h3><div class="plan-price" style="color: #f5af19;">₹3999<span>/once</span></div><ul class="plan-benefits"><li>Permanent access</li><li>Upload as Creator</li><li>Priority VIP support</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn premium-btn" style="flex: 1;" onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button><button class="submit-btn" style="width: auto; background: #333; color: white; border: 1px solid #f5af19;" onclick="openUPIModal('Lifetime Pass', 3999, null, true)">🎁</button></div></div>
-            <div class="pricing-card"><h3 class="plan-name">Yearly</h3><div class="plan-price">₹2499<span>/yr</span></div><ul class="plan-benefits"><li>365 days access</li><li>Upload as Creator</li></ul><div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;" onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button><button class="submit-btn" style="width: auto; background: #333; color: white;" onclick="openUPIModal('Yearly Pass', 2499, null, true)">🎁</button></div></div>
+            <div class="pricing-card">
+                <h3 class="plan-name">Monthly</h3>
+                <div class="plan-price">₹499<span>/mo</span></div>
+                <ul class="plan-benefits">
+                    <li>30 days access</li>
+                    <li>Upload as Creator</li>
+                </ul>
+                <div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;"
+                        onclick="openUPIModal('Monthly Pass', 499)">Subscribe Now</button><button class="submit-btn"
+                        style="width: auto; background: #333; color: white;"
+                        onclick="openUPIModal('Monthly Pass', 499, null, true)">🎁</button></div>
+            </div>
+            <div class="pricing-card popular">
+                <h3 class="plan-name" style="color: #fff;">Lifetime</h3>
+                <div class="plan-price" style="color: #f5af19;">₹3999<span>/once</span></div>
+                <ul class="plan-benefits">
+                    <li>Permanent access</li>
+                    <li>Upload as Creator</li>
+                    <li>Priority VIP support</li>
+                </ul>
+                <div style="display: flex; gap: 10px;"><button class="submit-btn premium-btn" style="flex: 1;"
+                        onclick="openUPIModal('Lifetime Pass', 3999)">Buy Lifetime</button><button class="submit-btn"
+                        style="width: auto; background: #333; color: white; border: 1px solid #f5af19;"
+                        onclick="openUPIModal('Lifetime Pass', 3999, null, true)">🎁</button></div>
+            </div>
+            <div class="pricing-card">
+                <h3 class="plan-name">Yearly</h3>
+                <div class="plan-price">₹2499<span>/yr</span></div>
+                <ul class="plan-benefits">
+                    <li>365 days access</li>
+                    <li>Upload as Creator</li>
+                </ul>
+                <div style="display: flex; gap: 10px;"><button class="submit-btn" style="flex: 1;"
+                        onclick="openUPIModal('Yearly Pass', 2499)">Subscribe Now</button><button class="submit-btn"
+                        style="width: auto; background: #333; color: white;"
+                        onclick="openUPIModal('Yearly Pass', 2499, null, true)">🎁</button></div>
+            </div>
         </div>
     </section>
 
     <section id="page-login" class="page-section">
         <div class="center-box">
             <h2 id="auth-main-title">Access <span id="login-title-span" style="color:#00d2ff;">Account</span></h2>
-            <div class="auth-toggle" id="auth-toggle"><div class="toggle-bg"></div><button class="active" id="btn-normal" onclick="setAuthMode('normal')">Login</button><button id="btn-premium" onclick="setAuthMode('premium')">Register</button></div>
-            <div class="auth-form-wrapper"><div class="flip-container" id="flip-container"><div class="flip-inner" id="flip-inner-box">
-                <div class="flip-front"><form id="login-form" onsubmit="handleLogin(event)"><div class="form-group"><input type="text" id="log-id" placeholder="Username or Email Address" required></div><div class="form-group"><input type="password" id="log-password" placeholder="Password" required></div><button type="submit" class="submit-btn auth-action-btn">Login</button><p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#" onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot Password?</a></p></form></div>
-                <div class="flip-back">
-                    <form id="register-form" onsubmit="handleRegistration(event)">
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name" placeholder="Full Name" required></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-username" placeholder="Unique Username" required pattern="[a-zA-Z0-9_.]+" title="Only letters, numbers, underscores and dotsallowed"></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email" placeholder="Email Address" required></div>
-                        <div class="form-group" style="margin-bottom: 10px;"><input type="password" id="reg-password" placeholder="Password" required></div>
-                        <button type="submit" id="btn-send-otp" class="submit-btn auth-action-btn">Create Account</button>
-                    </form>
+            <div class="auth-toggle" id="auth-toggle">
+                <div class="toggle-bg"></div><button class="active" id="btn-normal"
+                    onclick="setAuthMode('normal')">Login</button><button id="btn-premium"
+                    onclick="setAuthMode('premium')">Register</button>
+            </div>
+            <div class="auth-form-wrapper">
+                <div class="flip-container" id="flip-container">
+                    <div class="flip-inner" id="flip-inner-box">
+                        <div class="flip-front">
+                            <form id="login-form" onsubmit="handleLogin(event)">
+                                <div class="form-group"><input type="text" id="log-id"
+                                        placeholder="Username or Email Address" required></div>
+                                <div class="form-group">
+                                    <div style="position: relative; width: 100%; margin-bottom: 15px;">
+                                        <input type="password" id="log-password" placeholder="Password" required
+                                            style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; padding-right: 40px; margin-bottom: 0; box-sizing: border-box;">
+                                        <span onclick="togglePasswordVisibility('log-password', this)"
+                                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 1.2rem; user-select: none;">👁️</span>
+                                    </div>
+                                </div><button type="submit" class="submit-btn auth-action-btn">Login</button>
+                                <p style="text-align: right; margin-top: 10px; font-size: 0.8rem;"><a href="#"
+                                        onclick="openResetModal()" style="color: #aaa; text-decoration: none;">Forgot
+                                        Password?</a></p>
+                            </form>
+                        </div>
+                        <div class="flip-back">
+                            <form id="register-form" onsubmit="handleRegistration(event)">
+                                <div class="form-group" style="margin-bottom: 10px;"><input type="text" id="reg-name"
+                                        placeholder="Full Name" required></div>
+                                <div class="form-group" style="margin-bottom: 10px;"><input type="text"
+                                        id="reg-username" placeholder="Unique Username" required
+                                        pattern="[a-zA-Z0-9_.]+"
+                                        title="Only letters, numbers, underscores and dotsallowed"></div>
+                                <div class="form-group" style="margin-bottom: 10px;"><input type="email" id="reg-email"
+                                        placeholder="Email Address" required></div>
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <div style="position: relative; width: 100%; margin-bottom: 15px;">
+                                        <input type="password" id="reg-password" placeholder="Password" required
+                                            style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px; padding-right: 40px; margin-bottom: 0; box-sizing: border-box;">
+                                        <span onclick="togglePasswordVisibility('reg-password', this)"
+                                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #888; font-size: 1.2rem; user-select: none;">👁️</span>
+                                    </div>
+                                </div>
+                                <button type="submit" id="btn-send-otp" class="submit-btn auth-action-btn">Create
+                                    Account</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-            </div></div></div>
+            </div>
         </div>
     </section>
 
     <section id="page-notifications" class="page-section">
-        <div class="center-box" style="max-width: 600px; text-align: left;"><h2 style="color: #00d2ff; margin-bottom: 20px; text-align: center;">Alerts & Updates</h2><div id="notifications-list"></div></div>
+        <div class="center-box" style="max-width: 600px; text-align: left;">
+            <h2 style="color: #00d2ff; margin-bottom: 20px; text-align: center;">Alerts & Updates</h2>
+            <div id="notifications-list"></div>
+        </div>
     </section>
 
     <section id="page-profile" class="page-section">
         <div class="center-box" style="max-width: 800px; position: relative;">
-            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;"><a id="btn-staff-panel" href="/admin" target="_blank" style="display: none; background: transparent; border: 1px solid #f5af19; color: #f5af19; padding: 5px 15px; border-radius: 5px; text-decoration: none; font-size: 0.9rem;">Staff Panel</a><button onclick="handleLogout()" style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button></div>
+            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;"><a id="btn-staff-panel"
+                    href="/admin" target="_blank"
+                    style="display: none; background: transparent; border: 1px solid #f5af19; color: #f5af19; padding: 5px 15px; border-radius: 5px; text-decoration: none; font-size: 0.9rem;">Staff
+                    Panel</a><button onclick="handleLogout()"
+                    style="background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 5px 15px; border-radius: 5px; cursor: pointer;">Logout</button>
+            </div>
             <h2 style="color: #00d2ff; margin-bottom: 30px;">My Profile</h2>
-            <div class="profile-avatar-wrapper"><img id="profile-img" src="" alt="Profile" style="width: 120px; height: 120px; min-width: 120px; min-height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #00d2ff; margin-bottom: 15px; background: #111;"><label for="upload-photo" class="upload-btn">📷 Change Photo</label><input type="file" id="upload-photo" accept="image/*" style="display: none;" onchange="uploadPhoto(event)"></div>
+            <div class="profile-avatar-wrapper"><img id="profile-img" src="" alt="Profile"
+                    style="width: 120px; height: 120px; min-width: 120px; min-height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #00d2ff; margin-bottom: 15px; background: #111;"><label
+                    for="upload-photo" class="upload-btn">📷 Change Photo</label><input type="file" id="upload-photo"
+                    accept="image/*" style="display: none;" onchange="uploadPhoto(event)"></div>
             <div id="profile-status-badge"></div>
-            <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Access: <span></span></p>
-            
-            <div id="verify-email-box" style="display: none; background: rgba(255, 95, 86, 0.1); border: 1px dashed #ff5f56; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 400px; text-align: center;">
-                <p style="color: #ff5f56; font-size: 0.9rem; margin-bottom: 10px;">⚠️ Your email is not verified! You cannot buy codes or comment.</p>
-                <button onclick="sendVerifyOTP()" id="btn-send-verify" class="submit-btn" style="width: auto; padding: 5px 15px; font-size: 0.85rem; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Send Verification OTP</button>
+            <p id="profile-expiry" style="color: #aaa; font-size: 0.85rem; margin-top: 5px; display: none;">Access:
+                <span></span>
+            </p>
+
+            <div id="verify-email-box"
+                style="display: none; background: rgba(255, 95, 86, 0.1); border: 1px dashed #ff5f56; padding: 15px; border-radius: 8px; margin: 15px auto; max-width: 400px; text-align: center;">
+                <p style="color: #ff5f56; font-size: 0.9rem; margin-bottom: 10px;">⚠️ Your email is not verified! You
+                    cannot buy codes or comment.</p>
+                <button onclick="sendVerifyOTP()" id="btn-send-verify" class="submit-btn"
+                    style="width: auto; padding: 5px 15px; font-size: 0.85rem; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Send
+                    Verification OTP</button>
                 <div id="verify-otp-input-box" style="display: none; margin-top: 10px;">
-                    <input type="text" id="prof-verify-otp" placeholder="6-Digit OTP" style="padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; width: 120px; text-align: center; letter-spacing: 2px;">
-                    <button onclick="confirmVerifyOTP()" class="submit-btn premium-btn" style="width: auto; padding: 8px 15px; font-size: 0.85rem; margin-left: 5px;">Verify</button>
+                    <input type="text" id="prof-verify-otp" placeholder="6-Digit OTP"
+                        style="padding: 8px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; width: 120px; text-align: center; letter-spacing: 2px;">
+                    <button onclick="confirmVerifyOTP()" class="submit-btn premium-btn"
+                        style="width: auto; padding: 8px 15px; font-size: 0.85rem; margin-left: 5px;">Verify</button>
                 </div>
             </div>
 
-            <form id="profile-update-form" onsubmit="updateProfileName(event)" style="margin-top: 20px; margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto; text-align: left;">
+            <form id="profile-update-form" onsubmit="updateProfileName(event)"
+                style="margin-top: 20px; margin-bottom: 20px; max-width: 400px; margin-left: auto; margin-right: auto; text-align: left;">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px; display: block;">Email Address</label>
-                    <input type="email" id="prof-email" disabled style="background: rgba(0,0,0,0.2); color: #888; width: 100%; padding: 12px; border: 1px solid #333; border-radius: 5px;">
+                    <label style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px; display: block;">Email
+                        Address</label>
+                    <input type="email" id="prof-email" disabled
+                        style="background: rgba(0,0,0,0.2); color: #888; width: 100%; padding: 12px; border: 1px solid #333; border-radius: 5px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Full Name</label>
-                    <input type="text" id="prof-name" placeholder="Full Name" required style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                    <label style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Full
+                        Name</label>
+                    <input type="text" id="prof-name" placeholder="Full Name" required
+                        style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 5px;">
-                    <label style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Username</label>
-                    <input type="text" id="prof-username" placeholder="Username" required pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores allowed" style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                    <label
+                        style="color: #00d2ff; font-size: 0.85rem; margin-bottom: 5px; display: block;">Username</label>
+                    <input type="text" id="prof-username" placeholder="Username" required pattern="[a-zA-Z0-9_]+"
+                        title="Only letters, numbers, and underscores allowed"
+                        style="width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
-                <p style="font-size: 0.75rem; color: #888; text-align: left; margin-bottom: 15px;">* Username can be changed once every 14 days.</p>
+                <p style="font-size: 0.75rem; color: #888; text-align: left; margin-bottom: 15px;">* Username can be
+                    changed once every 14 days.</p>
                 <button type="submit" class="submit-btn" style="padding: 10px;">Save Changes</button>
             </form>
 
-            <form id="password-change-form" onsubmit="changePassword(event)" style="margin-top: 20px; margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #333;">
-                <h4 style="color: #fff; margin-top: 0; margin-bottom: 15px; text-align: left; font-size: 1rem;">🔒 Change Password</h4>
+            <form id="password-change-form" onsubmit="changePassword(event)"
+                style="margin-top: 20px; margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #333;">
+                <h4 style="color: #fff; margin-top: 0; margin-bottom: 15px; text-align: left; font-size: 1rem;">🔒
+                    Change Password</h4>
                 <div class="form-group" style="margin-bottom: 10px;">
-                    <input type="password" id="cp-old" placeholder="Current Password" required style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                    <input type="password" id="cp-old" placeholder="Current Password" required
+                        style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <input type="password" id="cp-new" placeholder="New Password" required minlength="6" style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
+                    <input type="password" id="cp-new" placeholder="New Password" required minlength="6"
+                        style="width: 100%; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 5px;">
                 </div>
-                <button type="submit" class="submit-btn" style="padding: 8px; background: transparent; border: 1px solid #00d2ff; color: #00d2ff; transition: 0.3s;" onmouseover="this.style.background='#00d2ff'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#00d2ff'">Update Password</button>
+                <button type="submit" class="submit-btn"
+                    style="padding: 8px; background: transparent; border: 1px solid #00d2ff; color: #00d2ff; transition: 0.3s;"
+                    onmouseover="this.style.background='#00d2ff'; this.style.color='#000'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#00d2ff'">Update
+                    Password</button>
             </form>
 
             <div style="border-top: 1px solid #333; padding-top: 20px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <button class="prof-tab-btn active" onclick="switchProfTab('locker')" id="ptab-locker">My Locker</button>
-                    <button class="prof-tab-btn" onclick="switchProfTab('saved')" id="ptab-saved" style="color:#00ff88; border-color:#00ff88;">🔖 Saved Items</button>
-                    <button class="prof-tab-btn" onclick="switchProfTab('support')" id="ptab-support">Support Tickets</button>
-                    <button class="prof-tab-btn" onclick="switchProfTab('creator')" id="ptab-creator" style="border-color: #b06ab3; color: #b06ab3;">Creator Studio</button>
-                    <button class="prof-tab-btn" onclick="switchProfTab('leaderboard')" id="ptab-leaderboard" style="border-color: #f5af19; color: #f5af19;">🏆 Leaderboard</button>
+                    <button class="prof-tab-btn active" onclick="switchProfTab('locker')" id="ptab-locker">My
+                        Locker</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('saved')" id="ptab-saved"
+                        style="color:#00ff88; border-color:#00ff88;">🔖 Saved Items</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('support')" id="ptab-support">Support
+                        Tickets</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('creator')" id="ptab-creator"
+                        style="border-color: #b06ab3; color: #b06ab3;">Creator Studio</button>
+                    <button class="prof-tab-btn" onclick="switchProfTab('leaderboard')" id="ptab-leaderboard"
+                        style="border-color: #f5af19; color: #f5af19;">🏆 Leaderboard</button>
                 </div>
-                
-                <div id="prof-sec-locker" class="prof-section" style="display: block;"><div id="my-purchases-list"><p style="color: #888; font-size: 0.9rem;">Loading...</p></div></div>
-                
+
+                <div id="prof-sec-locker" class="prof-section" style="display: block;">
+                    <div id="my-purchases-list">
+                        <p style="color: #888; font-size: 0.9rem;">Loading...</p>
+                    </div>
+                </div>
+
                 <div id="prof-sec-saved" class="prof-section" style="display: none; text-align: left;">
                     <h3 style="color: #00ff88; margin-bottom: 15px;">My Bookmarks</h3>
-                    <div id="my-saved-list"><p style="color:#888; font-size:0.9rem;">No items saved yet.</p></div>
+                    <div id="my-saved-list">
+                        <p style="color:#888; font-size:0.9rem;">No items saved yet.</p>
+                    </div>
                 </div>
 
                 <div id="prof-sec-support" class="prof-section" style="display: none; text-align: left;">
                     <h3 style="color: #fff; margin-bottom: 15px;">Open a Ticket</h3>
-                    <form onsubmit="submitSupportTicket(event)" style="margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;"><input type="text" id="tick-subject" placeholder="What do you need help with?" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><textarea id="tick-msg" placeholder="Describe the issue..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none;"></textarea><button type="submit" class="submit-btn" style="width: auto; padding: 8px 20px;">Send to Support</button></form>
-                    <h3 style="color: #fff; margin-bottom: 15px;">My Tickets</h3><div id="my-tickets-list"></div>
+                    <form onsubmit="submitSupportTicket(event)"
+                        style="margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                        <input type="text" id="tick-subject" placeholder="What do you need help with?" required
+                            style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><textarea
+                            id="tick-msg" placeholder="Describe the issue..." required
+                            style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none;"></textarea><button
+                            type="submit" class="submit-btn" style="width: auto; padding: 8px 20px;">Send to
+                            Support</button>
+                    </form>
+                    <h3 style="color: #fff; margin-bottom: 15px;">My Tickets</h3>
+                    <div id="my-tickets-list"></div>
                 </div>
-                
+
                 <div id="prof-sec-creator" class="prof-section" style="display: none; text-align: left;">
-                    <div id="creator-lock" style="display: block; text-align: center; padding: 40px; background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; border-radius: 8px;"><h3 style="color: #f5af19; margin-bottom: 10px;">⭐ Premium Access</h3><p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">You must have an active Premium Membership to become a Creator.</p><button class="submit-btn premium-btn" style="width: auto;" onclick="switchPage('pricing')">Upgrade to Premium</button></div>
+                    <div id="creator-lock"
+                        style="display: block; text-align: center; padding: 40px; background: rgba(245, 175, 25, 0.1); border: 1px solid #f5af19; border-radius: 8px;">
+                        <h3 style="color: #f5af19; margin-bottom: 10px;">⭐ Premium Access</h3>
+                        <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">You must have an active Premium
+                            Membership to become a Creator.</p><button class="submit-btn premium-btn"
+                            style="width: auto;" onclick="switchPage('pricing')">Upgrade to Premium</button>
+                    </div>
                     <div id="creator-unlocked" style="display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px;"><div><p style="color: #888; font-size: 0.85rem; margin-bottom: 5px;">Available Balance (80% Cut)</p><h2 style="color: #00ff88; margin: 0;">₹<span id="cr-earnings">0</span></h2></div><button onclick="requestPayout()" style="background: transparent; border: 1px solid #00ff88; color: #00ff88; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">Request Payout</button></div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; background: #111; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <div>
+                                <p style="color: #888; font-size: 0.85rem; margin-bottom: 5px;">Available Balance (80%
+                                    Cut)</p>
+                                <h2 style="color: #00ff88; margin: 0;">₹<span id="cr-earnings">0</span></h2>
+                            </div><button onclick="requestPayout()"
+                                style="background: transparent; border: 1px solid #00ff88; color: #00ff88; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">Request
+                                Payout</button>
+                        </div>
                         <h3 style="color: #00d2ff; margin-bottom: 10px; margin-top: 30px;">📊 My Analytics</h3>
-                        <div style="overflow-x: auto; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                        <div
+                            style="overflow-x: auto; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
                             <table class="stats-table" id="creator-stats-table"></table>
                         </div>
                         <h3 style="color: #b06ab3; margin-bottom: 10px;">Upload Content</h3>
-                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit Free Codes, Premium Codes, or AI Prompts. Staff will review it before it goes live!</p>
-                        <form onsubmit="submitCreatorCode(event)" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;">
-                            <select id="cr-type" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;" onchange="toggleCreatorFields()"><option value="premium">Premium Code (Earn ₹)</option><option value="free">Free Code (Earn 🤍)</option><option value="prompt">AI Prompt</option></select>
-                            <input type="text" id="cr-title" placeholder="Title" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                            <input type="text" id="cr-tags" placeholder="Tags (e.g. React, E-commerce) - Optional" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                            <select id="cr-cat" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><option value="Single Page">Single Page Code</option><option value="Full Website">Full Website (Link)</option></select>
-                            <input type="number" id="cr-price" placeholder="Price to sell at (₹)" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+                        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 20px;">Submit Free Codes, Premium
+                            Codes, or AI Prompts. Staff will review it before it goes live!</p>
+                        <form onsubmit="submitCreatorCode(event)"
+                            style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #b06ab3;">
+                            <select id="cr-type" required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"
+                                onchange="toggleCreatorFields()">
+                                <option value="premium">Premium Code (Earn ₹)</option>
+                                <option value="free">Free Code (Earn 🤍)</option>
+                                <option value="prompt">AI Prompt</option>
+                            </select>
+                            <input type="text" id="cr-title" placeholder="Title" required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <input type="text" id="cr-tags" placeholder="Tags (e.g. React, E-commerce) - Optional"
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                            <select id="cr-cat" required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                                <option value="Single Page">Single Page Code</option>
+                                <option value="Full Website">Full Website (Link)</option>
+                            </select>
+                            <input type="number" id="cr-price" placeholder="Price to sell at (₹)" required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
                                 <label style="color: #00d2ff; font-size: 0.8rem;">Code / Content</label>
-                                <button type="button" onclick="openEditor('cr-code')" style="background: transparent; color: #b06ab3; border: 1px solid #b06ab3; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">⛶ Open Full Editor</button>
+                                <button type="button" onclick="openEditor('cr-code')"
+                                    style="background: transparent; color: #b06ab3; border: 1px solid #b06ab3; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">⛶
+                                    Open Full Editor</button>
                             </div>
-                            <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px; resize: none;"></textarea>
-                            <button type="submit" class="submit-btn" style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button>
+                            <textarea id="cr-code" placeholder="Paste your code or Drive link here..." required
+                                style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 100px; resize: none;"></textarea>
+                            <button type="submit" class="submit-btn"
+                                style="width: 100%; background: #b06ab3; color: white;">Submit for Review</button>
                         </form>
                     </div>
                 </div>
 
                 <div id="prof-sec-leaderboard" class="prof-section" style="display: none; text-align: left;">
                     <h3 style="color: #f5af19; margin-bottom: 15px; text-align: center;">🏆 Top Creators</h3>
-                    <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
-                        <div id="leaderboard-list"><p style="text-align: center; color: #888;">Loading ranks...</p></div>
+                    <div
+                        style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; border: 1px solid #333;">
+                        <div id="leaderboard-list">
+                            <p style="text-align: center; color: #888;">Loading ranks...</p>
+                        </div>
                     </div>
                 </div>
 
@@ -238,55 +616,95 @@
         </div>
     </section>
 
-    <div id="public-prof-modal" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) this.style.display='none'">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center;">
-            <div onclick="document.getElementById('public-prof-modal').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
-            <img id="pub-prof-img" src="" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #00d2ff; margin-bottom: 15px;">
+    <div id="public-prof-modal" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) this.style.display='none'">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center;">
+            <div onclick="document.getElementById('public-prof-modal').style.display='none'"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
+            <img id="pub-prof-img" src=""
+                style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #00d2ff; margin-bottom: 15px;">
             <h2 id="pub-prof-name" style="color: #fff; margin-bottom: 10px;">Name</h2>
-            <div id="pub-prof-badges" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 25px;"></div>
-            <h4 style="color: #00d2ff; text-align: left; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">Published Works</h4>
+            <div id="pub-prof-badges"
+                style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 25px;"></div>
+            <h4
+                style="color: #00d2ff; text-align: left; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">
+                Published Works</h4>
             <div id="pub-prof-codes" style="text-align: left;"></div>
         </div>
     </div>
 
-    <div id="review-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) document.getElementById('review-modal-overlay').style.display='none'">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #f5af19; text-align: left;">
-            <div onclick="document.getElementById('review-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+    <div id="review-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) document.getElementById('review-modal-overlay').style.display='none'">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #f5af19; text-align: left;">
+            <div onclick="document.getElementById('review-modal-overlay').style.display='none'"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
             <h2 style="color: #f5af19; margin-bottom: 20px;">⭐ Community Reviews</h2>
-            <div id="review-list-container" style="margin-bottom: 20px; max-height: 250px; overflow-y: auto; border-bottom: 1px solid #333; padding-bottom: 15px;"></div>
+            <div id="review-list-container"
+                style="margin-bottom: 20px; max-height: 250px; overflow-y: auto; border-bottom: 1px solid #333; padding-bottom: 15px;">
+            </div>
             <h4 style="color: #fff; margin-bottom: 10px;">Leave a Review</h4>
             <form id="review-form" onsubmit="submitReview(event)">
                 <input type="hidden" id="rev-code-id">
-                <select id="rev-rating" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;"><option value="5">⭐⭐⭐⭐⭐ (5/5)</option><option value="4">⭐⭐⭐⭐ (4/5)</option><option value="3">⭐⭐⭐ (3/5)</option><option value="2">⭐⭐ (2/5)</option><option value="1">⭐ (1/5)</option></select>
-                <textarea id="rev-comment" placeholder="What did you think about this code?" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none;"></textarea>
+                <select id="rev-rating" required
+                    style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                    <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                    <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                    <option value="3">⭐⭐⭐ (3/5)</option>
+                    <option value="2">⭐⭐ (2/5)</option>
+                    <option value="1">⭐ (1/5)</option>
+                </select>
+                <textarea id="rev-comment" placeholder="What did you think about this code?" required
+                    style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none;"></textarea>
                 <button type="submit" class="submit-btn premium-btn" style="width: 100%;">Submit Review</button>
             </form>
         </div>
     </div>
 
-    <div id="comment-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) document.getElementById('comment-modal-overlay').style.display='none'">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #00ff88; text-align: left;">
-            <div onclick="document.getElementById('comment-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+    <div id="comment-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) document.getElementById('comment-modal-overlay').style.display='none'">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #00ff88; text-align: left;">
+            <div onclick="document.getElementById('comment-modal-overlay').style.display='none'"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
             <h2 style="color: #00ff88; margin-bottom: 20px;">💬 Community Discussion</h2>
-            <div id="comment-list-container" style="margin-bottom: 20px; max-height: 300px; overflow-y: auto; border-bottom: 1px solid #333; padding-bottom: 15px;"></div>
+            <div id="comment-list-container"
+                style="margin-bottom: 20px; max-height: 300px; overflow-y: auto; border-bottom: 1px solid #333; padding-bottom: 15px;">
+            </div>
             <form onsubmit="submitComment(event)" style="display: flex; gap: 10px;">
                 <input type="hidden" id="com-item-id">
                 <input type="hidden" id="com-item-type">
-                <input type="text" id="com-text" placeholder="Add a comment..." required style="flex: 1; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                <button type="submit" class="submit-btn" style="width: auto; background: #00ff88; color: #000; padding: 10px 20px;">Post</button>
+                <input type="text" id="com-text" placeholder="Add a comment..." required
+                    style="flex: 1; padding: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                <button type="submit" class="submit-btn"
+                    style="width: auto; background: #00ff88; color: #000; padding: 10px 20px;">Post</button>
             </form>
         </div>
     </div>
 
-    <div id="report-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) document.getElementById('report-modal-overlay').style.display='none'">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; border: 1px solid #ff5f56; text-align: left;">
-            <div onclick="document.getElementById('report-modal-overlay').style.display='none'" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+    <div id="report-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) document.getElementById('report-modal-overlay').style.display='none'">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; position: relative; border: 1px solid #ff5f56; text-align: left;">
+            <div onclick="document.getElementById('report-modal-overlay').style.display='none'"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
             <h2 style="color: #ff5f56; margin-bottom: 15px; margin-top: 0;">🚩 Report Content</h2>
-            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Help keep the community safe. Select a reason below.</p>
+            <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Help keep the community safe. Select a
+                reason below.</p>
             <form onsubmit="submitReport(event)">
                 <input type="hidden" id="rep-item-id">
                 <input type="hidden" id="rep-item-type">
-                <select id="rep-reason-type" required style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                <select id="rep-reason-type" required
+                    style="width: 100%; padding: 10px; margin-bottom: 10px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
                     <option value="" disabled selected>Select a reason...</option>
                     <option value="Broken Download Link">Broken Download Link</option>
                     <option value="Stolen / Plagiarized Code">Stolen / Plagiarized Code</option>
@@ -294,60 +712,119 @@
                     <option value="Inappropriate Content">Inappropriate Content</option>
                     <option value="Other">Other (Explain below)</option>
                 </select>
-                <textarea id="rep-reason" placeholder="Additional details (optional)..." style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 60px; resize: none;"></textarea>
-                <input type="url" id="rep-proof" placeholder="Link to proof (e.g. Drive, Imgur) - Optional" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
-                <button type="submit" class="submit-btn" style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Submit Report</button>
+                <textarea id="rep-reason" placeholder="Additional details (optional)..."
+                    style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px; height: 60px; resize: none;"></textarea>
+                <input type="url" id="rep-proof" placeholder="Link to proof (e.g. Drive, Imgur) - Optional"
+                    style="width: 100%; padding: 10px; margin-bottom: 15px; background: #111; color: white; border: 1px solid #444; border-radius: 4px;">
+                <button type="submit" class="submit-btn"
+                    style="width: 100%; background: transparent; border: 1px solid #ff5f56; color: #ff5f56;">Submit
+                    Report</button>
             </form>
         </div>
     </div>
 
-    <div id="upi-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeUPIModal()">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-            <div onclick="closeUPIModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+    <div id="upi-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) closeUPIModal()">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+            <div onclick="closeUPIModal()"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
             <h2 style="color: #00d2ff; margin-bottom: 10px; margin-top: 10px; font-size: 1.6rem;">Secure Checkout</h2>
             <p id="modal-plan-desc" style="color: #ccc; font-size: 0.95rem; margin-bottom: 25px; line-height: 1.4;"></p>
-            
+
             <div class="form-group" id="promo-container" style="margin-bottom: 20px; text-align: left;">
-                <label style="font-size: 0.85rem; color: #b06ab3; font-weight: bold; margin-bottom: 8px; display: block;">🎟️ Promo Code (Optional)</label>
+                <label
+                    style="font-size: 0.85rem; color: #b06ab3; font-weight: bold; margin-bottom: 8px; display: block;">🎟️
+                    Promo Code (Optional)</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="modal-promo" placeholder="Enter Code" style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #b06ab3; color: white; border-radius: 5px; text-transform: uppercase;">
-                    <button type="button" class="submit-btn" style="width: auto; padding: 0 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;" onclick="applyPromo()">Apply</button>
+                    <input type="text" id="modal-promo" placeholder="Enter Code"
+                        style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #b06ab3; color: white; border-radius: 5px; text-transform: uppercase;">
+                    <button type="button" class="submit-btn"
+                        style="width: auto; padding: 0 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3;"
+                        onclick="applyPromo()">Apply</button>
                 </div>
             </div>
 
-            <div style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;"><img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;"></div>
-            <div style="margin-bottom: 25px;"><p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p><a id="upi-mobile-link" href="#" class="submit-btn" style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay via App</a></div>
-            
+            <div
+                style="background: #fff; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+                <img id="upi-qr-code" src="" alt="UPI QR Code" style="width: 180px; height: 180px; display: block;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <p style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Mobile Users:</p><a id="upi-mobile-link"
+                    href="#" class="submit-btn"
+                    style="display: block; text-align: center; text-decoration: none; padding: 12px; font-weight: bold;">Pay
+                    via App</a>
+            </div>
+
             <form onsubmit="submitUPIPayment(event)">
-                <div class="form-group" id="gift-email-container" style="display: none; margin-bottom: 20px; text-align: left; background: rgba(255, 0, 127, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ff007f;"><label style="font-size: 0.9rem; color: #ff007f; font-weight: bold; margin-bottom: 8px; display: block;">🎁 Recipient's Email</label><input type="email" id="modal-gift-email" placeholder="friend@example.com" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;"></div>
-                <div class="form-group" style="margin-bottom: 15px; text-align: left;"><label style="font-size: 0.85rem; color: #00ff88; font-weight: bold; margin-bottom: 8px; display: block;">✅ Your UPI ID</label><input type="text" id="modal-sender-upi" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #00ff88; color: white; border-radius: 5px;"></div>
+                <div class="form-group" id="gift-email-container"
+                    style="display: none; margin-bottom: 20px; text-align: left; background: rgba(255, 0, 127, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ff007f;">
+                    <label
+                        style="font-size: 0.9rem; color: #ff007f; font-weight: bold; margin-bottom: 8px; display: block;">🎁
+                        Recipient's Email</label><input type="email" id="modal-gift-email"
+                        placeholder="friend@example.com"
+                        style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #ff007f; color: white; border-radius: 5px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: left;"><label
+                        style="font-size: 0.85rem; color: #00ff88; font-weight: bold; margin-bottom: 8px; display: block;">✅
+                        Your UPI ID</label><input type="text" id="modal-sender-upi" required
+                        style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #00ff88; color: white; border-radius: 5px;">
+                </div>
                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Click ONLY after payment completes.</p>
-                <button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 5px;">I have completed the payment</button>
+                <button type="submit" class="submit-btn premium-btn"
+                    style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 5px;">I have completed the
+                    payment</button>
             </form>
         </div>
     </div>
 
-    <div id="reset-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);" onclick="if(event.target === this) closeResetModal()">
-        <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-            <div onclick="closeResetModal()" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">✕</div>
+    <div id="reset-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);"
+        onclick="if(event.target === this) closeResetModal()">
+        <div
+            style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid #333; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+            <div onclick="closeResetModal()"
+                style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem;">
+                ✕</div>
             <h2 style="color: #00d2ff; margin-bottom: 20px; margin-top: 10px; font-size: 1.6rem;">Reset Password</h2>
-            <form id="request-code-form" onsubmit="handleRequestCode(event)"><input type="email" id="reset-email" placeholder="Email Address" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 20px;"><button type="submit" class="submit-btn" style="width: 100%; padding: 12px;">Send Code</button></form>
-            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text" id="reset-code" placeholder="6-Digit Code" required style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input type="password" id="reset-new-password" placeholder="New Password" required style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px;">Update Password</button></form>
+            <form id="request-code-form" onsubmit="handleRequestCode(event)"><input type="email" id="reset-email"
+                    placeholder="Email Address" required
+                    style="width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 5px; margin-bottom: 20px;"><button
+                    type="submit" class="submit-btn" style="width: 100%; padding: 12px;">Send Code</button></form>
+            <form id="verify-code-form" onsubmit="handleResetPassword(event)" style="display: none;"><input type="text"
+                    id="reset-code" placeholder="6-Digit Code" required
+                    style="width: 100%; padding: 12px; margin-bottom: 15px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><input
+                    type="password" id="reset-new-password" placeholder="New Password" required
+                    style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #333; border-radius: 5px;"><button
+                    type="submit" class="submit-btn premium-btn" style="width: 100%; padding: 12px;">Update
+                    Password</button></form>
         </div>
     </div>
-    
-    <div id="editor-modal-overlay" class="upi-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-        <div style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+
+    <div id="editor-modal-overlay" class="upi-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div
+            style="background: #121212; padding: 25px; border-radius: 12px; width: 90%; max-width: 800px; border: 1px solid #00d2ff; position: relative; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
             <h3 style="color: #00d2ff; margin-top: 0; margin-bottom: 15px;">⛶ Full Screen Editor</h3>
-            <textarea id="global-editor-textarea" style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; outline: none; margin-bottom: 15px; resize: none;"></textarea>
+            <textarea id="global-editor-textarea"
+                style="width: 100%; height: 60vh; background: #1e1e1e; color: #dcdcaa; border: 1px solid #333; border-radius: 8px; padding: 15px; font-family: monospace; outline: none; margin-bottom: 15px; resize: none;"></textarea>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="submit-btn" style="width: auto; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px;" onclick="closeEditor()">Cancel</button>
-                <button type="button" class="submit-btn" style="width: auto; background: #00d2ff; color: #000; padding: 10px 20px; font-weight: bold;" onclick="saveEditor()">Save & Close</button>
+                <button type="button" class="submit-btn"
+                    style="width: auto; background: transparent; border: 1px solid #ff5f56; color: #ff5f56; padding: 10px 20px;"
+                    onclick="closeEditor()">Cancel</button>
+                <button type="button" class="submit-btn"
+                    style="width: auto; background: #00d2ff; color: #000; padding: 10px 20px; font-weight: bold;"
+                    onclick="saveEditor()">Save & Close</button>
             </div>
         </div>
     </div>
 
-    <footer><p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank" style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p></footer>
+    <footer>
+        <p>Designed & Developed by <a href="https://instagram.com/mayank.code.ai" target="_blank"
+                style="color: #00d2ff; text-decoration: none;">@mayank.code.ai</a></p>
+    </footer>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}?v=sprint3"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
@@ -366,4 +843,5 @@
         }
     </script>
 </body>
+
 </html>

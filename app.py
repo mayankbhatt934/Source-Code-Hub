@@ -817,5 +817,40 @@ def admin_add_prompt():
     db.session.commit()
     return jsonify({"message": "Prompt published successfully!"}), 200
 
+@app.route('/admin/broadcast', methods=['POST'])
+def admin_broadcast():
+    try:
+        data = request.json
+        target = data.get('target') # Should be 'all' or a specific email
+        title = data.get('title')
+        message = data.get('message')
+
+        if not title or not message:
+            return jsonify({"success": False, "error": "Title and message are required"}), 400
+
+        # Broadcast to EVERY user
+        if target == 'all':
+            users = User.query.all()
+            for user in users:
+                notif = Notification(email=user.email, title=title, message=message)
+                db.session.add(notif)
+        
+        # Send to a SPECIFIC user
+        else:
+            user = User.query.filter_by(email=target).first()
+            if not user:
+                return jsonify({"success": False, "error": "User email not found in database."}), 404
+                
+            notif = Notification(email=target, title=title, message=message)
+            db.session.add(notif)
+            
+        db.session.commit()
+        return jsonify({"success": True, "message": "Broadcast dispatched successfully!"})
+        
+    except Exception as e:
+        db.session.rollback()
+        print("BROADCAST ERROR:", str(e)) # This will print the exact error in your VS Code terminal
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == '__main__': 
     app.run(debug=True)

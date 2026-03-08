@@ -1,147 +1,138 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-import string, random
 
 db = SQLAlchemy()
-
-def generate_ref_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    username_last_changed = db.Column(db.DateTime, nullable=True) 
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
-    is_verified = db.Column(db.Boolean, default=False) 
+    username = db.Column(db.String(50), unique=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     is_premium = db.Column(db.Boolean, default=False)
     premium_expiry = db.Column(db.DateTime, nullable=True)
-    profile_photo = db.Column(db.Text, nullable=True)
+    role = db.Column(db.String(20), default='member') # member, staff, admin, owner
     is_banned = db.Column(db.Boolean, default=False)
     ban_expiry = db.Column(db.DateTime, nullable=True)
-    role = db.Column(db.String(20), default='member') 
-    is_friend = db.Column(db.Boolean, default=False)
-    referral_code = db.Column(db.String(10), unique=True, default=generate_ref_code)
+    is_verified = db.Column(db.Boolean, default=False)
+    profile_photo = db.Column(db.Text, nullable=True)
     earnings = db.Column(db.Integer, default=0)
-
-class EmailOTP(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    otp = db.Column(db.String(6), nullable=False)
-    expiry = db.Column(db.DateTime, nullable=False)
-
-class PayoutRequest(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    amount = db.Column(db.Integer, nullable=False)
-    upi_id = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.String(20), default='Pending')
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    username_last_changed = db.Column(db.DateTime, nullable=True)
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    sender_upi = db.Column(db.String(100))
-    amount = db.Column(db.Integer)
-    plan = db.Column(db.String(50))
+    email = db.Column(db.String(120), nullable=False)
+    sender_upi = db.Column(db.String(100), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    plan = db.Column(db.String(50), nullable=False)
     code_id = db.Column(db.Integer, nullable=True)
-    status = db.Column(db.String(50), default='Pending')
     is_gift = db.Column(db.Boolean, default=False)
-    gift_recipient_email = db.Column(db.String(100), nullable=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-
-class UserCodePurchase(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    code_id = db.Column(db.Integer, nullable=False)
-
-class Notification(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False) 
-    title = db.Column(db.String(150), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    is_read = db.Column(db.Boolean, default=False)
-
-class SiteAnalytics(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    page_views = db.Column(db.Integer, default=0)
-    last_broadcast_time = db.Column(db.DateTime, nullable=True) # NEW: Universal Server Cooldown
-
-class PasswordReset(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    code = db.Column(db.String(10), nullable=False)
-    expiry = db.Column(db.DateTime, nullable=False)
+    gift_recipient_email = db.Column(db.String(120), nullable=True)
+    status = db.Column(db.String(20), default='Pending')
+    date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class FreeCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50))
+    tags = db.Column(db.String(200))
     code = db.Column(db.Text, nullable=False)
+    creator_email = db.Column(db.String(120), default='admin')
     views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
-    creator_email = db.Column(db.String(100), default='admin')
-    is_approved = db.Column(db.Boolean, default=True)
-    tags = db.Column(db.String(200), default="")
+    is_approved = db.Column(db.Boolean, default=False)
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)
 
 class PremiumCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50))
+    tags = db.Column(db.String(200))
     price = db.Column(db.Integer, nullable=False)
     code = db.Column(db.Text, nullable=False)
+    creator_email = db.Column(db.String(120), default='admin')
     views = db.Column(db.Integer, default=0)
     likes = db.Column(db.Integer, default=0)
-    creator_email = db.Column(db.String(100), default='admin')
-    is_approved = db.Column(db.Boolean, default=True)
-    tags = db.Column(db.String(200), default="")
+    is_approved = db.Column(db.Boolean, default=False)
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)
 
-class CodeLike(db.Model):
+class AIPrompt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    code_type = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    tags = db.Column(db.String(200))
+    prompt_text = db.Column(db.Text, nullable=False)
+    creator_email = db.Column(db.String(120), default='admin')
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    is_approved = db.Column(db.Boolean, default=False)
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserCodePurchase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
     code_id = db.Column(db.Integer, nullable=False)
+    date_purchased = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SupportTicket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
-    subject = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     admin_reply = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), default='Open')
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
 
-class AIPrompt(db.Model):
+class PasswordReset(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(150), nullable=False)
-    prompt_text = db.Column(db.Text, nullable=False)
-    creator_email = db.Column(db.String(100), default='admin')
-    is_approved = db.Column(db.Boolean, default=True)
-    tags = db.Column(db.String(200), default="")
+    email = db.Column(db.String(120), nullable=False)
+    code = db.Column(db.String(10), nullable=False)
+    expiry = db.Column(db.DateTime, nullable=False)
+
+class SiteAnalytics(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page_views = db.Column(db.Integer, default=0)
+
+class CodeLike(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False) 
+    item_id = db.Column(db.Integer, nullable=False)
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
     code_id = db.Column(db.Integer, nullable=False)
+    user_email = db.Column(db.String(120), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.Text, nullable=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    comment = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Bookmark(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
     item_type = db.Column(db.String(20), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
     item_type = db.Column(db.String(20), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
+    user_email = db.Column(db.String(120), nullable=False)
     text = db.Column(db.Text, nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class EmailOTP(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    otp = db.Column(db.String(10), nullable=False)
+    expiry = db.Column(db.DateTime, nullable=False)
 
 class SystemConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -149,18 +140,26 @@ class SystemConfig(db.Model):
 
 class PromoCode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(50), unique=True, nullable=False)
-    discount = db.Column(db.Integer, nullable=False)
-    limit = db.Column(db.Integer, default=0)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    discount = db.Column(db.Integer, nullable=False) 
+    limit = db.Column(db.Integer, default=0) 
     uses = db.Column(db.Integer, default=0)
 
 class PlatformReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     reporter_email = db.Column(db.String(120), nullable=False)
-    item_type = db.Column(db.String(50), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
-    reason = db.Column(db.String(500), nullable=False)
-    proof = db.Column(db.String(500), nullable=True) # Added Proof
-    admin_reply = db.Column(db.String(500), nullable=True) # Added Admin Reply
-    status = db.Column(db.String(50), default='Open')
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    reason = db.Column(db.Text, nullable=False)
+    proof = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), default='Open')
+    admin_reply = db.Column(db.Text, nullable=True)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PayoutRequest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    upi_id = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), default='Pending')
+    date = db.Column(db.DateTime, default=datetime.utcnow)

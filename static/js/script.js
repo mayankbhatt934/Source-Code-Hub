@@ -353,14 +353,20 @@ window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loa
 setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 5000);
 setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 10000);
 
-// --- PASSWORD VISIBILITY TOGGLE ---
-function togglePasswordVisibility(inputId, iconElement) {
+// --- PASSWORD VISIBILITY TOGGLE (BOXICONS) ---
+function togglePasswordVisibility(inputId, iconId) {
     const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    
     if (input.type === "password") {
         input.type = "text";
-        iconElement.innerText = "🙈"; // Monkey covering eyes when password is shown
+        // Change icon to 'show'
+        icon.classList.remove('bx-hide');
+        icon.classList.add('bx-show');
     } else {
         input.type = "password";
-        iconElement.innerText = "👁️"; // Open eye when password is hidden
+        // Change icon back to 'hide'
+        icon.classList.remove('bx-show');
+        icon.classList.add('bx-hide');
     }
 }

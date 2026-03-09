@@ -1176,7 +1176,6 @@
             element.classList.add('active');
         }
 
-        // ORIGINAL LOGIC REMAINS EXACTLY THE SAME BELOW
         let currentEditorTarget = "";
         function openEditor(targetId) { currentEditorTarget = targetId; document.getElementById('global-editor-textarea').value = document.getElementById(targetId).value; document.getElementById('editor-modal-overlay').style.display = 'flex'; }
         function closeEditor() { document.getElementById('editor-modal-overlay').style.display = 'none'; currentEditorTarget = ""; }
@@ -1188,38 +1187,39 @@
         document.getElementById('notif-target').addEventListener('change', function () { document.getElementById('notif-email').style.display = this.value === 'specific' ? 'block' : 'none'; document.getElementById('notif-email').required = this.value === 'specific'; });
 
         function checkBroadcastCooldown() { const cooldownEnd = localStorage.getItem('broadcastCooldown'); if (cooldownEnd) { const now = new Date().getTime(); if (now < cooldownEnd) { startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000)); } else { localStorage.removeItem('broadcastCooldown'); } } }
+        
+        // 1. FIXED TIMER: Saves to LocalStorage so F5 reload doesn't bypass the cooldown
         function startBroadcastTimer(seconds) {
-    const btn = document.getElementById('btn-broadcast'); 
-    if (!btn) return;
-    
-    // Save the exact time the cooldown will end to local storage
-    const expiryTime = new Date().getTime() + (seconds * 1000);
-    localStorage.setItem('broadcastCooldown', expiryTime);
+            const btn = document.getElementById('btn-broadcast'); 
+            if (!btn) return;
+            
+            const expiryTime = new Date().getTime() + (seconds * 1000);
+            localStorage.setItem('broadcastCooldown', expiryTime);
 
-    btn.disabled = true; 
-    btn.style.background = "rgba(255,255,255,0.1)"; 
-    btn.style.color = "#888"; 
-    btn.style.cursor = "not-allowed";
-    let timeLeft = seconds; 
-    btn.innerText = `Cooldown: ${timeLeft}s`;
-    
-    if (window.broadcastInterval) clearInterval(window.broadcastInterval);
-    
-    window.broadcastInterval = setInterval(() => { 
-        timeLeft--; 
-        if (timeLeft <= 0) { 
-            clearInterval(window.broadcastInterval); 
-            btn.disabled = false; 
-            btn.innerText = "Send Global Alert"; 
-            btn.style.background = ""; 
-            btn.style.color = ""; 
-            btn.style.cursor = "pointer"; 
-            localStorage.removeItem('broadcastCooldown'); // Clear storage when done
-        } else { 
-            btn.innerText = `Cooldown: ${timeLeft}s`; 
-        } 
-    }, 1000);
-}
+            btn.disabled = true; 
+            btn.style.background = "rgba(255,255,255,0.1)"; 
+            btn.style.color = "#888"; 
+            btn.style.cursor = "not-allowed";
+            let timeLeft = seconds; 
+            btn.innerText = `Cooldown: ${timeLeft}s`;
+            
+            if (window.broadcastInterval) clearInterval(window.broadcastInterval);
+            
+            window.broadcastInterval = setInterval(() => { 
+                timeLeft--; 
+                if (timeLeft <= 0) { 
+                    clearInterval(window.broadcastInterval); 
+                    btn.disabled = false; 
+                    btn.innerText = "Send Global Alert"; 
+                    btn.style.background = ""; 
+                    btn.style.color = ""; 
+                    btn.style.cursor = "pointer"; 
+                    localStorage.removeItem('broadcastCooldown');
+                } else { 
+                    btn.innerText = `Cooldown: ${timeLeft}s`; 
+                } 
+            }, 1000);
+        }
 
         async function toggleMaintenance() { const res = await fetch('/admin/toggle-maintenance', { method: 'POST' }); const data = await res.json(); if (res.ok) { document.getElementById('btn-maintenance').style.background = data.mode ? '#ff5f56' : 'transparent'; document.getElementById('btn-maintenance').style.color = data.mode ? '#fff' : '#ff5f56'; document.getElementById('btn-maintenance').innerText = data.mode ? 'Disable Maintenance' : 'Enable Maintenance'; document.getElementById('maintenance-status').innerText = data.mode ? 'STATUS: ACTIVE 🔴' : 'STATUS: OFFLINE 🟢'; document.getElementById('maintenance-status').style.color = data.mode ? '#ff5f56' : '#00ff88'; } }
         async function createPromo(e) { e.preventDefault(); await fetch('/admin/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: document.getElementById('promo-code').value, discount: document.getElementById('promo-discount').value, limit: document.getElementById('promo-limit').value }) }); e.target.reset(); loadAdminData(); }
@@ -1299,40 +1299,41 @@
         async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
         async function unbanUser(email) { if (!confirm(`Unban ${email}?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
         async function submitRoleUpdate(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing..."; const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked }; const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change"; }
-       async function submitAdminNotification(e) { 
-    e.preventDefault(); 
-    const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value; 
-    const btn = document.getElementById('btn-broadcast'); 
-    btn.disabled = true; 
-    btn.innerText = "Sending..."; 
-    
-    try { 
-        const res = await fetch('/admin/broadcast', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) 
-        }); 
         
-        const data = await res.json(); 
-        
-        if (res.ok) { 
-            alert("Broadcast Sent!"); 
-            e.target.reset(); 
-            document.getElementById('notif-email').style.display = 'none'; 
+        // 2. FIXED BROADCAST SUBMIT: URL is corrected and NaN bug is fixed
+        async function submitAdminNotification(e) { 
+            e.preventDefault(); 
+            const target = document.getElementById('notif-target').value === 'all' ? 'all' : document.getElementById('notif-email').value; 
+            const btn = document.getElementById('btn-broadcast'); 
+            btn.disabled = true; 
+            btn.innerText = "Sending..."; 
             
-            // THE FIX: Default to 120 seconds if data.cooldown is missing
-            startBroadcastTimer(data.cooldown || 120); 
-        } else { 
-            alert("Error: " + (data.error || "Failed to send")); 
-            if (data.cooldown) { startBroadcastTimer(data.cooldown); } 
-            else { btn.disabled = false; btn.innerText = "Send Global Alert"; } 
-        } 
-    } catch (err) { 
-        alert("Network Error!"); 
-        btn.disabled = false; 
-        btn.innerText = "Send Global Alert"; 
-    } 
-}
+            try { 
+                const res = await fetch('/admin/broadcast', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ target: target, title: document.getElementById('notif-title').value, message: document.getElementById('notif-message').value }) 
+                }); 
+                
+                const data = await res.json(); 
+                
+                if (res.ok) { 
+                    alert("Broadcast Sent!"); 
+                    e.target.reset(); 
+                    document.getElementById('notif-email').style.display = 'none'; 
+                    startBroadcastTimer(data.cooldown || 60); 
+                } else { 
+                    alert("Error: " + (data.error || "Failed to send")); 
+                    if (data.cooldown) { startBroadcastTimer(data.cooldown); } 
+                    else { btn.disabled = false; btn.innerText = "Send Global Alert"; } 
+                } 
+            } catch (err) { 
+                alert("Network Error!"); 
+                btn.disabled = false; 
+                btn.innerText = "Send Global Alert"; 
+            } 
+        }
+
         async function replyTicket(id) { const msg = document.getElementById(`reply-${id}`).value; await fetch('/admin/reply-ticket', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id, reply: msg }) }); loadAdminData(); }
 
         async function actionReport(id, actionType) {

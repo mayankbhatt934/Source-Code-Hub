@@ -4,6 +4,11 @@ import smtplib
 import string
 import urllib.request
 import json
+import time
+
+# Global variable to track the last broadcast
+last_broadcast_time = 0
+
 from email.mime.text import MIMEText
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask_cors import CORS
@@ -18,8 +23,8 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 
-# ALLOW NEXT.JS TO TALK TO PYTHON AND SHARE COOKIES (Legacy Support)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+# ALLOW CROSS-ORIGIN REQUESTS FOR LOCAL AND PRODUCTION
+CORS(app, supports_credentials=True)
 
 app.secret_key = 'super_secret_key_change_this_later' 
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
@@ -75,7 +80,7 @@ def check_admin_access():
 @app.before_request
 def check_maintenance():
     session.permanent = True 
-    if request.endpoint in ['static', 'admin_dashboard', 'admin_data', 'toggle_maintenance', 'admin_logout', 'login', 'force_db_reset', 'api_admin_login']:
+    if request.endpoint in ['static', 'admin_dashboard', 'admin_data', 'toggle_maintenance', 'admin_logout', 'login', 'force_db_reset', 'api_admin_login', 'init_admin']:
         return
     try:
         conf = SystemConfig.query.first()
@@ -819,38 +824,58 @@ def admin_add_prompt():
 
 @app.route('/admin/broadcast', methods=['POST'])
 def admin_broadcast():
+    global last_broadcast_time
+    
+    # 1. SERVER-SIDE COOLDOWN CHECK
+    current_time = time.time()
+    time_passed = current_time - last_broadcast_time
+    if time_passed < 60:
+        remaining = int(60 - time_passed)
+        return jsonify({"success": False, "error": f"Please wait {remaining} more seconds.", "cooldown": remaining}), 429
+
     try:
         data = request.json
-        target = data.get('target') # Should be 'all' or a specific email
+        target = data.get('target')
         title = data.get('title')
         message = data.get('message')
 
         if not title or not message:
-            return jsonify({"success": False, "error": "Title and message are required"}), 400
+            return jsonify({"success": False, "error": "Title and message required"}), 400
 
-        # Broadcast to EVERY user
         if target == 'all':
             users = User.query.all()
             for user in users:
                 notif = Notification(email=user.email, title=title, message=message)
                 db.session.add(notif)
-        
-        # Send to a SPECIFIC user
         else:
             user = User.query.filter_by(email=target).first()
             if not user:
-                return jsonify({"success": False, "error": "User email not found in database."}), 404
-                
+                return jsonify({"success": False, "error": "User not found."}), 404
             notif = Notification(email=target, title=title, message=message)
             db.session.add(notif)
             
         db.session.commit()
-        return jsonify({"success": True, "message": "Broadcast dispatched successfully!"})
+        
+        # 2. RECORD THE TIME OF THIS SUCCESSFUL BROADCAST
+        last_broadcast_time = time.time() 
+        
+        return jsonify({"success": True, "message": "Broadcast sent!", "cooldown": 60})
         
     except Exception as e:
         db.session.rollback()
-        print("BROADCAST ERROR:", str(e)) # This will print the exact error in your VS Code terminal
         return jsonify({"success": False, "error": str(e)}), 500
+
+# NEW: Quick route to instantly reclaim your Owner status after a DB Reset
+@app.route('/init-admin')
+def init_admin():
+    # Looks for the email you registered with and forcefully upgrades it
+    user = User.query.filter_by(email='mayankbhatt934@gmail.com').first()
+    if user:
+        user.role = 'owner'
+        user.is_verified = True
+        db.session.commit()
+        return "SUCCESS! You are now the Owner. Please return to the Admin Panel and login."
+    return "User not found. Please register an account on the main website first!"
 
 if __name__ == '__main__': 
     app.run(debug=True)

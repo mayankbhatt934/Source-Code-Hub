@@ -851,7 +851,7 @@ def admin_gift():
             db.session.add(Notification(
                 email=user.email, 
                 title="🎁 You received a Gift!", 
-                message=f"The Admin has granted you a free {gift_value}!"
+                message=f"The Admin has granted you a free {gift_value}! Please reload your web page to see the changes."
             ))
 
         elif gift_type == 'code':

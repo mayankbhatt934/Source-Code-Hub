@@ -446,7 +446,7 @@ function renderCodes(containerId, codes, type) {
     `).join('');
 }
 
-// 2. THE MISSING VIEW DETAILS FUNCTION
+// 2. THE FIXED VIEW DETAILS FUNCTION
 function viewCode(id, type) {
     // Find the item in our global storage
     let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
@@ -465,13 +465,20 @@ function viewCode(id, type) {
     
     // Check if it's premium to trigger the UPI Payment modal, or Free to just copy/view the code
     const actionBtn = isPremium 
-        ? `<button onclick="openUPIModal('${item.title}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`
+        ? `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`
         : `<button onclick="copyFreeCode(${item.id}, this)" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00d2ff, #3a7bd5);">Copy Source Code</button>`;
 
-    // Generate the Modal HTML
+    // Generate the Modal HTML (Removed data-aos and added a custom animation)
     const modalHtml = `
         <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
-            <div data-aos="zoom-in" style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8);">
+            <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
+                <style>
+                    @keyframes customPopIn { 
+                        from { opacity: 0; transform: scale(0.9); } 
+                        to { opacity: 1; transform: scale(1); } 
+                    }
+                </style>
+                
                 <div onclick="document.getElementById('dynamic-code-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
                 
                 <span class="badge" style="background: ${isPremium ? 'rgba(245,175,25,0.1)' : 'rgba(0,210,255,0.1)'}; color: ${themeColor}; border: 1px solid ${themeColor}; padding: 4px 10px; margin-bottom: 15px; display: inline-block;">${item.category}</span>

@@ -438,22 +438,51 @@ def interact_item():
     if not user: return jsonify({"error": "Please log in first!"}), 401
 
     try:
-        # 2. LIKE ACTION
-        if action == 'like':
-            obj.likes = getattr(obj, 'likes', 0) + 1
-            db.session.commit()
-            return jsonify({"status": "success", "count": obj.likes})
+        # 2. LIKE & DISLIKE ACTION (1-Time Toggle System)
+        if action in ['like', 'dislike']:
+            # Ensure attributes exist safely
+            if not hasattr(obj, 'likes'): obj.likes = 0
+            if not hasattr(obj, 'dislikes'): obj.dislikes = 0
+
+            like_key = f"liked_{item_type}_{item_id}"
+            dislike_key = f"disliked_{item_type}_{item_id}"
             
-        # 3. DISLIKE ACTION (Failsafes if 'dislikes' column isn't in models.py yet)
-        elif action == 'dislike':
-            try:
-                obj.dislikes = getattr(obj, 'dislikes', 0) + 1
-            except AttributeError:
-                pass 
-            db.session.commit()
-            return jsonify({"status": "success", "count": getattr(obj, 'dislikes', 0)})
+            if action == 'like':
+                if session.get(like_key):
+                    # User clicked Like again (UNLIKE)
+                    session[like_key] = False
+                    obj.likes = max(0, obj.likes - 1)
+                else:
+                    # User clicked LIKE
+                    session[like_key] = True
+                    obj.likes += 1
+                    # Remove their dislike if they had one
+                    if session.get(dislike_key):
+                        session[dislike_key] = False
+                        obj.dislikes = max(0, obj.dislikes - 1)
+                        
+            elif action == 'dislike':
+                if session.get(dislike_key):
+                    # User clicked Dislike again (UNDISLIKE)
+                    session[dislike_key] = False
+                    obj.dislikes = max(0, obj.dislikes - 1)
+                else:
+                    # User clicked DISLIKE
+                    session[dislike_key] = True
+                    obj.dislikes += 1
+                    # Remove their like if they had one
+                    if session.get(like_key):
+                        session[like_key] = False
+                        obj.likes = max(0, obj.likes - 1)
             
-        # 4. SAVE/BOOKMARK ACTION
+            db.session.commit()
+            return jsonify({
+                "status": "success", 
+                "likes": obj.likes, 
+                "dislikes": obj.dislikes
+            })
+            
+        # 3. SAVE/BOOKMARK ACTION
         elif action == 'save':
             existing = Bookmark.query.filter_by(email=user.email, item_type=item_type, item_id=item_id).first()
             if existing:

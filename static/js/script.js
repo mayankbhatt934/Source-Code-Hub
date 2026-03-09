@@ -437,15 +437,12 @@ function renderCodes(containerId, codes, type) {
             </div>
             
             <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Published by: <span style="color: #fff;">${c.creator}</span></p>
-            <div style="margin-bottom: 20px;">
-                ${c.tags ? c.tags.split(',').map(t => `<span class="tag-badge" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; display: inline-block;">#${t.trim()}</span>`).join('') : ''}
-            </div>
             
             <button class="${btnClass}" onclick="viewCode(${c.id}, '${type}'); toggleAction(${c.id}, '${type}', 'view');" style="width: 100%; padding: 12px; margin-bottom: 15px;">View Details</button>
             
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem;">
                 <div style="display: flex; gap: 15px;">
-                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-eye"></i> <span id="view-${type}-${c.id}" style="font-size:0.9rem">${c.views || 0}</span></span>
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show"></i> <span id="view-${type}-${c.id}" style="font-size:0.9rem">${c.views || 0}</span></span>
                     <span title="Like" onclick="toggleAction(${c.id}, '${type}', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-${type}-${c.id}" style="font-size:0.9rem">${c.likes || 0}</span></span>
                     <span title="Dislike" onclick="toggleAction(${c.id}, '${type}', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-${type}-${c.id}" style="font-size:0.9rem">${c.dislikes || 0}</span></span>
                     <span title="Comments" onclick="openComments(${c.id}, '${type}')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
@@ -482,7 +479,7 @@ function renderPrompts(prompts) {
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem;">
                 <div style="display: flex; gap: 15px;">
-                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-eye"></i> <span id="view-prompt-${p.id}" style="font-size:0.9rem">${p.views || 0}</span></span>
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show"></i> <span id="view-prompt-${p.id}" style="font-size:0.9rem">${p.views || 0}</span></span>
                     <span title="Like" onclick="toggleAction(${p.id}, 'prompt', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-prompt-${p.id}" style="font-size:0.9rem">${p.likes || 0}</span></span>
                     <span title="Dislike" onclick="toggleAction(${p.id}, 'prompt', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-prompt-${p.id}" style="font-size:0.9rem">${p.dislikes || 0}</span></span>
                     <span title="Comments" onclick="openComments(${p.id}, 'prompt')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
@@ -497,10 +494,79 @@ function renderPrompts(prompts) {
     `).join('');
 }
 
-// ==========================================
-// GLOBAL ENGAGEMENT FUNCTIONS
-// ==========================================
+async function viewCode(id, type) {
+    let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
+    if (!item) { alert("Error: Details not found."); return; }
 
+    const oldModal = document.getElementById('dynamic-code-modal');
+    if (oldModal) oldModal.remove();
+
+    const isPremium = type === 'premium';
+    const themeColor = isPremium ? '#f5af19' : '#00d2ff';
+    
+    let userOwnsCode = type === 'free'; 
+    if (isPremium) {
+        try {
+            const checkRes = await fetch('/api/my-purchases');
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.is_premium === true || (checkData.codes && checkData.codes.some(c => c.id === id))) {
+                    userOwnsCode = true; 
+                }
+            }
+        } catch (err) {}
+    }
+
+    const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const codeDisplayHtml = userOwnsCode 
+        ? `<div style="background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 20px; max-height: 250px; overflow-y: auto; text-align: left; position: relative;">
+               <div style="position: sticky; top: 0; background: #1a1a1a; color: #888; font-size: 0.7rem; margin-top: -15px; margin-left: -15px; margin-right: -15px; padding: 5px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; text-transform: uppercase;">Source Code</div>
+               <pre style="margin: 0; color: #00d2ff; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word;">${safeCode}</pre>
+           </div>`
+        : `<div style="background: rgba(0,0,0,0.5); border: 1px dashed ${themeColor}; border-radius: 8px; padding: 40px 15px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden;">
+               <div style="filter: blur(5px); opacity: 0.3; color: #aaa; font-family: monospace; font-size: 0.85rem; text-align: left;">
+                   // Premium Snippet<br>function executeSuperCode() {<br>&nbsp;&nbsp;return "Hidden Magic";<br>}<br>...
+               </div>
+               <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: ${themeColor}; font-weight: bold; font-size: 1.1rem; width: 100%;">
+                   🔒 Premium Content Locked
+               </div>
+           </div>`;
+
+    const actionBtn = userOwnsCode 
+        ? `<button onclick="copyFreeCode(${item.id}, this, '${type}')" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00ff88, #00cc66); color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">Copy Code to Clipboard 📋</button>`
+        : `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`;
+
+    const modalHtml = `
+        <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
+            <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
+                <style>
+                    @keyframes customPopIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+                    #dynamic-code-modal div::-webkit-scrollbar { width: 6px; }
+                    #dynamic-code-modal div::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+                </style>
+                <div onclick="document.getElementById('dynamic-code-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
+                <span class="badge" style="background: ${isPremium ? 'rgba(245,175,25,0.1)' : 'rgba(0,210,255,0.1)'}; color: ${themeColor}; border: 1px solid ${themeColor}; padding: 4px 10px; margin-bottom: 15px; display: inline-block;">${item.category}</span>
+                <h2 style="color: ${themeColor}; margin-top: 0; margin-bottom: 10px; font-size: 1.8rem;">${item.title}</h2>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Published by: <span style="color: #fff; font-weight: bold;">${item.creator}</span></p>
+                
+                <div style="display: flex; justify-content: space-around; align-items: center; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; color: #888; font-size: 1.3rem;">
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show"></i> <span id="modal-view" style="font-size:0.9rem">${item.views || 0}</span></span>
+                    <span title="Like" onclick="toggleAction(${item.id}, '${type}', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="modal-like" style="font-size:0.9rem">${item.likes || 0}</span></span>
+                    <span title="Dislike" onclick="toggleAction(${item.id}, '${type}', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="modal-dislike" style="font-size:0.9rem">${item.dislikes || 0}</span></span>
+                    <span title="Comments" onclick="openComments(${item.id}, '${type}')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
+                    <span title="Save for Later" onclick="toggleAction(${item.id}, '${type}', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
+                </div>
+                
+                ${codeDisplayHtml}
+                ${actionBtn}
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// DYNAMIC ACTION TOGGLER (Updates numbers instantly)
 async function toggleAction(id, type, action) {
     try {
         const res = await fetch('/api/interact', {
@@ -513,15 +579,29 @@ async function toggleAction(id, type, action) {
         if (res.status === 401) { alert("Please log in to use this feature!"); return; }
         if (!res.ok) return;
 
-        // Instantly update UI numbers based on the backend response
-        if (action === 'like') document.getElementById(`like-${type}-${id}`).innerText = data.count;
-        if (action === 'dislike') document.getElementById(`dislike-${type}-${id}`).innerText = data.count;
-        if (action === 'view') document.getElementById(`view-${type}-${id}`).innerText = data.count;
+        // Instantly update UI counters without reloading the page
+        if (action === 'like' || action === 'dislike') {
+            const likeEl = document.getElementById(`like-${type}-${id}`);
+            const dislikeEl = document.getElementById(`dislike-${type}-${id}`);
+            if(likeEl) likeEl.innerText = data.likes;
+            if(dislikeEl) dislikeEl.innerText = data.dislikes;
+            
+            // Also update inside the modal if it's open
+            const modalLike = document.getElementById(`modal-like`);
+            const modalDislike = document.getElementById(`modal-dislike`);
+            if(modalLike) modalLike.innerText = data.likes;
+            if(modalDislike) modalDislike.innerText = data.dislikes;
+        }
+        if (action === 'view') {
+            const viewEl = document.getElementById(`view-${type}-${id}`);
+            const modalViewEl = document.getElementById(`modal-view`);
+            if(viewEl) viewEl.innerText = data.count;
+            if(modalViewEl) modalViewEl.innerText = data.count;
+        }
         if (action === 'save') alert(data.message);
         
     } catch(e) { console.error("Action failed", e); }
 }
-
 function shareItem(type, id) {
     const url = `${window.location.origin}/code/${type}/${id}`; 
     navigator.clipboard.writeText(url).then(() => alert("🔗 Magic Link copied to clipboard!"));

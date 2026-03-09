@@ -975,5 +975,46 @@ def init_admin():
         return "SUCCESS! You are now the Owner. Please return to the Admin Panel and login."
     return "User not found. Please register an account on the main website first!"
 
+@app.route('/create-superuser')
+def create_superuser():
+    test_email = "test@superuser.com"
+    test_password = "test"
+    
+    # Check if the account already exists
+    user = User.query.filter_by(email=test_email).first()
+    
+    if not user:
+        # Create a brand new user if it doesn't exist
+        user = User(
+            name="Super Tester",
+            username="test_god",
+            email=test_email,
+            password=generate_password_hash(test_password, method='pbkdf2:sha256'),
+            is_verified=True
+        )
+        db.session.add(user)
+    
+    # Force max upgrade every time this URL is visited
+    user.role = 'owner'
+    user.is_premium = True
+    user.premium_expiry = None  # Lifetime access
+    user.is_verified = True
+    user.earnings = 50000       # Give some test money in the wallet
+    setattr(user, 'is_friend', True) # Give the special friend badge
+
+    db.session.commit()
+    
+    return f"""
+    <h1 style='color: #00ff88; background: #111; padding: 20px; font-family: sans-serif;'>
+        ✅ SUPERUSER CREATED SUCCESSFULLY!
+    </h1>
+    <h3 style='font-family: sans-serif;'>You can now log into the main website and admin panel with:</h3>
+    <ul style='font-family: sans-serif; font-size: 1.2rem;'>
+        <li><b>Email:</b> {test_email}</li>
+        <li><b>Password:</b> {test_password}</li>
+    </ul>
+    <p><i>(Remember to delete this route from app.py before sharing your site with the public!)</i></p>
+    """
+
 if __name__ == '__main__': 
     app.run(debug=True)

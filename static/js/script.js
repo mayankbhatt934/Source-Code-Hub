@@ -435,15 +435,164 @@ function renderCodes(containerId, codes, type) {
                     ? `<span class="badge" style="background: rgba(245,175,25,0.1); color: #f5af19; border: 1px solid #f5af19; padding: 5px 12px; border-radius: 20px; font-weight: bold;">₹${c.price}</span>` 
                     : `<span class="badge" style="background: rgba(0,210,255,0.1); color: #00d2ff; border: 1px solid #00d2ff; padding: 5px 12px; border-radius: 20px; font-weight: bold;">FREE</span>`}
             </div>
+            
             <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Published by: <span style="color: #fff;">${c.creator}</span></p>
             <div style="margin-bottom: 20px;">
                 ${c.tags ? c.tags.split(',').map(t => `<span class="tag-badge" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; display: inline-block;">#${t.trim()}</span>`).join('') : ''}
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="${btnClass}" onclick="viewCode(${c.id}, '${type}')" style="flex: 1; padding: 12px;">View Details</button>
+            
+            <button class="${btnClass}" onclick="viewCode(${c.id}, '${type}'); toggleAction(${c.id}, '${type}', 'view');" style="width: 100%; padding: 12px; margin-bottom: 15px;">View Details</button>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem;">
+                <div style="display: flex; gap: 15px;">
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-eye"></i> <span id="view-${type}-${c.id}" style="font-size:0.9rem">${c.views || 0}</span></span>
+                    <span title="Like" onclick="toggleAction(${c.id}, '${type}', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-${type}-${c.id}" style="font-size:0.9rem">${c.likes || 0}</span></span>
+                    <span title="Dislike" onclick="toggleAction(${c.id}, '${type}', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-${type}-${c.id}" style="font-size:0.9rem">${c.dislikes || 0}</span></span>
+                    <span title="Comments" onclick="openComments(${c.id}, '${type}')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <span title="Share Link" onclick="shareItem('${type}', ${c.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-send"></i></span>
+                    <span title="Save for Later" onclick="toggleAction(${c.id}, '${type}', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
+                    <span title="Report Content" onclick="reportContentAction(${c.id}, '${type}')" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag-alt"></i></span>
+                </div>
             </div>
         </div>
     `).join('');
+}
+
+function renderPrompts(prompts) {
+    const container = document.getElementById('dynamic-prompts');
+    if (!container) return;
+
+    if (prompts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 40px; grid-column: 1/-1;">No AI prompts available yet.</p>';
+        return;
+    }
+
+    container.innerHTML = prompts.map(p => `
+        <div class="prompt-card" data-aos="fade-up" style="padding: 25px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid #b06ab3; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <h3 style="margin-top: 0; color: #b06ab3; font-size: 1.3rem; margin-bottom: 10px;">${p.title}</h3>
+            <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; position: relative;">
+                <pre style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${p.prompt_text}</pre>
+                <button onclick="copyToClipboard(this, \`${p.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`); toggleAction(${p.id}, 'prompt', 'view');" 
+                    style="position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s;">
+                    Copy
+                </button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem;">
+                <div style="display: flex; gap: 15px;">
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-eye"></i> <span id="view-prompt-${p.id}" style="font-size:0.9rem">${p.views || 0}</span></span>
+                    <span title="Like" onclick="toggleAction(${p.id}, 'prompt', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-prompt-${p.id}" style="font-size:0.9rem">${p.likes || 0}</span></span>
+                    <span title="Dislike" onclick="toggleAction(${p.id}, 'prompt', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-prompt-${p.id}" style="font-size:0.9rem">${p.dislikes || 0}</span></span>
+                    <span title="Comments" onclick="openComments(${p.id}, 'prompt')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
+                </div>
+                <div style="display: flex; gap: 15px;">
+                    <span title="Share Link" onclick="shareItem('prompt', ${p.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-send"></i></span>
+                    <span title="Save for Later" onclick="toggleAction(${p.id}, 'prompt', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
+                    <span title="Report Content" onclick="reportContentAction(${p.id}, 'prompt')" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag-alt"></i></span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ==========================================
+// GLOBAL ENGAGEMENT FUNCTIONS
+// ==========================================
+
+async function toggleAction(id, type, action) {
+    try {
+        const res = await fetch('/api/interact', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id, type, action})
+        });
+        const data = await res.json();
+        
+        if (res.status === 401) { alert("Please log in to use this feature!"); return; }
+        if (!res.ok) return;
+
+        // Instantly update UI numbers based on the backend response
+        if (action === 'like') document.getElementById(`like-${type}-${id}`).innerText = data.count;
+        if (action === 'dislike') document.getElementById(`dislike-${type}-${id}`).innerText = data.count;
+        if (action === 'view') document.getElementById(`view-${type}-${id}`).innerText = data.count;
+        if (action === 'save') alert(data.message);
+        
+    } catch(e) { console.error("Action failed", e); }
+}
+
+function shareItem(type, id) {
+    const url = `${window.location.origin}/code/${type}/${id}`; 
+    navigator.clipboard.writeText(url).then(() => alert("🔗 Magic Link copied to clipboard!"));
+}
+
+async function reportContentAction(id, type) {
+    const reason = prompt("Why are you reporting this content?");
+    if (!reason) return;
+    
+    await fetch('/api/report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: id, type: type, reason: reason})
+    });
+    alert("🚩 Report submitted to the Staff Team.");
+}
+
+async function openComments(id, type) {
+    // Inject the Glass Comment Modal
+    const modalHtml = `
+    <div id="comment-modal" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:999999; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(8px);" onclick="if(event.target === this) this.remove()">
+        <div style="background:#121212; padding:25px; border-radius:15px; width:90%; max-width:450px; border:1px solid #00d2ff; box-shadow:0 10px 40px rgba(0,0,0,0.8); position:relative;">
+            <div onclick="document.getElementById('comment-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; background: rgba(255,255,255,0.1); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">✕</div>
+            <h3 style="color:#00d2ff; margin-top:0; font-size:1.5rem;"><i class='bx bx-message-circle-detail'></i> Community Chat</h3>
+            <div id="comment-list" style="max-height:300px; overflow-y:auto; margin-bottom:20px; color:#aaa; font-size:0.9rem; padding-right:10px;">
+                <p style="text-align:center;">Loading...</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="new-comment-text" placeholder="Add a comment..." style="flex:1; padding:12px; border-radius:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:white; outline:none;">
+                <button onclick="submitComment(${id}, '${type}')" style="background:linear-gradient(90deg, #00d2ff, #3a7bd5); border:none; padding:0 20px; border-radius:8px; color:#fff; cursor:pointer; font-size:1.2rem;"><i class='bx bx-send'></i></button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Fetch live comments
+    const res = await fetch(`/api/comments?type=${type}&id=${id}`);
+    const comments = await res.json();
+    const listDiv = document.getElementById('comment-list');
+    
+    if (comments.length === 0) {
+        listDiv.innerHTML = '<p style="text-align:center; padding: 20px;">Be the first to comment!</p>';
+    } else {
+        listDiv.innerHTML = comments.map(c => `
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; margin-bottom:10px;">
+                <strong style="color:#fff; font-size:0.85rem;">@${c.user}</strong> <span style="color:#666; font-size:0.75rem; float:right;">${c.date}</span>
+                <p style="margin:5px 0 0 0; color:#ddd; font-size:0.95rem;">${c.text}</p>
+            </div>
+        `).join('');
+    }
+}
+
+async function submitComment(id, type) {
+    const input = document.getElementById('new-comment-text');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id, type, text})
+    });
+    
+    if(res.status === 401) {
+        alert("Please log in to chat!");
+        document.getElementById('comment-modal').remove();
+    } else if (res.ok) {
+        input.value = '';
+        document.getElementById('comment-modal').remove();
+        openComments(id, type); // Reload modal to show new comment
+    }
 }
 
 // 2. THE SMART VIEW DETAILS FUNCTION (With Built-in Code Viewer)

@@ -407,6 +407,94 @@ def submit_report():
     
     return jsonify({"status": "success"})
 
+
+# ===============================================
+# --- NEW ENGAGEMENT ROUTES (Views, Likes, Comments) ---
+# ===============================================
+
+@app.route('/api/interact', methods=['POST'])
+def interact_item():
+    user = get_current_user()
+    data = request.json
+    item_id = data.get('id')
+    item_type = data.get('type')
+    action = data.get('action')
+
+    # Find the target item
+    obj = None
+    if item_type == 'free': obj = FreeCode.query.get(item_id)
+    elif item_type == 'premium': obj = PremiumCode.query.get(item_id)
+    elif item_type == 'prompt': obj = AIPrompt.query.get(item_id)
+    
+    if not obj: return jsonify({"error": "Item not found"}), 404
+
+    # 1. VIEW ACTION (No login required)
+    if action == 'view':
+        obj.views = getattr(obj, 'views', 0) + 1
+        db.session.commit()
+        return jsonify({"status": "success", "count": obj.views})
+
+    # ALL ACTIONS BELOW REQUIRE LOGIN
+    if not user: return jsonify({"error": "Please log in first!"}), 401
+
+    try:
+        # 2. LIKE ACTION
+        if action == 'like':
+            obj.likes = getattr(obj, 'likes', 0) + 1
+            db.session.commit()
+            return jsonify({"status": "success", "count": obj.likes})
+            
+        # 3. DISLIKE ACTION (Failsafes if 'dislikes' column isn't in models.py yet)
+        elif action == 'dislike':
+            try:
+                obj.dislikes = getattr(obj, 'dislikes', 0) + 1
+            except AttributeError:
+                pass 
+            db.session.commit()
+            return jsonify({"status": "success", "count": getattr(obj, 'dislikes', 0)})
+            
+        # 4. SAVE/BOOKMARK ACTION
+        elif action == 'save':
+            existing = Bookmark.query.filter_by(email=user.email, item_type=item_type, item_id=item_id).first()
+            if existing:
+                db.session.delete(existing)
+                msg = "Removed from Saved Items! ❌"
+            else:
+                db.session.add(Bookmark(email=user.email, item_type=item_type, item_id=item_id))
+                msg = "Saved to Bookmarks! 💾"
+            db.session.commit()
+            return jsonify({"status": "success", "message": msg})
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+        
+    return jsonify({"error": "Invalid action"}), 400
+
+@app.route('/api/comments', methods=['GET', 'POST'])
+def handle_comments():
+    # Fetch Comments
+    if request.method == 'GET':
+        item_type = request.args.get('type')
+        item_id = request.args.get('id')
+        comments = Comment.query.filter_by(item_type=item_type, item_id=item_id).order_by(Comment.date_created.desc()).all()
+        return jsonify([{"user": c.email.split('@')[0], "text": getattr(c, 'text', getattr(c, 'content', '')), "date": c.date_created.strftime('%b %d')} for c in comments])
+    
+    # Post Comment
+    user = get_current_user()
+    if not user: return jsonify({"error": "Login required"}), 401
+    
+    data = request.json
+    # Uses kwargs to safely map 'text' or 'content' depending on your models.py schema
+    new_comment = Comment(email=user.email, item_type=data.get('type'), item_id=data.get('id'))
+    if hasattr(new_comment, 'text'): new_comment.text = data.get('text')
+    elif hasattr(new_comment, 'content'): new_comment.content = data.get('text')
+    
+    db.session.add(new_comment)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+
 @app.route('/api/my-purchases', methods=['GET'])
 def my_purchases():
     user = get_current_user()
@@ -964,6 +1052,7 @@ def admin_update_role():
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 # NEW: Quick route to instantly reclaim your Owner status after a DB Reset
 @app.route('/init-admin')
 def init_admin():

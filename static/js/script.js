@@ -259,7 +259,6 @@ async function loadLeaderboard() {
 function openReviewModal(codeId) { document.getElementById('rev-code-id').value = codeId; const code = currentGlobalContent.premium_codes.find(c => c.id === codeId); const listContainer = document.getElementById('review-list-container'); if (code && code.reviews.length > 0) { listContainer.innerHTML = code.reviews.map(r => `<div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;"><strong style="color:#f5af19;">${'⭐'.repeat(r.rating)}</strong> <span style="color:#aaa; font-size:0.8rem;">- ${r.user}</span><p style="margin:5px 0 0 0; color:#fff; font-size:0.9rem;">${r.comment}</p></div>`).join(''); } else { listContainer.innerHTML = '<p style="color:#888; font-size:0.9rem;">No reviews yet. Be the first!</p>'; } document.getElementById('review-modal-overlay').style.display = 'flex'; }
 async function submitReview(e) { e.preventDefault(); if (!isLoggedIn) { alert("Please login first!"); return; } const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/submit-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code_id: document.getElementById('rev-code-id').value, rating: document.getElementById('rev-rating').value, comment: document.getElementById('rev-comment').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); document.getElementById('review-modal-overlay').style.display = 'none'; e.target.reset(); loadDynamicContent(); } else { alert("Error: " + (data.error || data.message)); } } catch (err) {} btn.innerText = "Submit Review"; }
 
-
 function openPromptModal(title, text) { document.getElementById('modal-prompt-title').innerText = title; document.getElementById('modal-prompt-text').innerText = text; currentModalPromptText = text; document.getElementById('prompt-modal-overlay').style.display = 'flex'; }
 function closePromptModal() { document.getElementById('prompt-modal-overlay').style.display = 'none'; }
 function copyFromModal(btnElement) { navigator.clipboard.writeText(currentModalPromptText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
@@ -297,8 +296,17 @@ let currentGlobalContent = { premium_codes: [] };
 let lastContentHash = "";
 window.siteContent = { free: [], premium: [], prompts: [] };
 
-// REVEAL CONTENT FUNCTION (Triggers View Count)
+// THE NEW ACCORDION REVEAL FUNCTION
 function revealContent(id, type) {
+    // 1. Close ALL currently open overlays to keep the screen clean
+    document.querySelectorAll('.code-overlay').forEach(el => el.style.display = 'flex');
+    document.querySelectorAll('.code-content-blurred').forEach(el => {
+        el.style.filter = 'blur(5px)';
+        el.style.userSelect = 'none';
+    });
+    document.querySelectorAll('.copy-reveal-btn').forEach(el => el.style.display = 'none');
+    
+    // 2. Reveal ONLY the specifically clicked item
     const overlay = document.getElementById(`overlay-${type}-${id}`);
     const content = document.getElementById(`content-${type}-${id}`);
     const copyBtn = document.getElementById(`copy-${type}-${id}`);
@@ -310,10 +318,9 @@ function revealContent(id, type) {
     }
     if(copyBtn) copyBtn.style.display = 'inline-block';
     
-    // Trigger the view increment ONLY when revealed
+    // 3. Trigger the view count ONLY when revealed
     toggleAction(id, type, 'view');
 }
-
 
 async function loadDynamicContent() {
     try {
@@ -329,8 +336,11 @@ async function loadDynamicContent() {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items yet.</p>';
             return codes.map((item, index) => {
                 const isLocked = isPremiumSection && !isPremiumUser; const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
-                const mainColor = isPremiumSection ? '#f5af19' : '#00d2ff'; const isFullWebsite = item.category.includes("Full Website");
-                const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                let mainColor = isPremiumSection ? '#f5af19' : '#00d2ff'; 
+                if(typeName === 'prompt') mainColor = '#b06ab3';
+                
+                const isFullWebsite = item.category && item.category.includes("Full Website");
+                const safeCode = item.code ? item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
                 
                 let tagsHTML = ""; 
                 if(item.tags) { 
@@ -340,16 +350,16 @@ async function loadDynamicContent() {
 
                 const num = (index + 1).toString().padStart(2, '0');
 
-                // UNIFIED ACTION BAR WITH BOXICONS (No "Discuss" text)
+                // CLEAN ACTION BAR (MATCHES YOUR SCREENSHOT + COMMENT/REPORT ADDED)
                 const actionBarHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem; margin-top: 15px;">
-                    <div style="display: flex; gap: 15px;">
-                        <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show" style="color: ${mainColor};"></i> <span id="view-${typeName}-${item.id}" style="font-size:0.9rem">${item.views || 0}</span></span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; color: #888; font-size: 1.1rem;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span title="Views" style="display: flex; align-items: center; gap: 5px; color: ${mainColor};"><i class="bx bx-show"></i> <span id="view-${typeName}-${item.id}" style="font-size:0.9rem">${item.views || 0}</span></span>
                         <span title="Like" onclick="toggleAction(${item.id}, '${typeName}', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-${typeName}-${item.id}" style="font-size:0.9rem">${item.likes || 0}</span></span>
                         <span title="Dislike" onclick="toggleAction(${item.id}, '${typeName}', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-${typeName}-${item.id}" style="font-size:0.9rem">${item.dislikes || 0}</span></span>
                         <span title="Comments" onclick="openCommentModal('${typeName}', ${item.id})" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
                     </div>
-                    <div style="display: flex; gap: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
                         <span title="Share Link" onclick="shareItem('${typeName}', ${item.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-send"></i></span>
                         <span title="Save for Later" onclick="toggleAction(${item.id}, '${typeName}', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
                         <span title="Report Content" onclick="openReportModal('${typeName}', ${item.id})" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag-alt"></i></span>
@@ -371,16 +381,16 @@ async function loadDynamicContent() {
                                 </div>
                                 <div style="display: flex; gap: 10px; align-items: center;">
                                     <span style="color: #aaa; font-size: 0.85rem; display: flex; align-items: center; margin-right: 10px;">By <b style="color: #fff; margin-left: 4px;">${item.creator}</b></span>
-                                    <button id="copy-free-${item.id}" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: none; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
+                                    <button id="copy-free-${item.id}" class="copy-reveal-btn" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: none; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
                                 </div>
                             </div>
                             <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
-                                <div id="overlay-free-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
+                                <div id="overlay-free-${item.id}" class="code-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
                                     <button class="submit-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px;" onclick="revealContent(${item.id}, 'free')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Code</button>
                                 </div>
-                                <pre id="content-free-${item.id}" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: blur(5px); user-select: none; transition: 0.3s;">${safeCode}</pre>
+                                <pre id="content-free-${item.id}" class="code-content-blurred" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: blur(5px); user-select: none; transition: 0.3s;">${safeCode}</pre>
                             </div>
-                            <div style="background: #11111a; padding: 0 15px 15px 15px;">
+                            <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
                             </div>
                         </div>
@@ -398,7 +408,9 @@ async function loadDynamicContent() {
                         
                         <div style="${blurStyle}">
                             <button class="submit-btn premium-btn" onclick="viewCode(${item.id}, 'premium'); toggleAction(${item.id}, 'premium', 'view');" style="width: 100%; padding: 12px;">View Details</button>
-                            ${actionBarHTML}
+                            <div style="margin-top: 10px;">
+                                ${actionBarHTML}
+                            </div>
                         </div>
 
                         ${isLocked ? `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
@@ -422,7 +434,9 @@ async function loadDynamicContent() {
                                 <h3 style="color: #fff; margin-bottom: 20px;">Full Website Files</h3>
                                 <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Published by: <span style="color: #fff;">${item.creator}</span></p>
                                 <a href="${isLocked ? '#' : item.code}" target="${isLocked ? '' : '_blank'}" class="submit-btn" style="text-decoration: none; display: inline-block; width: auto; background: ${mainColor}; color: #000;" onclick="toggleAction(${item.id}, '${typeName}', 'view')">Download Files</a>
-                                ${actionBarHTML}
+                                <div style="margin-top: 15px;">
+                                    ${actionBarHTML}
+                                </div>
                             </div>
                             ${isLocked ? `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; width: 90%;"><div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div><h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3><button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Full Site - ${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})">Buy ₹${item.price}</button></div>` : ''}
                         </div>
@@ -449,14 +463,14 @@ async function loadDynamicContent() {
                 }
                 
                 const actionBarHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.3rem; margin-top: 15px;">
-                    <div style="display: flex; gap: 15px;">
-                        <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show" style="color: #b06ab3;"></i> <span id="view-prompt-${item.id}" style="font-size:0.9rem">${item.views || 0}</span></span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; color: #888; font-size: 1.1rem;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span title="Views" style="display: flex; align-items: center; gap: 5px; color: #b06ab3;"><i class="bx bx-show"></i> <span id="view-prompt-${item.id}" style="font-size:0.9rem">${item.views || 0}</span></span>
                         <span title="Like" onclick="toggleAction(${item.id}, 'prompt', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-prompt-${item.id}" style="font-size:0.9rem">${item.likes || 0}</span></span>
                         <span title="Dislike" onclick="toggleAction(${item.id}, 'prompt', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-prompt-${item.id}" style="font-size:0.9rem">${item.dislikes || 0}</span></span>
                         <span title="Comments" onclick="openCommentModal('prompt', ${item.id})" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-message-circle-detail"></i></span>
                     </div>
-                    <div style="display: flex; gap: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
                         <span title="Share Link" onclick="shareItem('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-send"></i></span>
                         <span title="Save for Later" onclick="toggleAction(${item.id}, 'prompt', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
                         <span title="Report Content" onclick="openReportModal('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag-alt"></i></span>
@@ -469,13 +483,15 @@ async function loadDynamicContent() {
                     <div style="margin-bottom:15px;">${tagsHTML}</div>
                     
                     <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; position: relative; min-height: 100px;">
-                        <div id="overlay-prompt-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
+                        <div id="overlay-prompt-${item.id}" class="code-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
                             <button class="submit-btn" style="width: auto; padding: 8px 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3; border-radius: 30px;" onclick="revealContent(${item.id}, 'prompt')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Prompt</button>
                         </div>
-                        <pre id="content-prompt-${item.id}" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: blur(5px); user-select: none; transition: 0.3s;">${item.prompt_text}</pre>
-                        <button id="copy-prompt-${item.id}" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
+                        <pre id="content-prompt-${item.id}" class="code-content-blurred" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: blur(5px); user-select: none; transition: 0.3s;">${item.prompt_text}</pre>
+                        <button id="copy-prompt-${item.id}" class="copy-reveal-btn" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
                     </div>
-                    ${actionBarHTML}
+                    <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        ${actionBarHTML}
+                    </div>
                 </div>`;
             }).join(''); 
         }
@@ -573,6 +589,7 @@ async function toggleAction(id, type, action) {
         }
         if (!res.ok) return;
 
+        // Instantly update UI numbers
         if (action === 'like' || action === 'dislike') {
             const likeEl = document.getElementById(`like-${type}-${id}`);
             const dislikeEl = document.getElementById(`dislike-${type}-${id}`);

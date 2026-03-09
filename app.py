@@ -822,6 +822,60 @@ def admin_add_prompt():
     db.session.commit()
     return jsonify({"message": "Prompt published successfully!"}), 200
 
+@app.route('/admin/gift', methods=['POST'])
+def admin_gift():
+    if not check_admin_access():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    try:
+        data = request.json
+        target_email = data.get('email')
+        gift_type = data.get('type')    # 'membership' or 'code'
+        gift_value = data.get('value')  # 'Lifetime Pass' or the code ID
+
+        user = User.query.filter_by(email=target_email).first()
+        if not user:
+            return jsonify({"error": "User email not found in database!"}), 404
+
+        if gift_type == 'membership':
+            user.is_premium = True
+            if gift_value == 'Weekly Pass': 
+                user.premium_expiry = datetime.utcnow() + timedelta(days=7)
+            elif gift_value == 'Monthly Pass': 
+                user.premium_expiry = datetime.utcnow() + timedelta(days=30)
+            elif gift_value == 'Yearly Pass': 
+                user.premium_expiry = datetime.utcnow() + timedelta(days=365)
+            elif gift_value == 'Lifetime Pass': 
+                user.premium_expiry = None
+            
+            db.session.add(Notification(
+                email=user.email, 
+                title="🎁 You received a Gift!", 
+                message=f"The Admin has granted you a free {gift_value}!"
+            ))
+
+        elif gift_type == 'code':
+            # Grant access to a specific premium code
+            code = PremiumCode.query.get(int(gift_value))
+            if not code:
+                return jsonify({"error": "Premium code not found!"}), 404
+            
+            already_owned = UserCodePurchase.query.filter_by(email=user.email, code_id=code.id).first()
+            if not already_owned:
+                db.session.add(UserCodePurchase(email=user.email, code_id=code.id))
+                db.session.add(Notification(
+                    email=user.email, 
+                    title="🎁 Premium Code Gifted!", 
+                    message=f"The Admin gifted you full access to: {code.title}"
+                ))
+
+        db.session.commit()
+        return jsonify({"success": True, "message": "Gift dispatched successfully!"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/admin/broadcast', methods=['POST'])
 def admin_broadcast():
     global last_broadcast_time

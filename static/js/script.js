@@ -446,8 +446,8 @@ function renderCodes(containerId, codes, type) {
     `).join('');
 }
 
-// 2. THE FIXED VIEW DETAILS FUNCTION
-function viewCode(id, type) {
+// 2. THE SMART VIEW DETAILS FUNCTION (Checks Premium Status)
+async function viewCode(id, type) {
     // Find the item in our global storage
     let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
     
@@ -463,12 +463,30 @@ function viewCode(id, type) {
     const isPremium = type === 'premium';
     const themeColor = isPremium ? '#f5af19' : '#00d2ff';
     
-    // Check if it's premium to trigger the UPI Payment modal, or Free to just copy/view the code
-    const actionBtn = isPremium 
-        ? `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`
-        : `<button onclick="copyFreeCode(${item.id}, this)" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00d2ff, #3a7bd5);">Copy Source Code</button>`;
+    // --- NEW: Check if the user owns this code! ---
+    let userOwnsCode = type === 'free'; // Free codes are always owned
+    
+    if (isPremium) {
+        try {
+            // Ask the backend if the current user has a pass or bought this code
+            const checkRes = await fetch('/api/my-purchases');
+            if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.is_premium === true || (checkData.codes && checkData.codes.some(c => c.id === id))) {
+                    userOwnsCode = true; // VIP access granted!
+                }
+            }
+        } catch (err) {
+            console.log("User not logged in or network error.");
+        }
+    }
 
-    // Generate the Modal HTML (Removed data-aos and added a custom animation)
+    // Generate the correct button based on ownership
+    const actionBtn = userOwnsCode 
+        ? `<button onclick="copyFreeCode(${item.id}, this, '${type}')" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00ff88, #00cc66); color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">Unlock & Copy Code 🔓</button>`
+        : `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`;
+
+    // Generate the Modal HTML
     const modalHtml = `
         <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
             <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
@@ -509,20 +527,25 @@ function viewCode(id, type) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-// 3. Helper to safely copy code without breaking HTML quotes
-function copyFreeCode(id, btn) {
-    const item = window.siteContent.free.find(c => c.id === id);
+// 3. Helper to safely copy code (Updated to support unlocking Premium codes too)
+function copyFreeCode(id, btn, type = 'free') {
+    const item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
     if (!item) return;
 
     navigator.clipboard.writeText(item.code).then(() => {
         const originalText = btn.innerText;
-        btn.innerText = "Code Copied! ✔️";
-        btn.style.background = "#00ff88";
+        btn.innerText = "Code Copied to Clipboard! ✔️";
+        btn.style.background = "#00d2ff";
         btn.style.color = "#000";
         setTimeout(() => {
             btn.innerText = originalText;
-            btn.style.background = "linear-gradient(90deg, #00d2ff, #3a7bd5)";
-            btn.style.color = "#fff";
+            // Return to the green unlocked state or blue free state
+            if (type === 'premium') {
+                btn.style.background = "linear-gradient(90deg, #00ff88, #00cc66)";
+            } else {
+                btn.style.background = "linear-gradient(90deg, #00d2ff, #3a7bd5)";
+                btn.style.color = "#fff";
+            }
         }, 2000);
     });
 }

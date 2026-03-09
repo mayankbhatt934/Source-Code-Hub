@@ -113,8 +113,9 @@ def send_system_email(to_email, subject, body):
 
 @app.route('/force-db-reset')
 def force_db_reset(): 
-    if not session.get('is_admin'):
-        return "ACCESS DENIED. Master Admin authentication required. Please go to /admin and log in with the Owner credentials first.", 403
+    # CHANGED: Now allows the Master Admin OR anyone with the 'owner' role (like your Superuser)
+    if not session.get('is_admin') and get_user_role() != 'owner':
+        return "ACCESS DENIED. Master Admin or Owner authentication required.", 403
     try:
         db.drop_all()
         db.create_all()

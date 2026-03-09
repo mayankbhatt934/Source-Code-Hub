@@ -272,8 +272,8 @@ async function handleResetPassword(e) { e.preventDefault(); try { const res = aw
 window.onload = () => { loadUserProfile().then(() => { loadDynamicContent(); loadLeaderboard(); }); };
 
 setInterval(() => { if (isLoggedIn) { loadNotifications(); } }, 5000);
-// The Auto-refresh is still active to update likes/views, but our new Accordion system protects the open codes!
-setInterval(() => { if (isLoggedIn && !isBannedUser) { loadDynamicContent(); } }, 10000);
+
+// I HAVE REMOVED THE 10-SECOND CONTENT REFRESH SO THE CODES WILL NEVER AUTO HIDE AGAIN!
 
 function togglePasswordVisibility(inputId, iconId) {
     const input = document.getElementById(inputId);
@@ -292,32 +292,15 @@ function togglePasswordVisibility(inputId, iconId) {
 
 
 // ==========================================
-// UNIFIED CONTENT RENDERING ENGINE (ACCORDION & HIDDEN CODE)
+// UNIFIED CONTENT RENDERING ENGINE
 // ==========================================
 
 let currentGlobalContent = { premium_codes: [] };
 let lastContentHash = "";
 window.siteContent = { free: [], premium: [], prompts: [] };
 
-// Memory states to prevent the 10-second auto-refresh from closing your open code
-let currentlyRevealedFree = null;
-let currentlyRevealedPrompt = null;
-
-// THE NEW ACCORDION REVEAL FUNCTION
+// REVEAL FUNCTION: Opens the code, and DOES NOT CLOSE other codes.
 function revealContent(id, type) {
-    // 1. Save state so the 10s auto-refresh doesn't hide it again!
-    if (type === 'free') currentlyRevealedFree = id;
-    if (type === 'prompt') currentlyRevealedPrompt = id;
-
-    // 2. Close ALL currently open overlays FOR THIS TYPE (The Accordion effect)
-    document.querySelectorAll(`.code-overlay-${type}`).forEach(el => el.style.display = 'flex');
-    document.querySelectorAll(`.code-content-blurred-${type}`).forEach(el => {
-        el.style.filter = 'blur(5px)';
-        el.style.userSelect = 'none';
-    });
-    document.querySelectorAll(`.copy-reveal-btn-${type}`).forEach(el => el.style.display = 'none');
-    
-    // 3. Reveal ONLY the specifically clicked item
     const overlay = document.getElementById(`overlay-${type}-${id}`);
     const content = document.getElementById(`content-${type}-${id}`);
     const copyBtn = document.getElementById(`copy-${type}-${id}`);
@@ -329,7 +312,7 @@ function revealContent(id, type) {
     }
     if(copyBtn) copyBtn.style.display = 'inline-block';
     
-    // 4. Trigger the view count ONLY when revealed
+    // Trigger the view count ONLY when revealed
     toggleAction(id, type, 'view');
 }
 
@@ -361,17 +344,7 @@ async function loadDynamicContent() {
 
                 const num = (index + 1).toString().padStart(2, '0');
 
-                // Determine if this specific item should be revealed based on our Accordion memory
-                let isRevealed = false;
-                if (typeName === 'free' && currentlyRevealedFree === item.id) isRevealed = true;
-                if (typeName === 'prompt' && currentlyRevealedPrompt === item.id) isRevealed = true;
-                
-                const overlayDisplay = isRevealed ? 'none' : 'flex';
-                const contentFilter = isRevealed ? 'none' : 'blur(5px)';
-                const contentSelect = isRevealed ? 'auto' : 'none';
-                const copyBtnDisplay = isRevealed ? 'inline-block' : 'none';
-
-                // UNIFIED ACTION BAR WITH UNIVERSAL BOXICONS (Comment and Report fixed!)
+                // UNIFIED ACTION BAR WITH UNIVERSAL BOXICONS (Comment correctly using bx-chat)
                 const actionBarHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; color: #888; font-size: 1.1rem;">
                     <div style="display: flex; gap: 15px; align-items: center;">
@@ -388,7 +361,7 @@ async function loadDynamicContent() {
                 </div>`;
 
                 if (!isPremiumSection && !isFullWebsite) {
-                    // FREE CODE MAC OS UI (Hidden Code System + Memory Sync)
+                    // FREE CODE MAC OS UI (Hidden Code System)
                     return `
                     <div class="code-wrapper" data-tags="${item.tags}" style="margin-bottom: 30px;" data-aos="fade-up">
                         <h3 style="color: #00d2ff; margin-bottom: 5px;">${num}. ${item.title}</h3>
@@ -402,14 +375,14 @@ async function loadDynamicContent() {
                                 </div>
                                 <div style="display: flex; gap: 10px; align-items: center;">
                                     <span style="color: #aaa; font-size: 0.85rem; display: flex; align-items: center; margin-right: 10px;">By <b style="color: #fff; margin-left: 4px;">${item.creator}</b></span>
-                                    <button id="copy-free-${item.id}" class="copy-reveal-btn-free" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: ${copyBtnDisplay}; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
+                                    <button id="copy-free-${item.id}" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: none; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
                                 </div>
                             </div>
                             <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
-                                <div id="overlay-free-${item.id}" class="code-overlay-free" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
+                                <div id="overlay-free-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
                                     <button class="submit-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px;" onclick="revealContent(${item.id}, 'free')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Code</button>
                                 </div>
-                                <pre id="content-free-${item.id}" class="code-content-blurred-free" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s;">${safeCode}</pre>
+                                <pre id="content-free-${item.id}" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: blur(5px); user-select: none; transition: 0.3s;">${safeCode}</pre>
                             </div>
                             <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
@@ -498,23 +471,17 @@ async function loadDynamicContent() {
                     </div>
                 </div>`;
 
-                let isRevealed = (currentlyRevealedPrompt === item.id);
-                const overlayDisplay = isRevealed ? 'none' : 'flex';
-                const contentFilter = isRevealed ? 'none' : 'blur(5px)';
-                const contentSelect = isRevealed ? 'auto' : 'none';
-                const copyBtnDisplay = isRevealed ? 'inline-block' : 'none';
-
-                // PROMPT UI (Hidden Text System + Memory Sync)
+                // PROMPT UI (Hidden Text System)
                 return `<div class="prompt-box" data-tags="${item.tags}" data-aos="fade-up" style="background: rgba(0,0,0,0.4); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid #b06ab3; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <h3 style="margin-top: 0; color: #b06ab3; font-size: 1.3rem; margin-bottom: 10px;">${item.title}</h3>
                     <div style="margin-bottom:15px;">${tagsHTML}</div>
                     
                     <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; position: relative; min-height: 100px;">
-                        <div id="overlay-prompt-${item.id}" class="code-overlay-prompt" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
+                        <div id="overlay-prompt-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
                             <button class="submit-btn" style="width: auto; padding: 8px 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3; border-radius: 30px;" onclick="revealContent(${item.id}, 'prompt')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Prompt</button>
                         </div>
-                        <pre id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s;">${item.prompt_text}</pre>
-                        <button id="copy-prompt-${item.id}" class="copy-reveal-btn-prompt" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: ${copyBtnDisplay}; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
+                        <pre id="content-prompt-${item.id}" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: blur(5px); user-select: none; transition: 0.3s;">${item.prompt_text}</pre>
+                        <button id="copy-prompt-${item.id}" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
                     </div>
                     <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                         ${actionBarHTML}

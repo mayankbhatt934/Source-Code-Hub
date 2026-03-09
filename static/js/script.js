@@ -33,14 +33,14 @@ function switchProfTab(tab) {
     if(tab === 'leaderboard') loadLeaderboard();
 }
 
-function copyMainCode(elementId, btnElement, type, codeId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); toggleAction(codeId, type, 'view'); }
+function copyMainCode(elementId, btnElement, type, codeId) { navigator.clipboard.writeText(document.getElementById(elementId).innerText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
 function copyPrompt(btn, text) { navigator.clipboard.writeText(text); const originalText = btn.innerText; btn.innerText = "Copied!"; btn.style.background = "#00ff88"; btn.style.color = "#000"; setTimeout(() => { btn.innerText = originalText; btn.style.background = ""; btn.style.color = ""; }, 2000); }
 
 function filterCodes(type) { 
     const query = document.getElementById(`search-${type}`).value.toLowerCase(); 
     ['single', 'full'].forEach(tab => { 
         document.querySelectorAll(`#${type}-${tab}-content .code-wrapper`).forEach(el => { 
-            const title = el.querySelector('.code-title span').innerText.toLowerCase(); 
+            const title = el.querySelector('.code-title span') ? el.querySelector('.code-title span').innerText.toLowerCase() : el.querySelector('h3').innerText.toLowerCase(); 
             const tagsText = el.getAttribute('data-tags') ? el.getAttribute('data-tags').toLowerCase() : "";
             el.style.display = (title.includes(query) || tagsText.includes(query)) ? 'block' : 'none'; 
         }); 
@@ -257,10 +257,6 @@ async function loadLeaderboard() {
     } catch(e) {}
 }
 
-function openReviewModal(codeId) { document.getElementById('rev-code-id').value = codeId; const code = currentGlobalContent.premium_codes.find(c => c.id === codeId); const listContainer = document.getElementById('review-list-container'); if (code && code.reviews.length > 0) { listContainer.innerHTML = code.reviews.map(r => `<div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:5px;"><strong style="color:#f5af19;">${'⭐'.repeat(r.rating)}</strong> <span style="color:#aaa; font-size:0.8rem;">- ${r.user}</span><p style="margin:5px 0 0 0; color:#fff; font-size:0.9rem;">${r.comment}</p></div>`).join(''); } else { listContainer.innerHTML = '<p style="color:#888; font-size:0.9rem;">No reviews yet. Be the first!</p>'; } document.getElementById('review-modal-overlay').style.display = 'flex'; }
-async function submitReview(e) { e.preventDefault(); if (!isLoggedIn) { alert("Please login first!"); return; } const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; try { const res = await fetch('/api/submit-review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code_id: document.getElementById('rev-code-id').value, rating: document.getElementById('rev-rating').value, comment: document.getElementById('rev-comment').value }) }); const data = await res.json(); if (res.ok) { alert(data.message); document.getElementById('review-modal-overlay').style.display = 'none'; e.target.reset(); loadDynamicContent(); } else { alert("Error: " + (data.error || data.message)); } } catch (err) {} btn.innerText = "Submit Review"; }
-
-
 function openPromptModal(title, text) { document.getElementById('modal-prompt-title').innerText = title; document.getElementById('modal-prompt-text').innerText = text; currentModalPromptText = text; document.getElementById('prompt-modal-overlay').style.display = 'flex'; }
 function closePromptModal() { document.getElementById('prompt-modal-overlay').style.display = 'none'; }
 function copyFromModal(btnElement) { navigator.clipboard.writeText(currentModalPromptText); const originalText = btnElement.innerText; btnElement.innerText = "Copied!"; btnElement.style.background = "#00ff88"; btnElement.style.color = "#000"; setTimeout(() => { btnElement.innerText = originalText; btnElement.style.background = ""; btnElement.style.color = ""; }, 2000); }
@@ -292,15 +288,34 @@ function togglePasswordVisibility(inputId, iconId) {
 
 
 // ==========================================
-// UNIFIED CONTENT RENDERING ENGINE
+// UNIFIED CONTENT RENDERING ENGINE (ACCORDION & HIDDEN CODE)
 // ==========================================
 
 let currentGlobalContent = { premium_codes: [] };
 let lastContentHash = "";
 window.siteContent = { free: [], premium: [], prompts: [] };
 
-// REVEAL FUNCTION: Opens the code, and DOES NOT CLOSE other codes.
+// Memory states to prevent the 10-second auto-refresh from closing your open code
+let currentlyRevealedFree = null;
+let currentlyRevealedPrompt = null;
+let currentlyRevealedPremium = null;
+
+// THE NEW ACCORDION REVEAL FUNCTION
 function revealContent(id, type) {
+    // 1. Save state so the page remembers what is open
+    if (type === 'free') currentlyRevealedFree = id;
+    if (type === 'prompt') currentlyRevealedPrompt = id;
+    if (type === 'premium') currentlyRevealedPremium = id;
+
+    // 2. Close ALL currently open overlays FOR THIS TYPE (The Accordion effect)
+    document.querySelectorAll(`.code-overlay-${type}`).forEach(el => el.style.display = 'flex');
+    document.querySelectorAll(`.code-content-blurred-${type}`).forEach(el => {
+        el.style.filter = 'blur(5px)';
+        el.style.userSelect = 'none';
+    });
+    document.querySelectorAll(`.copy-reveal-btn-${type}`).forEach(el => el.style.display = 'none');
+    
+    // 3. Reveal ONLY the specifically clicked item
     const overlay = document.getElementById(`overlay-${type}-${id}`);
     const content = document.getElementById(`content-${type}-${id}`);
     const copyBtn = document.getElementById(`copy-${type}-${id}`);
@@ -312,12 +327,23 @@ function revealContent(id, type) {
     }
     if(copyBtn) copyBtn.style.display = 'inline-block';
     
-    // Trigger the view count ONLY when revealed
+    // 4. Trigger the view count ONLY when revealed
     toggleAction(id, type, 'view');
 }
 
 async function loadDynamicContent() {
     try {
+        let purchasedCodeIds = [];
+        if (isLoggedIn && !isPremiumUser) {
+            try {
+                const pRes = await fetch('/api/my-purchases');
+                if (pRes.ok) {
+                    const pData = await pRes.json();
+                    purchasedCodeIds = pData.codes.map(c => c.id);
+                }
+            } catch(e) {}
+        }
+
         const res = await fetch('/api/content'); if (!res.ok) return; 
         const rawText = await res.text(); if (rawText === lastContentHash) return; lastContentHash = rawText;
         const data = JSON.parse(rawText); currentGlobalContent = data; 
@@ -329,7 +355,8 @@ async function loadDynamicContent() {
         const generateCodeHTML = (codes, isPremiumSection = false, typeName) => {
             if (codes.length === 0) return '<p style="text-align: center; color: #888;">No items yet.</p>';
             return codes.map((item, index) => {
-                const isLocked = isPremiumSection && !isPremiumUser; const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
+                
+                const isLocked = isPremiumSection && !isPremiumUser && !purchasedCodeIds.includes(item.id); 
                 let mainColor = isPremiumSection ? '#f5af19' : '#00d2ff'; 
                 if(typeName === 'prompt') mainColor = '#b06ab3';
                 
@@ -344,7 +371,17 @@ async function loadDynamicContent() {
 
                 const num = (index + 1).toString().padStart(2, '0');
 
-                // UNIFIED ACTION BAR WITH UNIVERSAL BOXICONS (Comment correctly using bx-chat)
+                let isRevealed = false;
+                if (typeName === 'free' && currentlyRevealedFree === item.id) isRevealed = true;
+                if (typeName === 'prompt' && currentlyRevealedPrompt === item.id) isRevealed = true;
+                if (typeName === 'premium' && currentlyRevealedPremium === item.id) isRevealed = true;
+                
+                const overlayDisplay = isRevealed ? 'none' : 'flex';
+                const contentFilter = isRevealed ? 'none' : 'blur(5px)';
+                const contentSelect = isRevealed ? 'auto' : 'none';
+                const copyBtnDisplay = isRevealed ? 'inline-block' : 'none';
+
+                // UNIFIED ACTION BAR WITH UNIVERSAL BOXICONS
                 const actionBarHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; color: #888; font-size: 1.1rem;">
                     <div style="display: flex; gap: 15px; align-items: center;">
@@ -361,7 +398,7 @@ async function loadDynamicContent() {
                 </div>`;
 
                 if (!isPremiumSection && !isFullWebsite) {
-                    // FREE CODE MAC OS UI (Hidden Code System)
+                    // FREE CODE MAC OS UI
                     return `
                     <div class="code-wrapper" data-tags="${item.tags}" style="margin-bottom: 30px;" data-aos="fade-up">
                         <h3 style="color: #00d2ff; margin-bottom: 5px;">${num}. ${item.title}</h3>
@@ -375,14 +412,14 @@ async function loadDynamicContent() {
                                 </div>
                                 <div style="display: flex; gap: 10px; align-items: center;">
                                     <span style="color: #aaa; font-size: 0.85rem; display: flex; align-items: center; margin-right: 10px;">By <b style="color: #fff; margin-left: 4px;">${item.creator}</b></span>
-                                    <button id="copy-free-${item.id}" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: none; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
+                                    <button id="copy-free-${item.id}" class="copy-reveal-btn-free" onclick="copyFreeCode(${item.id}, this, 'free');" style="display: ${copyBtnDisplay}; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
                                 </div>
                             </div>
                             <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
-                                <div id="overlay-free-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
+                                <div id="overlay-free-${item.id}" class="code-overlay-free" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
                                     <button class="submit-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px;" onclick="revealContent(${item.id}, 'free')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Code</button>
                                 </div>
-                                <pre id="content-free-${item.id}" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: blur(5px); user-select: none; transition: 0.3s;">${safeCode}</pre>
+                                <pre id="content-free-${item.id}" class="code-content-blurred-free" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s;">${safeCode}</pre>
                             </div>
                             <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
@@ -390,34 +427,54 @@ async function loadDynamicContent() {
                         </div>
                     </div>`;
                 } else if (isPremiumSection && !isFullWebsite) {
-                    // PREMIUM CODE GLASS UI
+                    // PREMIUM CODE MAC OS UI
                     return `
-                    <div class="code-wrapper code-card" data-tags="${item.tags}" data-aos="fade-up" style="margin-bottom: 20px; padding: 25px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid #f5af19; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                            <h3 class="code-title" style="margin: 0; color: #f5af19; font-size: 1.4rem;"><span>${num}. ${item.title}</span></h3>
+                    <div class="code-wrapper" data-tags="${item.tags}" style="margin-bottom: 30px;" data-aos="fade-up">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                            <h3 style="color: ${mainColor}; margin: 0;">${num}. ${item.title}</h3>
                             <span class="badge" style="background: rgba(245,175,25,0.1); color: #f5af19; border: 1px solid #f5af19; padding: 5px 12px; border-radius: 20px; font-weight: bold;">₹${item.price}</span>
                         </div>
-                        <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Published by: <span style="color: #fff;">${item.creator}</span></p>
-                        <div style="margin-bottom: 20px;">${tagsHTML}</div>
+                        <div style="margin-bottom: 10px;">${tagsHTML}</div>
                         
-                        <div style="${blurStyle}">
-                            <button class="submit-btn premium-btn" onclick="viewCode(${item.id}, 'premium'); toggleAction(${item.id}, 'premium', 'view');" style="width: 100%; padding: 12px;">View Details</button>
-                            <div style="margin-top: 10px;">
+                        <div style="background: #1e1e2e; border-radius: 10px; overflow: hidden; border: 1px solid rgba(245, 175, 25, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;">
+                            
+                            <div style="background: #2a2a3b; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 175, 25, 0.1);">
+                                <div style="display: flex; gap: 8px;">
+                                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f56;"></div>
+                                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e;"></div>
+                                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #27c93f;"></div>
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <span style="color: #aaa; font-size: 0.85rem; display: flex; align-items: center; margin-right: 10px;">By <b style="color: #fff; margin-left: 4px;">${item.creator}</b></span>
+                                    <button id="copy-premium-${item.id}" class="copy-reveal-btn-premium" onclick="copyFreeCode(${item.id}, this, 'premium');" style="display: ${!isLocked && isRevealed ? 'inline-block' : 'none'}; background: #f5af19; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
+                                </div>
+                            </div>
+                            
+                            <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
+                                ${isLocked ? `
+                                    <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(4px);">
+                                        <div style="font-size: 2.5rem; margin-bottom: 5px;">🔒</div>
+                                        <h3 style="color: #f5af19; margin-bottom: 15px; margin-top: 0;">Premium Locked</h3>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button class="submit-btn premium-btn" style="width: auto; padding: 8px 20px;" onclick="openUPIModal('Single File - ${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})">Buy ₹${item.price}</button>
+                                            <button class="submit-btn" style="width: auto; padding: 8px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id}, true)">🎁 Gift</button>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div id="overlay-premium-${item.id}" class="code-overlay-premium" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
+                                        <button class="submit-btn premium-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px; color: #000;" onclick="revealContent(${item.id}, 'premium')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Code</button>
+                                    </div>
+                                `}
+                                <pre id="content-premium-${item.id}" class="code-content-blurred-premium" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: ${isLocked ? 'blur(5px)' : contentFilter}; user-select: ${isLocked ? 'none' : contentSelect}; transition: 0.3s;">${isLocked ? '// Premium Snippet\nfunction executeSuperCode() {\n  return "Hidden Magic";\n}\n...' : safeCode}</pre>
+                            </div>
+                            <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
                             </div>
                         </div>
-
-                        ${isLocked ? `<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
-                            <div style="font-size: 2.5rem; margin-bottom: 10px;">🔒</div>
-                            <h3 style="color: #f5af19; margin-bottom: 15px;">Premium Locked</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="submit-btn premium-btn" style="width: auto; padding: 10px 20px;" onclick="openUPIModal('Single File - ${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})">Buy ₹${item.price}</button>
-                                <button class="submit-btn" style="width: auto; padding: 10px 15px; background: #333; border: 1px solid #f5af19;" onclick="openUPIModal('Single File - ${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id}, true)">🎁 Gift</button>
-                            </div>
-                        </div>` : ''}
                     </div>`;
                 } else {
                     // FULL WEBSITE HTML (ZIP FOLDERS)
+                    const blurStyle = isLocked ? 'filter: blur(5px); pointer-events: none; opacity: 0.6; user-select: none;' : '';
                     return `
                     <div class="code-wrapper" data-tags="${item.tags}" data-aos="fade-up" style="margin-bottom: 20px;">
                         <div class="code-title" style="color: ${mainColor}; margin-bottom: 5px;"><span>${num}. ${item.title}</span></div>
@@ -471,17 +528,23 @@ async function loadDynamicContent() {
                     </div>
                 </div>`;
 
-                // PROMPT UI (Hidden Text System)
+                let isRevealed = (currentlyRevealedPrompt === item.id);
+                const overlayDisplay = isRevealed ? 'none' : 'flex';
+                const contentFilter = isRevealed ? 'none' : 'blur(5px)';
+                const contentSelect = isRevealed ? 'auto' : 'none';
+                const copyBtnDisplay = isRevealed ? 'inline-block' : 'none';
+
+                // PROMPT UI (Hidden Text System + Memory Sync)
                 return `<div class="prompt-box" data-tags="${item.tags}" data-aos="fade-up" style="background: rgba(0,0,0,0.4); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid #b06ab3; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <h3 style="margin-top: 0; color: #b06ab3; font-size: 1.3rem; margin-bottom: 10px;">${item.title}</h3>
                     <div style="margin-bottom:15px;">${tagsHTML}</div>
                     
                     <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; position: relative; min-height: 100px;">
-                        <div id="overlay-prompt-${item.id}" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: flex; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
+                        <div id="overlay-prompt-${item.id}" class="code-overlay-prompt" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(17, 17, 17, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px); border-radius: 8px;">
                             <button class="submit-btn" style="width: auto; padding: 8px 20px; background: transparent; border: 1px solid #b06ab3; color: #b06ab3; border-radius: 30px;" onclick="revealContent(${item.id}, 'prompt')"><i class="bx bx-show" style="margin-right: 5px;"></i> View Prompt</button>
                         </div>
-                        <pre id="content-prompt-${item.id}" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: blur(5px); user-select: none; transition: 0.3s;">${item.prompt_text}</pre>
-                        <button id="copy-prompt-${item.id}" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
+                        <pre id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s;">${item.prompt_text}</pre>
+                        <button id="copy-prompt-${item.id}" class="copy-reveal-btn-prompt" onclick="copyToClipboard(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: ${copyBtnDisplay}; position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s; z-index: 10;">Copy</button>
                     </div>
                     <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                         ${actionBarHTML}
@@ -491,77 +554,6 @@ async function loadDynamicContent() {
         }
         if(window.Prism) Prism.highlightAll();
     } catch (err) { console.error("Error loading content:", err); }
-}
-
-// ==========================================
-// VIEW DETAILS MODAL (For Premium)
-// ==========================================
-async function viewCode(id, type) {
-    let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
-    if (!item) { alert("Error: Details not found."); return; }
-
-    const oldModal = document.getElementById('dynamic-code-modal');
-    if (oldModal) oldModal.remove();
-
-    const isPremium = type === 'premium';
-    const themeColor = isPremium ? '#f5af19' : '#00d2ff';
-    
-    let userOwnsCode = type === 'free'; 
-    if (isPremium) {
-        try {
-            const checkRes = await fetch('/api/my-purchases');
-            if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData.is_premium === true || (checkData.codes && checkData.codes.some(c => c.id === id))) {
-                    userOwnsCode = true; 
-                }
-            }
-        } catch (err) {}
-    }
-
-    const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    const codeDisplayHtml = userOwnsCode 
-        ? `<div style="background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 20px; max-height: 250px; overflow-y: auto; text-align: left; position: relative;">
-               <div style="position: sticky; top: 0; background: #1a1a1a; color: #888; font-size: 0.7rem; margin-top: -15px; margin-left: -15px; margin-right: -15px; padding: 5px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; text-transform: uppercase;">Source Code</div>
-               <pre style="margin: 0; color: #00d2ff; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word;">${safeCode}</pre>
-           </div>`
-        : `<div style="background: rgba(0,0,0,0.5); border: 1px dashed ${themeColor}; border-radius: 8px; padding: 40px 15px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden;">
-               <div style="filter: blur(5px); opacity: 0.3; color: #aaa; font-family: monospace; font-size: 0.85rem; text-align: left;">// Premium Snippet<br>function executeSuperCode() {<br>&nbsp;&nbsp;return "Hidden Magic";<br>}<br>...</div>
-               <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: ${themeColor}; font-weight: bold; font-size: 1.1rem; width: 100%;">🔒 Premium Content Locked</div>
-           </div>`;
-
-    const actionBtn = userOwnsCode 
-        ? `<button onclick="copyFreeCode(${item.id}, this, '${type}')" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00ff88, #00cc66); color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">Copy Code to Clipboard 📋</button>`
-        : `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`;
-
-    const modalHtml = `
-        <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
-            <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
-                <style>
-                    @keyframes customPopIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-                    #dynamic-code-modal div::-webkit-scrollbar { width: 6px; }
-                    #dynamic-code-modal div::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-                </style>
-                <div onclick="document.getElementById('dynamic-code-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
-                <span class="badge" style="background: ${isPremium ? 'rgba(245,175,25,0.1)' : 'rgba(0,210,255,0.1)'}; color: ${themeColor}; border: 1px solid ${themeColor}; padding: 4px 10px; margin-bottom: 15px; display: inline-block;">${item.category}</span>
-                <h2 style="color: ${themeColor}; margin-top: 0; margin-bottom: 10px; font-size: 1.8rem;">${item.title}</h2>
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Published by: <span style="color: #fff; font-weight: bold;">${item.creator}</span></p>
-                
-                <div style="display: flex; justify-content: space-around; align-items: center; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; color: #888; font-size: 1.3rem;">
-                    <span title="Views" style="display: flex; align-items: center; gap: 5px;"><i class="bx bx-show" style="color:${themeColor};"></i> <span id="modal-view" style="font-size:0.9rem">${item.views || 0}</span></span>
-                    <span title="Like" onclick="toggleAction(${item.id}, '${type}', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="modal-like" style="font-size:0.9rem">${item.likes || 0}</span></span>
-                    <span title="Dislike" onclick="toggleAction(${item.id}, '${type}', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="modal-dislike" style="font-size:0.9rem">${item.dislikes || 0}</span></span>
-                    <span title="Comments" onclick="openCommentModal('${type}', ${item.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-chat"></i></span>
-                    <span title="Save for Later" onclick="toggleAction(${item.id}, '${type}', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
-                </div>
-                
-                ${codeDisplayHtml}
-                ${actionBtn}
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
 // ==========================================
@@ -589,17 +581,10 @@ async function toggleAction(id, type, action) {
             const dislikeEl = document.getElementById(`dislike-${type}-${id}`);
             if(likeEl) likeEl.innerText = data.likes;
             if(dislikeEl) dislikeEl.innerText = data.dislikes;
-            
-            const modalLike = document.getElementById(`modal-like`);
-            const modalDislike = document.getElementById(`modal-dislike`);
-            if(modalLike) modalLike.innerText = data.likes;
-            if(modalDislike) modalDislike.innerText = data.dislikes;
         }
         if (action === 'view') {
             const viewEl = document.getElementById(`view-${type}-${id}`);
-            const modalViewEl = document.getElementById(`modal-view`);
             if(viewEl) viewEl.innerText = data.count;
-            if(modalViewEl) modalViewEl.innerText = data.count;
         }
         if (action === 'save') {
              alert(data.message);

@@ -375,13 +375,21 @@ function togglePasswordVisibility(inputId, iconId) {
 // PUBLIC CONTENT RENDERING ENGINE
 // ==========================================
 
+// 1. Global Storage so the browser remembers the data for the View Details modal
+window.siteContent = { free: [], premium: [], prompts: [] };
+
 async function loadPublicContent() {
     try {
         const res = await fetch('/api/content');
         if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
 
-        // 1. Render Free Codes
+        // Save fetched data globally
+        window.siteContent.free = data.codes;
+        window.siteContent.premium = data.premium_codes;
+        window.siteContent.prompts = data.prompts;
+
+        // Render Free Codes
         if (document.getElementById('free-single-content')) {
             const freeSingle = data.codes.filter(c => c.category === 'Single Page');
             const freeFull = data.codes.filter(c => c.category === 'Full Website');
@@ -389,7 +397,7 @@ async function loadPublicContent() {
             renderCodes('free-full-content', freeFull, 'free');
         }
 
-        // 2. Render Premium Codes
+        // Render Premium Codes
         if (document.getElementById('prem-single-content')) {
             const premSingle = data.premium_codes.filter(c => c.category === 'Single Page');
             const premFull = data.premium_codes.filter(c => c.category === 'Full Website');
@@ -397,17 +405,13 @@ async function loadPublicContent() {
             renderCodes('prem-full-content', premFull, 'premium');
         }
 
-        // 3. Render AI Prompts
+        // Render Prompts
         if (document.getElementById('dynamic-prompts')) {
             renderPrompts(data.prompts);
         }
 
     } catch (err) {
         console.error("Error loading content:", err);
-        // Change "Loading..." to an error message if it fails
-        const errHtml = '<p style="text-align: center; color: #ff5f56; padding: 40px;">Network Error: Failed to load content.</p>';
-        if (document.getElementById('prem-single-content')) document.getElementById('prem-single-content').innerHTML = errHtml;
-        if (document.getElementById('dynamic-prompts')) document.getElementById('dynamic-prompts').innerHTML = errHtml;
     }
 }
 
@@ -416,7 +420,7 @@ function renderCodes(containerId, codes, type) {
     if (!container) return;
 
     if (codes.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #888; padding: 40px; width: 100%;">No content available in this category yet.</p>';
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 40px; width: 100%;">No content available.</p>';
         return;
     }
 
@@ -440,6 +444,80 @@ function renderCodes(containerId, codes, type) {
             </div>
         </div>
     `).join('');
+}
+
+// 2. THE MISSING VIEW DETAILS FUNCTION
+function viewCode(id, type) {
+    // Find the item in our global storage
+    let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
+    
+    if (!item) {
+        alert("Error: Details not found.");
+        return;
+    }
+
+    // Clean up any old modals to prevent duplicates
+    const oldModal = document.getElementById('dynamic-code-modal');
+    if (oldModal) oldModal.remove();
+
+    const isPremium = type === 'premium';
+    const themeColor = isPremium ? '#f5af19' : '#00d2ff';
+    
+    // Check if it's premium to trigger the UPI Payment modal, or Free to just copy/view the code
+    const actionBtn = isPremium 
+        ? `<button onclick="openUPIModal('${item.title}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`
+        : `<button onclick="copyFreeCode(${item.id}, this)" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00d2ff, #3a7bd5);">Copy Source Code</button>`;
+
+    // Generate the Modal HTML
+    const modalHtml = `
+        <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
+            <div data-aos="zoom-in" style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8);">
+                <div onclick="document.getElementById('dynamic-code-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
+                
+                <span class="badge" style="background: ${isPremium ? 'rgba(245,175,25,0.1)' : 'rgba(0,210,255,0.1)'}; color: ${themeColor}; border: 1px solid ${themeColor}; padding: 4px 10px; margin-bottom: 15px; display: inline-block;">${item.category}</span>
+                
+                <h2 style="color: ${themeColor}; margin-top: 0; margin-bottom: 10px; font-size: 1.8rem;">${item.title}</h2>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">Published by: <span style="color: #fff; font-weight: bold;">${item.creator}</span></p>
+                
+                <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px; display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Views</span>
+                        <strong style="color: #fff; font-size: 1.2rem;">${item.views}</strong>
+                    </div>
+                    <div>
+                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Likes</span>
+                        <strong style="color: #fff; font-size: 1.2rem;">${item.likes}</strong>
+                    </div>
+                    <div>
+                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Status</span>
+                        <strong style="color: #00ff88; font-size: 1.2rem;">Verified</strong>
+                    </div>
+                </div>
+                
+                ${actionBtn}
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// 3. Helper to safely copy code without breaking HTML quotes
+function copyFreeCode(id, btn) {
+    const item = window.siteContent.free.find(c => c.id === id);
+    if (!item) return;
+
+    navigator.clipboard.writeText(item.code).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = "Code Copied! ✔️";
+        btn.style.background = "#00ff88";
+        btn.style.color = "#000";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "linear-gradient(90deg, #00d2ff, #3a7bd5)";
+            btn.style.color = "#fff";
+        }, 2000);
+    });
 }
 
 function renderPrompts(prompts) {

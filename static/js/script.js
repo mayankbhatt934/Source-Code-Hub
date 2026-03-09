@@ -446,9 +446,8 @@ function renderCodes(containerId, codes, type) {
     `).join('');
 }
 
-// 2. THE SMART VIEW DETAILS FUNCTION (Checks Premium Status)
+// 2. THE SMART VIEW DETAILS FUNCTION (With Built-in Code Viewer)
 async function viewCode(id, type) {
-    // Find the item in our global storage
     let item = type === 'free' ? window.siteContent.free.find(c => c.id === id) : window.siteContent.premium.find(c => c.id === id);
     
     if (!item) {
@@ -456,45 +455,64 @@ async function viewCode(id, type) {
         return;
     }
 
-    // Clean up any old modals to prevent duplicates
     const oldModal = document.getElementById('dynamic-code-modal');
     if (oldModal) oldModal.remove();
 
     const isPremium = type === 'premium';
     const themeColor = isPremium ? '#f5af19' : '#00d2ff';
     
-    // --- NEW: Check if the user owns this code! ---
-    let userOwnsCode = type === 'free'; // Free codes are always owned
+    // Check if the user owns this code
+    let userOwnsCode = type === 'free'; 
     
     if (isPremium) {
         try {
-            // Ask the backend if the current user has a pass or bought this code
             const checkRes = await fetch('/api/my-purchases');
             if (checkRes.ok) {
                 const checkData = await checkRes.json();
                 if (checkData.is_premium === true || (checkData.codes && checkData.codes.some(c => c.id === id))) {
-                    userOwnsCode = true; // VIP access granted!
+                    userOwnsCode = true; 
                 }
             }
         } catch (err) {
-            console.log("User not logged in or network error.");
+            console.log("Network error checking purchases.");
         }
     }
 
+    // Safely escape the code so it doesn't break the HTML formatting
+    const safeCode = item.code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // UI for displaying the actual code
+    const codeDisplayHtml = userOwnsCode 
+        ? `<div style="background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 20px; max-height: 250px; overflow-y: auto; text-align: left; position: relative;">
+               <div style="position: sticky; top: 0; background: #1a1a1a; color: #888; font-size: 0.7rem; margin-top: -15px; margin-left: -15px; margin-right: -15px; padding: 5px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 10px; text-transform: uppercase;">Source Code</div>
+               <pre style="margin: 0; color: #00d2ff; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-wrap: break-word;">${safeCode}</pre>
+           </div>`
+        : `<div style="background: rgba(0,0,0,0.5); border: 1px dashed ${themeColor}; border-radius: 8px; padding: 40px 15px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden;">
+               <div style="filter: blur(5px); opacity: 0.3; color: #aaa; font-family: monospace; font-size: 0.85rem; text-align: left;">
+                   // Premium Snippet<br>function executeSuperCode() {<br>&nbsp;&nbsp;return "Hidden Magic";<br>}<br>...
+               </div>
+               <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: ${themeColor}; font-weight: bold; font-size: 1.1rem; width: 100%;">
+                   🔒 Premium Content Locked
+               </div>
+           </div>`;
+
     // Generate the correct button based on ownership
     const actionBtn = userOwnsCode 
-        ? `<button onclick="copyFreeCode(${item.id}, this, '${type}')" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00ff88, #00cc66); color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">Unlock & Copy Code 🔓</button>`
+        ? `<button onclick="copyFreeCode(${item.id}, this, '${type}')" class="submit-btn" style="width: 100%; padding: 15px; font-size: 1.1rem; background: linear-gradient(90deg, #00ff88, #00cc66); color: #000; box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);">Copy Code to Clipboard 📋</button>`
         : `<button onclick="openUPIModal('${item.title.replace(/'/g, "\\'")}', ${item.price}, ${item.id})" class="submit-btn premium-btn" style="width: 100%; padding: 15px; font-size: 1.1rem;">Secure Purchase (₹${item.price})</button>`;
 
     // Generate the Modal HTML
     const modalHtml = `
         <div id="dynamic-code-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(8px);" onclick="if(event.target === this) this.remove()">
-            <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
+            <div style="background: #121212; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; border: 1px solid ${themeColor}; position: relative; box-shadow: 0 15px 50px rgba(0,0,0,0.8); animation: customPopIn 0.3s ease-out forwards;">
                 <style>
                     @keyframes customPopIn { 
                         from { opacity: 0; transform: scale(0.9); } 
                         to { opacity: 1; transform: scale(1); } 
                     }
+                    /* Scrollbar styling for the code block */
+                    #dynamic-code-modal div::-webkit-scrollbar { width: 6px; }
+                    #dynamic-code-modal div::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
                 </style>
                 
                 <div onclick="document.getElementById('dynamic-code-modal').remove()" style="position: absolute; top: 15px; right: 15px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; background: rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: 0.3s;">✕</div>
@@ -502,22 +520,24 @@ async function viewCode(id, type) {
                 <span class="badge" style="background: ${isPremium ? 'rgba(245,175,25,0.1)' : 'rgba(0,210,255,0.1)'}; color: ${themeColor}; border: 1px solid ${themeColor}; padding: 4px 10px; margin-bottom: 15px; display: inline-block;">${item.category}</span>
                 
                 <h2 style="color: ${themeColor}; margin-top: 0; margin-bottom: 10px; font-size: 1.8rem;">${item.title}</h2>
-                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px;">Published by: <span style="color: #fff; font-weight: bold;">${item.creator}</span></p>
+                <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 20px;">Published by: <span style="color: #fff; font-weight: bold;">${item.creator}</span></p>
                 
-                <div style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 25px; display: flex; justify-content: space-around; text-align: center;">
+                <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center;">
                     <div>
-                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Views</span>
-                        <strong style="color: #fff; font-size: 1.2rem;">${item.views}</strong>
+                        <span style="display: block; color: #888; font-size: 0.75rem; text-transform: uppercase;">Views</span>
+                        <strong style="color: #fff; font-size: 1.1rem;">${item.views}</strong>
                     </div>
                     <div>
-                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Likes</span>
-                        <strong style="color: #fff; font-size: 1.2rem;">${item.likes}</strong>
+                        <span style="display: block; color: #888; font-size: 0.75rem; text-transform: uppercase;">Likes</span>
+                        <strong style="color: #fff; font-size: 1.1rem;">${item.likes}</strong>
                     </div>
                     <div>
-                        <span style="display: block; color: #888; font-size: 0.8rem; text-transform: uppercase;">Status</span>
-                        <strong style="color: #00ff88; font-size: 1.2rem;">Verified</strong>
+                        <span style="display: block; color: #888; font-size: 0.75rem; text-transform: uppercase;">Status</span>
+                        <strong style="color: #00ff88; font-size: 1.1rem;">Verified</strong>
                     </div>
                 </div>
+                
+                ${codeDisplayHtml}
                 
                 ${actionBtn}
             </div>

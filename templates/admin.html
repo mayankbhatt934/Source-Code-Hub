@@ -1189,12 +1189,37 @@
 
         function checkBroadcastCooldown() { const cooldownEnd = localStorage.getItem('broadcastCooldown'); if (cooldownEnd) { const now = new Date().getTime(); if (now < cooldownEnd) { startBroadcastTimer(Math.ceil((cooldownEnd - now) / 1000)); } else { localStorage.removeItem('broadcastCooldown'); } } }
         function startBroadcastTimer(seconds) {
-            const btn = document.getElementById('btn-broadcast'); if (!btn) return;
-            btn.disabled = true; btn.style.background = "rgba(255,255,255,0.1)"; btn.style.color = "#888"; btn.style.cursor = "not-allowed";
-            let timeLeft = seconds; btn.innerText = `Cooldown: ${timeLeft}s`;
-            if (window.broadcastInterval) clearInterval(window.broadcastInterval);
-            window.broadcastInterval = setInterval(() => { timeLeft--; if (timeLeft <= 0) { clearInterval(window.broadcastInterval); btn.disabled = false; btn.innerText = "Send Global Alert"; btn.style.background = ""; btn.style.color = ""; btn.style.cursor = "pointer"; } else { btn.innerText = `Cooldown: ${timeLeft}s`; } }, 1000);
-        }
+    const btn = document.getElementById('btn-broadcast'); 
+    if (!btn) return;
+    
+    // Save the exact time the cooldown will end to local storage
+    const expiryTime = new Date().getTime() + (seconds * 1000);
+    localStorage.setItem('broadcastCooldown', expiryTime);
+
+    btn.disabled = true; 
+    btn.style.background = "rgba(255,255,255,0.1)"; 
+    btn.style.color = "#888"; 
+    btn.style.cursor = "not-allowed";
+    let timeLeft = seconds; 
+    btn.innerText = `Cooldown: ${timeLeft}s`;
+    
+    if (window.broadcastInterval) clearInterval(window.broadcastInterval);
+    
+    window.broadcastInterval = setInterval(() => { 
+        timeLeft--; 
+        if (timeLeft <= 0) { 
+            clearInterval(window.broadcastInterval); 
+            btn.disabled = false; 
+            btn.innerText = "Send Global Alert"; 
+            btn.style.background = ""; 
+            btn.style.color = ""; 
+            btn.style.cursor = "pointer"; 
+            localStorage.removeItem('broadcastCooldown'); // Clear storage when done
+        } else { 
+            btn.innerText = `Cooldown: ${timeLeft}s`; 
+        } 
+    }, 1000);
+}
 
         async function toggleMaintenance() { const res = await fetch('/admin/toggle-maintenance', { method: 'POST' }); const data = await res.json(); if (res.ok) { document.getElementById('btn-maintenance').style.background = data.mode ? '#ff5f56' : 'transparent'; document.getElementById('btn-maintenance').style.color = data.mode ? '#fff' : '#ff5f56'; document.getElementById('btn-maintenance').innerText = data.mode ? 'Disable Maintenance' : 'Enable Maintenance'; document.getElementById('maintenance-status').innerText = data.mode ? 'STATUS: ACTIVE 🔴' : 'STATUS: OFFLINE 🟢'; document.getElementById('maintenance-status').style.color = data.mode ? '#ff5f56' : '#00ff88'; } }
         async function createPromo(e) { e.preventDefault(); await fetch('/admin/promo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: document.getElementById('promo-code').value, discount: document.getElementById('promo-discount').value, limit: document.getElementById('promo-limit').value }) }); e.target.reset(); loadAdminData(); }
@@ -1295,8 +1320,8 @@
             e.target.reset(); 
             document.getElementById('notif-email').style.display = 'none'; 
             
-            // THE FIX: Default to 60 seconds if data.cooldown is missing
-            startBroadcastTimer(data.cooldown || 60); 
+            // THE FIX: Default to 120 seconds if data.cooldown is missing
+            startBroadcastTimer(data.cooldown || 120); 
         } else { 
             alert("Error: " + (data.error || "Failed to send")); 
             if (data.cooldown) { startBroadcastTimer(data.cooldown); } 

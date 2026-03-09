@@ -370,3 +370,117 @@ function togglePasswordVisibility(inputId, iconId) {
         icon.classList.add('bx-hide');
     }
 }
+
+// ==========================================
+// PUBLIC CONTENT RENDERING ENGINE
+// ==========================================
+
+async function loadPublicContent() {
+    try {
+        const res = await fetch('/api/content');
+        if (!res.ok) throw new Error("Failed to fetch data");
+        const data = await res.json();
+
+        // 1. Render Free Codes
+        if (document.getElementById('free-single-content')) {
+            const freeSingle = data.codes.filter(c => c.category === 'Single Page');
+            const freeFull = data.codes.filter(c => c.category === 'Full Website');
+            renderCodes('free-single-content', freeSingle, 'free');
+            renderCodes('free-full-content', freeFull, 'free');
+        }
+
+        // 2. Render Premium Codes
+        if (document.getElementById('prem-single-content')) {
+            const premSingle = data.premium_codes.filter(c => c.category === 'Single Page');
+            const premFull = data.premium_codes.filter(c => c.category === 'Full Website');
+            renderCodes('prem-single-content', premSingle, 'premium');
+            renderCodes('prem-full-content', premFull, 'premium');
+        }
+
+        // 3. Render AI Prompts
+        if (document.getElementById('dynamic-prompts')) {
+            renderPrompts(data.prompts);
+        }
+
+    } catch (err) {
+        console.error("Error loading content:", err);
+        // Change "Loading..." to an error message if it fails
+        const errHtml = '<p style="text-align: center; color: #ff5f56; padding: 40px;">Network Error: Failed to load content.</p>';
+        if (document.getElementById('prem-single-content')) document.getElementById('prem-single-content').innerHTML = errHtml;
+        if (document.getElementById('dynamic-prompts')) document.getElementById('dynamic-prompts').innerHTML = errHtml;
+    }
+}
+
+function renderCodes(containerId, codes, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (codes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 40px; width: 100%;">No content available in this category yet.</p>';
+        return;
+    }
+
+    const themeColor = type === 'premium' ? '#f5af19' : '#00d2ff';
+    const btnClass = type === 'premium' ? 'submit-btn premium-btn' : 'submit-btn';
+
+    container.innerHTML = codes.map(c => `
+        <div class="code-card" data-aos="fade-up" style="margin-bottom: 20px; padding: 25px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid ${themeColor}; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: ${themeColor}; font-size: 1.4rem;">${c.title}</h3>
+                ${type === 'premium' 
+                    ? `<span class="badge" style="background: rgba(245,175,25,0.1); color: #f5af19; border: 1px solid #f5af19; padding: 5px 12px; border-radius: 20px; font-weight: bold;">₹${c.price}</span>` 
+                    : `<span class="badge" style="background: rgba(0,210,255,0.1); color: #00d2ff; border: 1px solid #00d2ff; padding: 5px 12px; border-radius: 20px; font-weight: bold;">FREE</span>`}
+            </div>
+            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Published by: <span style="color: #fff;">${c.creator}</span></p>
+            <div style="margin-bottom: 20px;">
+                ${c.tags ? c.tags.split(',').map(t => `<span class="tag-badge" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; display: inline-block;">#${t.trim()}</span>`).join('') : ''}
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="${btnClass}" onclick="viewCode(${c.id}, '${type}')" style="flex: 1; padding: 12px;">View Details</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderPrompts(prompts) {
+    const container = document.getElementById('dynamic-prompts');
+    if (!container) return;
+
+    if (prompts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 40px; grid-column: 1/-1;">No AI prompts available yet.</p>';
+        return;
+    }
+
+    container.innerHTML = prompts.map(p => `
+        <div class="prompt-card" data-aos="fade-up" style="padding: 25px; border-radius: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-top: 3px solid #b06ab3; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <h3 style="margin-top: 0; color: #b06ab3; font-size: 1.3rem; margin-bottom: 10px;">${p.title}</h3>
+            <div style="margin-bottom: 15px;">
+                ${p.tags ? p.tags.split(',').map(t => `<span class="tag-badge" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #aaa; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; margin-right: 6px; display: inline-block;">#${t.trim()}</span>`).join('') : ''}
+            </div>
+            <div style="background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; position: relative;">
+                <pre style="margin: 0; color: #ccc; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">${p.prompt_text}</pre>
+                <button onclick="copyToClipboard(this, \`${p.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`)" 
+                    style="position: absolute; top: 10px; right: 10px; background: rgba(176, 106, 179, 0.1); color: #b06ab3; border: 1px solid #b06ab3; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; transition: 0.3s;">
+                    Copy
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function copyToClipboard(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = "Copied! ✔️";
+        btn.style.background = "#b06ab3";
+        btn.style.color = "#fff";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "rgba(176, 106, 179, 0.1)";
+            btn.style.color = "#b06ab3";
+        }, 2000);
+    });
+}
+
+// Auto-Trigger on page load
+loadPublicContent();

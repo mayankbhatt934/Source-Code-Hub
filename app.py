@@ -919,6 +919,50 @@ def admin_broadcast():
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/admin/update-role', methods=['POST'])
+def admin_update_role():
+    # Security: Only the Master Owner can change roles
+    if get_user_role() != 'owner': 
+        return jsonify({"status": "error", "message": "Unauthorized. Only the Owner can change roles."}), 403
+        
+    try:
+        data = request.json
+        email = data.get('email')
+        new_role = data.get('role')
+        is_friend = data.get('is_friend', False)
+        send_email_flag = data.get('send_email', False)
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({"status": "error", "message": "User email not found in database!"}), 404
+
+        # Update the database values
+        user.role = new_role
+        user.is_friend = is_friend
+
+        # If "Email Password" is checked, generate a random secure password
+        if send_email_flag and new_role in ['staff', 'admin', 'owner']:
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            user.password = generate_password_hash(temp_password, method='pbkdf2:sha256')
+            
+            # Send the email to the new staff member
+            email_subject = "Your Staff Credentials - Source Code Hub"
+            email_body = f"Welcome to the team!\n\nYour account role has been upgraded to: {new_role.upper()}\nYour temporary password is: {temp_password}\n\nPlease log in to the admin panel immediately and change your password."
+            send_system_email(user.email, email_subject, email_body)
+
+        # Notify the user on their dashboard
+        db.session.add(Notification(
+            email=user.email, 
+            title="Role Updated 👑", 
+            message=f"Your account role has been changed to {new_role.upper()}."
+        ))
+        
+        db.session.commit()
+        return jsonify({"status": "success", "message": f"Successfully updated {email} to {new_role}!"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
 # NEW: Quick route to instantly reclaim your Owner status after a DB Reset
 @app.route('/init-admin')
 def init_admin():

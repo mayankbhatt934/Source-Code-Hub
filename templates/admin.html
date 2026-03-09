@@ -1298,7 +1298,41 @@
         async function submitAdminGift(e) { e.preventDefault(); const t = document.getElementById('gift-type').value; const v = t === 'membership' ? document.getElementById('gift-membership-val').value : document.getElementById('gift-code-val').value; await fetch('/admin/gift', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('gift-email').value, type: t, value: v }) }); e.target.reset(); loadAdminData(); alert("Gift Sent!"); }
         async function submitBanUser(e) { e.preventDefault(); await fetch('/admin/ban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.getElementById('ban-email').value, duration_days: document.getElementById('ban-duration').value }) }); e.target.reset(); loadAdminData(); }
         async function unbanUser(email) { if (!confirm(`Unban ${email}?`)) return; await fetch('/admin/unban-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) }); loadAdminData(); }
-        async function submitRoleUpdate(e) { e.preventDefault(); const btn = e.target.querySelector('button'); btn.innerText = "Processing..."; const payload = { email: document.getElementById('role-email').value, role: document.getElementById('role-select').value, is_friend: document.getElementById('role-friend').checked, send_email: document.getElementById('role-email-cred').checked }; const res = await fetch('/admin/update-role', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const data = await res.json(); e.target.reset(); alert(data.message); btn.innerText = "Execute Change"; }
+       async function submitRoleUpdate(e) { 
+    e.preventDefault(); 
+    const btn = e.target.querySelector('button'); 
+    btn.innerText = "Processing..."; 
+    
+    try {
+        const payload = { 
+            email: document.getElementById('role-email').value, 
+            role: document.getElementById('role-select').value, 
+            is_friend: document.getElementById('role-friend').checked, 
+            send_email: document.getElementById('role-email-cred').checked 
+        }; 
+        
+        const res = await fetch('/admin/update-role', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload) 
+        }); 
+        
+        const data = await res.json(); 
+        
+        if (res.ok) {
+            alert(data.message);
+            e.target.reset(); 
+            loadAdminData(); // Refresh the list to show new roles
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        alert("Network Error: Could not reach the server.");
+    } finally {
+        // This ensures the button always returns to normal, even if it fails!
+        btn.innerText = "Execute Change"; 
+    }
+}
         
         // 2. FIXED BROADCAST SUBMIT: URL is corrected and NaN bug is fixed
         async function submitAdminNotification(e) { 

@@ -482,65 +482,61 @@ async function loadDynamicContent() {
         // ---------------------------------------------------------
         // COMPLETELY REDESIGNED, BEAUTIFUL AI PROMPTS
         // ---------------------------------------------------------
-        const promptContainer = document.getElementById('dynamic-prompts');
+       const promptContainer = document.getElementById('dynamic-prompts');
         if (promptContainer) { 
             promptContainer.innerHTML = data.prompts.length === 0 ? '<p style="text-align: center; color: #888;">No prompts published yet.</p>' : data.prompts.map((item, index) => {
                 let tagsHTML = ""; 
                 if(item.tags) { 
                     const tagsArray = item.tags.split(',').map(t => t.trim()).filter(t => t); 
-                    tagsHTML = tagsArray.map(t => `<span class="badge" style="background: rgba(176, 106, 179, 0.1); border: 1px solid rgba(176, 106, 179, 0.3); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; color: #d49ce0; margin-right: 6px;">#${t}</span>`).join(''); 
+                    tagsHTML = tagsArray.map(t => `<span class="badge" style="background: rgba(176, 106, 179, 0.1); border: 1px solid rgba(176, 106, 179, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: #d49ce0; margin: 0 4px;">#${t}</span>`).join(''); 
                 }
                 
+                // FIXED: Beautifully spaced, single-row action bar centered at the bottom
                 const actionBarHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; color: #888; font-size: 1.15rem;">
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <span title="Views" style="display: flex; align-items: center; gap: 5px; color: #b06ab3;"><i class="bx bx-show"></i> <span id="view-prompt-${item.id}" style="font-size:0.9rem; color: #aaa;">${item.views || 0}</span></span>
-                        <span title="Like" onclick="toggleAction(${item.id}, 'prompt', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-prompt-${item.id}" style="font-size:0.9rem; color: #aaa;">${item.likes || 0}</span></span>
-                        <span title="Dislike" onclick="toggleAction(${item.id}, 'prompt', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-prompt-${item.id}" style="font-size:0.9rem; color: #aaa;">${item.dislikes || 0}</span></span>
-                        <span title="Comments" onclick="openCommentModal('prompt', ${item.id})" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-chat"></i></span>
-                    </div>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <span title="Share Link" onclick="shareItem('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-share-alt"></i></span>
-                        <span title="Save for Later" onclick="toggleAction(${item.id}, 'prompt', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
-                        <span title="Report Content" onclick="openReportModal('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag"></i></span>
-                    </div>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 20px; padding-top: 15px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); color: #888; font-size: 1.2rem; flex-wrap: wrap;">
+                    <span title="Views" style="display: flex; align-items: center; gap: 5px; color: #b06ab3;"><i class="bx bx-show"></i> <span id="view-prompt-${item.id}" style="font-size:0.95rem; color: #aaa;">${item.views || 0}</span></span>
+                    <span title="Like" onclick="toggleAction(${item.id}, 'prompt', 'like')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#00ff88'" onmouseout="this.style.color=''"><i class="bx bx-like"></i> <span id="like-prompt-${item.id}" style="font-size:0.95rem; color: #aaa;">${item.likes || 0}</span></span>
+                    <span title="Dislike" onclick="toggleAction(${item.id}, 'prompt', 'dislike')" style="cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s;" onmouseover="this.style.color='#ff5f56'" onmouseout="this.style.color=''"><i class="bx bx-dislike"></i> <span id="dislike-prompt-${item.id}" style="font-size:0.95rem; color: #aaa;">${item.dislikes || 0}</span></span>
+                    <span title="Comments" onclick="openCommentModal('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#00d2ff'" onmouseout="this.style.color=''"><i class="bx bx-chat"></i></span>
+                    <span title="Share Link" onclick="shareItem('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s; margin-left: 5px;" onmouseover="this.style.color='#f5af19'" onmouseout="this.style.color=''"><i class="bx bx-share-alt"></i></span>
+                    <span title="Save for Later" onclick="toggleAction(${item.id}, 'prompt', 'save')" style="cursor: pointer; transition: 0.3s;" onmouseover="this.style.color='#b06ab3'" onmouseout="this.style.color=''"><i class="bx bx-save"></i></span>
+                    <span title="Report Content" onclick="openReportModal('prompt', ${item.id})" style="cursor: pointer; transition: 0.3s; color: #ff5f56;" onmouseover="this.style.color='#ff0000'" onmouseout="this.style.color='#ff5f56'"><i class="bx bx-flag"></i></span>
                 </div>`;
 
                 let isRevealed = (currentlyRevealedPrompt === item.id);
                 const overlayDisplay = isRevealed ? 'none' : 'flex';
                 const contentFilter = isRevealed ? 'none' : 'blur(6px)';
                 const contentSelect = isRevealed ? 'auto' : 'none';
-                const copyBtnDisplay = isRevealed ? 'flex' : 'none';
+                const copyBtnDisplay = isRevealed ? 'block' : 'none';
+                
+                // FIXED: Safety fallback for undefined creators
+                const creatorName = item.creator || item.creator_username || 'Admin 👑';
 
                 return `
-                <div class="prompt-box" data-tags="${item.tags}" data-aos="fade-up" style="background: #140f1c; border-radius: 12px; border: 1px solid #312145; box-shadow: 0 8px 30px rgba(0,0,0,0.6); margin-bottom: 25px; overflow: hidden;">
+                <div class="prompt-box" data-tags="${item.tags}" data-aos="fade-up" style="background: #140f1c; border-radius: 12px; border: 1px solid #312145; box-shadow: 0 8px 30px rgba(0,0,0,0.6); margin-bottom: 25px; padding: 25px; text-align: center;">
                     
-                    <div style="padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                            <h3 style="margin: 0; color: #d49ce0; font-size: 1.4rem; font-weight: 600;">${item.title}</h3>
-                            <span style="color: #888; font-size: 0.85rem;">By <b style="color: #fff;">${item.creator}</b></span>
-                        </div>
-                        <div style="margin-bottom: 15px;">${tagsHTML}</div>
+                    <h3 style="margin: 0 0 5px 0; color: #d49ce0; font-size: 1.6rem; font-weight: 600;">${item.title}</h3>
+                    <p style="color: #888; font-size: 0.9rem; margin: 0 0 15px 0;">By <b style="color: #fff;">${creatorName}</b></p>
+                    
+                    <div style="margin-bottom: 20px;">${tagsHTML}</div>
+                    
+                    <div style="position: relative; background: rgba(0,0,0,0.5); border: 1px solid #241933; border-radius: 8px; padding: 20px; min-height: 140px; text-align: left; overflow: hidden;">
                         
-                        <div style="position: relative; background: rgba(0,0,0,0.5); border: 1px solid #241933; border-radius: 8px; min-height: 100px;">
-                            
-                            <div id="overlay-prompt-${item.id}" class="code-overlay-prompt" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(20, 15, 28, 0.8); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; border-radius: 8px; backdrop-filter: blur(2px);">
-                                <button class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a4b8d); color: #fff; border: none; padding: 10px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(176, 106, 179, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="revealContent(${item.id}, 'prompt')">
-                                    <i class="bx bx-show"></i> View Prompt
-                                </button>
-                            </div>
-
-                            <button id="copy-prompt-${item.id}" class="copy-reveal-btn-prompt" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: ${copyBtnDisplay}; position: absolute; top: 15px; right: 15px; background: rgba(176, 106, 179, 0.15); color: #d49ce0; border: 1px solid #b06ab3; padding: 6px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; z-index: 10; transition: 0.2s; align-items: center;">
-                                <i class="bx bx-copy" style="margin-right: 4px;"></i> Copy
+                        <div id="overlay-prompt-${item.id}" class="code-overlay-prompt" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(20, 15, 28, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(2px);">
+                            <button class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a4b8d); color: #fff; border: none; padding: 12px 35px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(176, 106, 179, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="revealContent(${item.id}, 'prompt')">
+                                <i class="bx bx-show"></i> View Prompt
                             </button>
-                            
-                            <pre id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; padding: 20px; color: #e2e2e2; font-size: 0.95rem; line-height: 1.6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; filter: ${contentFilter}; user-select: ${contentSelect}; transition: filter 0.4s ease; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; overflow-x: hidden;">${item.prompt_text}</pre>
                         </div>
+
+                        <button id="copy-prompt-${item.id}" class="copy-reveal-btn-prompt" onclick="copyPrompt(this, \`${item.prompt_text.replace(/`/g, '\\`').replace(/"/g, '&quot;')}\`);" style="display: ${copyBtnDisplay}; position: absolute; top: 15px; right: 15px; background: rgba(176, 106, 179, 0.15); color: #d49ce0; border: 1px solid #b06ab3; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.85rem; z-index: 10; transition: 0.2s;">
+                            <i class="bx bx-copy" style="margin-right: 4px;"></i> Copy
+                        </button>
+                        
+                        <pre id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; padding-top: 40px; color: #e2e2e2; font-size: 0.95rem; line-height: 1.6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; filter: ${contentFilter}; user-select: ${contentSelect}; transition: filter 0.4s ease; white-space: pre-wrap; overflow-y: auto; max-height: 300px;">${item.prompt_text}</pre>
                     </div>
                     
-                    <div style="background: #110c17; padding: 12px 20px; border-top: 1px solid #241933;">
-                        ${actionBarHTML}
-                    </div>
+                    ${actionBarHTML}
+                    
                 </div>`;
             }).join(''); 
         }

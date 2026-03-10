@@ -395,11 +395,11 @@ async function loadDynamicContent() {
                                     <button id="copy-free-${item.id}" class="copy-reveal-btn-free" onclick="copyMainCode('content-free-${item.id}', this, 'free', ${item.id});" style="display: ${copyBtnDisplay}; background: #00d2ff; color: #000; border: none; padding: 5px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.85rem;">Copy Script</button>
                                 </div>
                             </div>
-                            <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
+                            <div style="position: relative; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px;">
                                 <div id="overlay-free-${item.id}" class="code-overlay-free" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; backdrop-filter: blur(4px);">
                                     <button class="submit-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px; display: flex; align-items: center;" onclick="revealContent(${item.id}, 'free')"><i class="bx bx-show" style="margin-right: 8px;"></i> View Code</button>
                                 </div>
-                              <pre id="content-free-${item.id}" class="code-content-blurred-free" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s; overflow: hidden;">${safeCode}</pre>
+                                <pre id="content-free-${item.id}" class="code-content-blurred-free" style="margin:0; padding: 20px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9rem; filter: ${contentFilter}; user-select: ${contentSelect}; transition: 0.3s; max-height: 300px; overflow-y: auto; overflow-x: hidden;">${safeCode}</pre>
                             </div>
                             <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
@@ -429,7 +429,7 @@ async function loadDynamicContent() {
                                 </div>
                             </div>
                             
-                            <div style="position: relative; padding: 20px; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px; max-height: 300px; overflow-y: auto;">
+                            <div style="position: relative; background: #1a1a24; font-family: monospace; color: #ddd; min-height: 120px;">
                                 ${isLocked ? `
                                     <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(26, 26, 36, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; backdrop-filter: blur(4px);">
                                         <div style="font-size: 2.5rem; margin-bottom: 5px;">🔒</div>
@@ -444,7 +444,7 @@ async function loadDynamicContent() {
                                         <button class="submit-btn premium-btn" style="width: auto; padding: 10px 25px; font-size: 1.1rem; border-radius: 30px; color: #000; display: flex; align-items: center;" onclick="revealContent(${item.id}, 'premium')"><i class="bx bx-show" style="margin-right: 8px;"></i> View Code</button>
                                     </div>
                                 `}
-                                <pre id="content-premium-${item.id}" class="code-content-blurred-premium" style="margin:0; white-space: pre-wrap; font-size: 0.9rem; filter: ${isLocked ? 'blur(6px)' : contentFilter}; user-select: ${isLocked ? 'none' : contentSelect}; transition: 0.3s; overflow: hidden;">${isLocked ? '// Premium Snippet\nfunction executeSuperCode() {\n  return "Hidden Magic";\n}\n...' : safeCode}</pre>
+                                <pre id="content-premium-${item.id}" class="code-content-blurred-premium" style="margin:0; padding: 20px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9rem; filter: ${isLocked ? 'blur(6px)' : contentFilter}; user-select: ${isLocked ? 'none' : contentSelect}; transition: 0.3s; max-height: 300px; overflow-y: auto; overflow-x: hidden;">${isLocked ? '// Premium Snippet\nfunction executeSuperCode() {\n  return "Hidden Magic";\n}\n...' : safeCode}</pre>
                             </div>
                             <div style="background: #11111a; padding: 10px 15px; border-top: 1px solid rgba(255,255,255,0.05);">
                                 ${actionBarHTML}
@@ -522,7 +522,7 @@ async function loadDynamicContent() {
                         </div>
                         <div style="margin-bottom: 15px;">${tagsHTML}</div>
                         
-                        <div style="position: relative; background: rgba(0,0,0,0.5); border: 1px solid #241933; border-radius: 8px; padding: 20px; min-height: 100px;">
+                        <div style="position: relative; background: rgba(0,0,0,0.5); border: 1px solid #241933; border-radius: 8px; min-height: 100px;">
                             
                             <div id="overlay-prompt-${item.id}" class="code-overlay-prompt" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(20, 15, 28, 0.8); display: ${overlayDisplay}; justify-content: center; align-items: center; z-index: 5; border-radius: 8px; backdrop-filter: blur(2px);">
                                 <button class="submit-btn" style="background: linear-gradient(90deg, #b06ab3, #8a4b8d); color: #fff; border: none; padding: 10px 25px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem; box-shadow: 0 4px 15px rgba(176, 106, 179, 0.4); display: flex; align-items: center; gap: 8px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="revealContent(${item.id}, 'prompt')">
@@ -534,7 +534,7 @@ async function loadDynamicContent() {
                                 <i class="bx bx-copy" style="margin-right: 4px;"></i> Copy
                             </button>
                             
-                            <div id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; color: #e2e2e2; font-size: 0.95rem; line-height: 1.6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; filter: ${contentFilter}; user-select: ${contentSelect}; transition: filter 0.4s ease; white-space: pre-wrap; overflow: hidden;">${item.prompt_text}</div>
+                            <pre id="content-prompt-${item.id}" class="code-content-blurred-prompt" style="margin: 0; padding: 20px; color: #e2e2e2; font-size: 0.95rem; line-height: 1.6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; filter: ${contentFilter}; user-select: ${contentSelect}; transition: filter 0.4s ease; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; overflow-x: hidden;">${item.prompt_text}</pre>
                         </div>
                     </div>
                     
